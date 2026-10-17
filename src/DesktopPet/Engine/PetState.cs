@@ -34,5 +34,8 @@ public enum PetState
     Sit,         // calm seated rest
     Happy,       // happy celebratory reaction
     Annoyed,     // grumpy reaction (e.g. repeated dragging or disturbance)
-    Surprised    // startled reaction (e.g. sudden drop or test failure)
+    Surprised,   // startled reaction (e.g. sudden drop or test failure)
+    Wave,        // friendly wave greeting
+    Celebrate,   // focus or build completion victory celebration
+    Confused     // puzzled head-tilt / questioning reaction
 }

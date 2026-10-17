@@ -132,7 +132,7 @@ public sealed class DeveloperEventService : IDisposable
             case "build_pass":
             case "build_ok":
                 _engine.Personality.OnPositiveEvent();
-                _engine.TriggerDeveloperReaction(PetState.Happy,
+                _engine.TriggerDeveloperReaction(PetState.Celebrate,
                     !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetBuildSuccessLine());
                 break;
 

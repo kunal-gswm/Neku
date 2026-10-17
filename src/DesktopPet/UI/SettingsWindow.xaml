@@ -35,20 +35,26 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <TextBlock Text="Character selection" Style="{StaticResource Head}"/>
-                        <ComboBox x:Name="CatColorBox" Width="220" HorizontalAlignment="Left" Margin="0,0,0,2">
-                            <ComboBoxItem Content="Neku (Goblin companion)" Tag="neku"/>
-                            <ComboBoxItem Content="Classic Gray Cat"         Tag="cat"/>
-                            <ComboBoxItem Content="Orange Cat"               Tag="cat-orange"/>
-                            <ComboBoxItem Content="Silver Tabby Cat"         Tag="cat-silver"/>
-                            <ComboBoxItem Content="Cream Cat"                Tag="cat-cream"/>
-                            <ComboBoxItem Content="Chocolate Cat"            Tag="cat-chocolate"/>
-                            <ComboBoxItem Content="Blue Cat"                 Tag="cat-blue"/>
-                            <ComboBoxItem Content="Janet Cat"                Tag="cat-janet"/>
-                        </ComboBox>
-                        <TextBlock x:Name="PackWarningText" Foreground="#D9534F"
-                                   Style="{StaticResource Hint}" Margin="0,2,0,4" Visibility="Collapsed" TextWrapping="Wrap"/>
-                        <TextBlock x:Name="ColorRestartNote" Text="Restart Neku to switch character spritesheet."
-                                   Style="{StaticResource Hint}" Margin="0,0,0,12" Visibility="Collapsed"/>
+                        <Grid Margin="0,4,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <ComboBox x:Name="CatColorBox" Width="220" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="PackWarningText" Foreground="#D9534F"
+                                           Style="{StaticResource Hint}" Margin="0,2,0,4" Visibility="Collapsed" TextWrapping="Wrap" MaxWidth="220"/>
+                                <TextBlock x:Name="ColorRestartNote" Text="Restart Neku to switch character spritesheet."
+                                           Style="{StaticResource Hint}" Margin="0,0,0,4" Visibility="Collapsed" MaxWidth="220"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Width="80" Height="80" CornerRadius="8" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1" VerticalAlignment="Center">
+                                <Image x:Name="CharacterPreviewImage" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            </Border>
+                        </Grid>
 
                         <TextBlock Text="Size" Style="{StaticResource Head}"/>
                         <ComboBox x:Name="SizeBox" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12">

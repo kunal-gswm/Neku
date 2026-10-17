@@ -87,12 +87,12 @@ public class CompanionPackTests
             Assert.NotEmpty(manifest.Animations[req].Frames);
         }
 
-        // Verify all frame indices are in bounds (0..47)
+        // Verify all frame indices are in bounds (0..63 for 64-frame sheet)
         foreach (var (name, anim) in manifest.Animations)
         {
             foreach (int idx in anim.Frames)
             {
-                Assert.InRange(idx, 0, 47);
+                Assert.InRange(idx, 0, 63);
             }
         }
     }
@@ -201,6 +201,60 @@ public class CompanionPackTests
         Assert.Equal("kunal-gswm", UpdateService.Owner);
         Assert.Equal("Neku", UpdateService.Repo);
         Assert.Equal("https://api.github.com/repos/kunal-gswm/Neku/releases/latest", UpdateService.LatestReleaseUrl);
+    }
+
+    [Fact]
+    public void Neku_contains_all_expressive_animations()
+    {
+        string[] expressives = ["wave", "celebrate", "confused", "laugh", "pout", "facepalm"];
+        string path = "Assets/pets/neku/manifest.json";
+        Assert.True(AssetSource.Exists(path));
+        var manifest = PetManifest.Parse(AssetSource.ReadAllText(path), path);
+
+        foreach (var anim in expressives)
+        {
+            Assert.True(manifest.Animations.ContainsKey(anim), $"Neku missing expressive animation: '{anim}'");
+            Assert.NotEmpty(manifest.Animations[anim].Frames);
+            Assert.True(manifest.Animations[anim].Fps > 0);
+        }
+    }
+
+    [Fact]
+    public void Cat_packs_safely_resolve_expressive_animations_via_fallback_chain()
+    {
+        string[] catPacks = ["cat", "cat-blue", "cat-chocolate", "cat-cream", "cat-janet", "cat-orange", "cat-silver"];
+        string[] expressives = ["wave", "celebrate", "confused", "laugh", "pout", "facepalm"];
+
+        foreach (var pack in catPacks)
+        {
+            string manPath = $"Assets/pets/{pack}/manifest.json";
+            Assert.True(AssetSource.Exists(manPath), $"Pack manifest missing: {manPath}");
+            var manifest = PetManifest.Parse(AssetSource.ReadAllText(manPath), manPath);
+            byte[] sheetBytes = AssetSource.ReadAllBytes($"Assets/pets/{pack}/{manifest.Sheet}");
+            var animator = new SpriteAnimator(manifest, sheetBytes);
+
+            foreach (var anim in expressives)
+            {
+                animator.Play(anim);
+                // Must resolve to a valid candidate in the cat manifest, never null or empty
+                Assert.False(string.IsNullOrEmpty(animator.CurrentAnimationName), $"Pack '{pack}' resolved '{anim}' to empty");
+                Assert.True(manifest.Animations.ContainsKey(animator.CurrentAnimationName),
+                    $"Pack '{pack}' resolved '{anim}' to undefined animation '{animator.CurrentAnimationName}'");
+            }
+        }
+    }
+
+    [Fact]
+    public void AssetSource_GetPackPreview_returns_valid_preview_for_builtin_packs()
+    {
+        var nekuPreview = AssetSource.GetPackPreview("neku");
+        Assert.NotNull(nekuPreview);
+
+        var catPreview = AssetSource.GetPackPreview("cat");
+        Assert.NotNull(catPreview);
+
+        var nullPreview = AssetSource.GetPackPreview("non-existent-pack-999");
+        Assert.Null(nullPreview);
     }
 
     [Fact]

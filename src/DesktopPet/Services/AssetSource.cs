@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using System.Windows.Media;
 using DesktopPet.Engine;
 
 namespace DesktopPet.Services;
@@ -180,6 +181,30 @@ public static class AssetSource
         if (!Exists(sheetRel))
             return (false, $"Spritesheet '{manifest.Sheet}' not found");
 
+        byte[] bytes;
+        try
+        {
+            bytes = ReadAllBytes(sheetRel);
+            if (bytes.Length == 0)
+                return (false, $"Spritesheet '{manifest.Sheet}' is empty");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Failed to read spritesheet '{manifest.Sheet}': {ex.Message}");
+        }
+
+        // Validate frame capacity from PNG dimensions if available
+        var dims = TryGetPngDimensions(bytes);
+        int maxFrames = int.MaxValue;
+        if (dims is { Width: > 0, Height: > 0 } d)
+        {
+            int cols = d.Width / manifest.CellWidth;
+            int rows = d.Height / manifest.CellHeight;
+            maxFrames = cols * rows;
+            if (manifest.Columns > cols)
+                return (false, $"Manifest columns ({manifest.Columns}) exceeds sheet columns ({cols}) based on width {d.Width}px and cellWidth {manifest.CellWidth}px");
+        }
+
         if (manifest.Animations == null || manifest.Animations.Count == 0)
             return (false, "No animations defined");
 
@@ -195,21 +220,53 @@ public static class AssetSource
             {
                 if (idx < 0)
                     return (false, $"Animation '{name}' has negative frame index: {idx}");
+                if (idx >= maxFrames)
+                    return (false, $"Animation '{name}' references frame {idx}, but spritesheet only holds {maxFrames} frames ({dims!.Value.Width}x{dims!.Value.Height})");
             }
         }
 
+        return (true, null);
+    }
+
+    /// <summary>
+    /// Parses width and height directly from PNG IHDR chunk (bytes 16..23).
+    /// </summary>
+    public static (int Width, int Height)? TryGetPngDimensions(byte[] bytes)
+    {
+        if (bytes.Length >= 24 &&
+            bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 &&
+            bytes[12] == (byte)'I' && bytes[13] == (byte)'H' && bytes[14] == (byte)'D' && bytes[15] == (byte)'R')
+        {
+            int w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+            int h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+            return (w, h);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Loads a preview ImageSource of the pack's idle frame for UI previews.
+    /// </summary>
+    public static ImageSource? GetPackPreview(string packId)
+    {
         try
         {
-            byte[] bytes = ReadAllBytes(sheetRel);
-            if (bytes.Length == 0)
-                return (false, $"Spritesheet '{manifest.Sheet}' is empty");
-        }
-        catch (Exception ex)
-        {
-            return (false, $"Failed to read spritesheet '{manifest.Sheet}': {ex.Message}");
-        }
+            string dir = $"Assets/pets/{packId}";
+            string manifestRel = $"{dir}/manifest.json";
+            if (!Exists(manifestRel)) return null;
 
-        return (true, null);
+            var manifest = PetManifest.Parse(ReadAllText(manifestRel), manifestRel);
+            string sheetRel = $"{dir}/{manifest.Sheet}";
+            if (!Exists(sheetRel)) return null;
+
+            byte[] bytes = ReadAllBytes(sheetRel);
+            var animator = new SpriteAnimator(manifest, bytes);
+            return animator.GetPreviewFrame("idle");
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

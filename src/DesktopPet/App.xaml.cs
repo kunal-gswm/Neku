@@ -134,6 +134,7 @@ public partial class App : Application
         _engine = new PetEngine(_petWindow, animator, surfaceProvider, stateMachine, _settings, _keyboard, _mouse, _system);
         _petWindow.TargetFps = _settings.TargetFps;
         _petWindow.Attach(_engine, _engine.Width, _engine.Height);
+        _engine.TriggerGreeting();
 
         // Watch for "should the cat be hidden right now?". Deliberately a slow timer rather than
         // engine work: when the answer is yes we detach the render loop completely, and the
@@ -408,8 +409,7 @@ public partial class App : Application
             case FocusTimerState.Idle:
                 _focusTimer.StartFocus(_settings.FocusDurationMinutes);
                 _engine?.Personality.OnPositiveEvent();
-                if (_engine != null)
-                    _engine.ShowSpeech(_engine.Personality.GetFocusStartedLine(), 3.5);
+                _engine?.TriggerReaction(PetState.Typing, _engine.Personality.GetFocusStartedLine(), 2.0);
                 break;
             case FocusTimerState.Focusing:
                 _focusTimer.Pause();
@@ -447,7 +447,7 @@ public partial class App : Application
     private void OnFocusCompleted()
     {
         _engine?.Personality.OnPositiveEvent();
-        _engine?.TriggerDeveloperReaction(PetState.Happy, _engine.Personality.GetFocusCompletedLine());
+        _engine?.TriggerReaction(PetState.Celebrate, _engine.Personality.GetFocusCompletedLine(), 2.0);
         _petWindow?.SpawnHearts();
 
         var notif = new FocusNotificationWindow(
@@ -455,13 +455,18 @@ public partial class App : Application
             "Great work! Time for a 5m break.",
             "🍅",
             "Start 5m Break ☕",
-            () => _focusTimer.StartBreak(_settings.BreakDurationMinutes));
+            () =>
+            {
+                _focusTimer.StartBreak(_settings.BreakDurationMinutes);
+                _engine?.TriggerReaction(PetState.Stretch, "Break time! Stretch those paws and rest your eyes 🌸", 2.0);
+            });
         notif.Show();
     }
 
     private void OnBreakCompleted()
     {
-        _engine?.TriggerDeveloperReaction(PetState.Jump, _engine.Personality.GetBreakCompletedLine());
+        _engine?.Personality.OnPositiveEvent();
+        _engine?.TriggerReaction(PetState.Wave, _engine.Personality.GetBreakCompletedLine(), 2.0);
 
         var notif = new FocusNotificationWindow(
             "Break finished! ✨",

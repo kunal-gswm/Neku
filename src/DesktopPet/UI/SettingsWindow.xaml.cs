@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using DesktopPet.Services;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
@@ -186,10 +187,29 @@ public partial class SettingsWindow : Window
         UpdatePackWarning();
     }
 
+    private readonly Dictionary<string, ImageSource?> _previewCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private void UpdatePreview(string packId)
+    {
+        if (string.IsNullOrWhiteSpace(packId))
+        {
+            CharacterPreviewImage.Source = null;
+            return;
+        }
+
+        if (!_previewCache.TryGetValue(packId, out var img))
+        {
+            img = AssetSource.GetPackPreview(packId);
+            _previewCache[packId] = img;
+        }
+        CharacterPreviewImage.Source = img;
+    }
+
     private void UpdatePackWarning()
     {
         if (CatColorBox.SelectedItem is ComboBoxItem item && item.Tag is string packId)
         {
+            UpdatePreview(packId);
             var (isValid, error) = AssetSource.ValidatePack(packId);
             if (!isValid)
             {
@@ -197,6 +217,10 @@ public partial class SettingsWindow : Window
                 PackWarningText.Visibility = Visibility.Visible;
                 return;
             }
+        }
+        else
+        {
+            CharacterPreviewImage.Source = null;
         }
         PackWarningText.Visibility = Visibility.Collapsed;
     }

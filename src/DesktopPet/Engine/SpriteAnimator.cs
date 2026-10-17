@@ -66,24 +66,101 @@ public sealed class SpriteAnimator
         return cropped;
     }
 
+    public static readonly IReadOnlyDictionary<string, string[]> FallbackChain = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["wave"]        = ["talk", "happy", "pet", "idle"],
+        ["celebrate"]   = ["happy", "jump", "proud", "idle"],
+        ["confused"]    = ["lookaround", "blink", "surprised", "idle"],
+        ["pout"]        = ["annoyed", "idle"],
+        ["laugh"]       = ["happy", "celebrate", "idle"],
+        ["facepalm"]    = ["annoyed", "lookaround", "idle"],
+        ["yawn"]        = ["sleep", "siderest", "idle"],
+        ["stretch"]     = ["wakeup", "idle"],
+        ["focus"]       = ["typing", "idle"],
+        ["work"]        = ["typing", "idle"],
+        ["typingfast"]  = ["typing", "idle"],
+        ["crouch"]      = ["sit", "loaf", "idle"],
+        ["pounce"]      = ["jump", "walk", "idle"],
+        ["proud"]       = ["happy", "sit", "idle"],
+        ["groom"]       = ["pet", "sit", "idle"],
+        ["loaf"]        = ["sit", "siderest", "idle"],
+        ["siderest"]    = ["sleep", "sit", "idle"],
+        ["wakeup"]      = ["stretch", "idle"],
+        ["talk"]        = ["idle"],
+        ["blink"]       = ["idle"],
+        ["lookaround"]  = ["idle"],
+        ["sit"]         = ["idle"],
+        ["happy"]       = ["pet", "idle"],
+        ["annoyed"]     = ["idle"],
+        ["surprised"]   = ["idle"],
+    };
+
     /// <summary>
     /// Switch to a named animation. Re-playing the animation already running is a no-op for
     /// looping clips, but restarts a non-looping one: those hold their last frame and leave
     /// <see cref="Finished"/> latched true, so silently ignoring the call would make the
     /// caller's next Finished-gated state end on the frame it began.
+    /// If the requested animation is missing from the character manifest, it smoothly resolves
+    /// down <see cref="FallbackChain"/> to a semantically similar animation and ultimately to idle.
     /// </summary>
     public void Play(string name)
     {
-        if (name == _currentName && _current.Loop) return;
-        if (!_manifest.Animations.TryGetValue(name, out var def))
-            return; // unknown animation: keep current
+        string targetName = name;
+        AnimationDef? def = null;
+
+        if (_manifest.Animations.TryGetValue(targetName, out def))
+        {
+            // Exact match
+        }
+        else if (FallbackChain.TryGetValue(targetName, out var fallbacks))
+        {
+            foreach (var candidate in fallbacks)
+            {
+                if (_manifest.Animations.TryGetValue(candidate, out def))
+                {
+                    targetName = candidate;
+                    break;
+                }
+            }
+        }
+
+        // Ultimate fallback to idle, or first defined animation
+        if (def == null)
+        {
+            if (_manifest.Animations.TryGetValue("idle", out def))
+                targetName = "idle";
+            else
+            {
+                def = _manifest.Animations.Values.FirstOrDefault();
+                targetName = _manifest.Animations.Keys.FirstOrDefault() ?? "";
+            }
+        }
+
+        if (def == null) return;
+        if (targetName == _currentName && def.Loop) return;
 
         _current = def;
-        _currentName = name;
+        _currentName = targetName;
         _frameIndex = 0;
         _accumulator = 0;
         Finished = false;
-        DesktopPet.Services.DebugLog.Write($"[SpriteAnimator] Selected animation: '{name}'");
+        DesktopPet.Services.DebugLog.Write($"[SpriteAnimator] Selected animation: '{targetName}' (requested '{name}')");
+    }
+
+    /// <summary>Returns the first frame of the specified animation (or idle) as an ImageSource.</summary>
+    public ImageSource? GetPreviewFrame(string animationName = "idle")
+    {
+        AnimationDef? def = null;
+        if (!_manifest.Animations.TryGetValue(animationName, out def) || def.Frames.Length == 0)
+        {
+            if (!_manifest.Animations.TryGetValue("idle", out def) || def.Frames.Length == 0)
+                def = _manifest.Animations.Values.FirstOrDefault();
+        }
+
+        if (def != null && def.Frames.Length > 0 && _frames.TryGetValue(def.Frames[0], out var frame))
+            return frame;
+
+        return _frames.Values.FirstOrDefault();
     }
 
     /// <summary>Advance by <paramref name="dt"/> seconds and return the current frame image.</summary>

@@ -191,6 +191,55 @@
       ],
       "fps": 6,
       "loop": true
+    },
+    "blink": {
+      "frames": [
+        0,
+        1
+      ],
+      "fps": 2,
+      "loop": false
+    },
+    "lookaround": {
+      "frames": [
+        0,
+        1,
+        0
+      ],
+      "fps": 2,
+      "loop": false
+    },
+    "sit": {
+      "frames": [
+        39
+      ],
+      "fps": 1,
+      "loop": true
+    },
+    "happy": {
+      "frames": [
+        12,
+        13,
+        12,
+        13
+      ],
+      "fps": 5,
+      "loop": true
+    },
+    "annoyed": {
+      "frames": [
+        0,
+        1
+      ],
+      "fps": 2,
+      "loop": true
+    },
+    "surprised": {
+      "frames": [
+        10
+      ],
+      "fps": 1,
+      "loop": false
     }
   }
 }

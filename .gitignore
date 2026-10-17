@@ -17,6 +17,7 @@ desktop.ini
 # Temp verification screenshots in tools/ — ignore all PNGs there except the
 # source collage and the icon preview we intentionally keep.
 tools/*.png
+tools/previews/
 !tools/gemini_cat.png
 !tools/gemini_addon.png
 !tools/gemini_hunt.png

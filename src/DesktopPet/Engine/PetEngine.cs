@@ -123,6 +123,10 @@ public sealed class PetEngine
     public bool   Paused         { get; set; }
     public double Width          => _w;
     public double Height         => _h;
+    public PetState State        => _state;
+    public PetState? PendingEmotion => _pendingEmotion;
+    public string SpeechText     => _bubbleText;
+    public void   SetQuiet(bool quiet) => _quiet = quiet;
     /// <summary>True while a speech bubble is currently showing (AI companion).</summary>
     public bool   IsSpeaking     => _bubbleTimeLeft > 0;
 
@@ -237,19 +241,62 @@ public sealed class PetEngine
 
     public Personality Personality => _personality;
 
-    public void TriggerDeveloperReaction(PetState state, string message)
+    private DateTime _lastReactionTime = DateTime.MinValue;
+
+    /// <summary>
+    /// Triggers an expressive contextual reaction with cooldown, anti-spam,
+    /// quiet-mode filtering, reduced-motion adaptations, and drag/fall protection.
+    /// </summary>
+    public void TriggerReaction(PetState state, string? message = null, double cooldownSeconds = 2.0)
     {
+        // 1. Critical interaction protection: never interrupt dragging
         if (_state is PetState.Drag) return;
-        ShowSpeech(message, 3.8);
-        if (_state != PetState.Fall)
+
+        // 2. Anti-spam cooldown
+        var now = DateTime.Now;
+        double elapsed = (now - _lastReactionTime).TotalSeconds;
+        if (elapsed < 0.5) return;
+        if (_state == state && elapsed < cooldownSeconds) return;
+
+        // 3. Respect Quiet Mode: avoid energetic remarks/spins/jumps during presentations or gaming
+        if (_quiet && (state is PetState.Zoomies or PetState.Jump or PetState.Celebrate))
         {
-            EnterState(state);
+            state = PetState.Sit;
         }
-        else
+
+        // 4. Respect Reduced Motion: map energetic jumps/celebrations to calm seated or happy
+        if (_settings.ReducedMotion && (state is PetState.Celebrate or PetState.Zoomies or PetState.Spin))
+        {
+            state = PetState.Happy;
+        }
+
+        _lastReactionTime = now;
+
+        if (!string.IsNullOrWhiteSpace(message) && !_quiet)
+        {
+            ShowSpeech(message, 3.5);
+        }
+
+        // 5. Fall physics protection: do not interrupt airborne falling; queue emotion for landing
+        if (_state == PetState.Fall)
         {
             _pendingEmotion = state;
             _pendingEmotionTtl = 8.0;
         }
+        else
+        {
+            EnterState(state);
+        }
+    }
+
+    public void TriggerDeveloperReaction(PetState state, string message)
+    {
+        TriggerReaction(state, message, cooldownSeconds: 2.0);
+    }
+
+    public void TriggerGreeting()
+    {
+        TriggerReaction(PetState.Wave, "Hey there! Ready to code? ✨", cooldownSeconds: 5.0);
     }
 
     public void ResetPosition()
@@ -507,6 +554,9 @@ public sealed class PetEngine
             case PetState.Happy:      UpdateStationary(dt); break;
             case PetState.Annoyed:    UpdateStationary(dt); break;
             case PetState.Surprised:  UpdateStationary(dt); break;
+            case PetState.Wave:       UpdateStationary(dt); break;
+            case PetState.Celebrate:  UpdateStationary(dt); break;
+            case PetState.Confused:   UpdateStationary(dt); break;
             case PetState.Fall:       UpdateFall(dt);       break;
             case PetState.Drag:       UpdateDrag(dt);       break;
         }
@@ -717,7 +767,7 @@ public sealed class PetEngine
         // Talk is the bubble's own state - let it finish rather than cutting the line short.
         if (_state != PetState.Talk && TryApplyPendingEmotion()) return;
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     /// <summary>Sleep, then wake with a little stretch instead of snapping awake.</summary>
@@ -931,7 +981,7 @@ public sealed class PetEngine
             _vx = 0; _vy = 0;
             if (_isPetted) EnterState(PetState.Pet);
             else if (hardLand) EnterState(PetState.Surprised);
-            else EnterState(PetState.Idle);
+            else if (!TryApplyPendingEmotion()) EnterState(PetState.Idle);
         }
         else
         {
@@ -942,7 +992,7 @@ public sealed class PetEngine
                 _vx = 0; _vy = 0;
                 if (_isPetted) EnterState(PetState.Pet);
                 else if (hardLand) EnterState(PetState.Surprised);
-                else EnterState(PetState.Idle);
+                else if (!TryApplyPendingEmotion()) EnterState(PetState.Idle);
             }
         }
     }
@@ -961,12 +1011,17 @@ public sealed class PetEngine
         {
             SetFeet(landTop);
             _vx = 0; _vy = 0;
-            EnterState(_isPetted ? PetState.Pet : PetState.Idle);
+            if (_isPetted) EnterState(PetState.Pet);
+            else if (!TryApplyPendingEmotion()) EnterState(PetState.Idle);
         }
         else
         {
             SetFeet(nextFeet);
-            if (_vy > 0 && RescueBelowFloor()) EnterState(_isPetted ? PetState.Pet : PetState.Idle);
+            if (_vy > 0 && RescueBelowFloor())
+            {
+                if (_isPetted) EnterState(PetState.Pet);
+                else if (!TryApplyPendingEmotion()) EnterState(PetState.Idle);
+            }
         }
     }
 
@@ -1164,6 +1219,22 @@ public sealed class PetEngine
                 _vx = 0; _vy = 0;
                 _stateTimer = _sm.SurprisedDuration();
                 _anim.Play("surprised");
+                break;
+            case PetState.Wave:
+                _vx = 0; _vy = 0;
+                _stateTimer = 2.0;
+                _anim.Play("wave");
+                break;
+            case PetState.Celebrate:
+                _vx = 0; _vy = 0;
+                _stateTimer = 2.5;
+                _view.SpawnHearts();
+                _anim.Play("celebrate");
+                break;
+            case PetState.Confused:
+                _vx = 0; _vy = 0;
+                _stateTimer = 2.0;
+                _anim.Play("confused");
                 break;
             case PetState.Fall:
                 _anim.Play("fall");
