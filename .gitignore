@@ -1,0 +1,44 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS junk
+Thumbs.db
+desktop.ini
+
+# Temp verification screenshots in tools/ — ignore all PNGs there except the
+# source collage and the icon preview we intentionally keep.
+tools/*.png
+!tools/gemini_cat.png
+!tools/gemini_addon.png
+!tools/gemini_hunt.png
+!tools/icon_preview.png
+
+# Python cache
+__pycache__/
+
+# Never commit a real settings file or any API key. The live settings file lives in
+# %AppData%\PixelPaws\settings.json (outside the repo); these block accidental local copies.
+settings.json
+**/settings.local.json
+*.key
+!settings.example.json
+
+# Release artifacts
+dist/
+
+# Local personal companion assets and private scripts
+src/DesktopPet/Assets/pets/neku-personal-local/
+tests/DesktopPet.Tests/Assets/pets/neku-personal-local/
+tools/personal/
+*.jpg
+*.jpeg
+

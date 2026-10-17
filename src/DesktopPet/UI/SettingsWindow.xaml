@@ -1,0 +1,252 @@
+<Window x:Class="DesktopPet.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Neku Settings"
+        Width="440" Height="640"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="Hint">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#FF8855BB"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Head">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,8,0,4"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,4"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="14">
+        <TextBlock DockPanel.Dock="Top" Text="🐾 Neku" FontSize="18" FontWeight="Bold" Margin="4,0,0,10"/>
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="CloseButton" Content="Done" Width="80" Click="CloseButton_Click"/>
+        </StackPanel>
+
+        <TabControl>
+            <!-- ─────────────── Appearance ─────────────── -->
+            <TabItem Header="Appearance">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Character selection" Style="{StaticResource Head}"/>
+                        <ComboBox x:Name="CatColorBox" Width="220" HorizontalAlignment="Left" Margin="0,0,0,2">
+                            <ComboBoxItem Content="Neku (Goblin companion)" Tag="neku"/>
+                            <ComboBoxItem Content="Classic Gray Cat"         Tag="cat"/>
+                            <ComboBoxItem Content="Orange Cat"               Tag="cat-orange"/>
+                            <ComboBoxItem Content="Silver Tabby Cat"         Tag="cat-silver"/>
+                            <ComboBoxItem Content="Cream Cat"                Tag="cat-cream"/>
+                            <ComboBoxItem Content="Chocolate Cat"            Tag="cat-chocolate"/>
+                            <ComboBoxItem Content="Blue Cat"                 Tag="cat-blue"/>
+                            <ComboBoxItem Content="Janet Cat"                Tag="cat-janet"/>
+                        </ComboBox>
+                        <TextBlock x:Name="ColorRestartNote" Text="Restart Neku to switch character spritesheet."
+                                   Style="{StaticResource Hint}" Margin="0,0,0,12" Visibility="Collapsed"/>
+
+                        <TextBlock Text="Size" Style="{StaticResource Head}"/>
+                        <ComboBox x:Name="SizeBox" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12">
+                            <ComboBoxItem Content="Small (75%)"  Tag="0.75"/>
+                            <ComboBoxItem Content="Medium (100%)" Tag="1.0"/>
+                            <ComboBoxItem Content="Large (130%)"  Tag="1.3"/>
+                            <ComboBoxItem Content="Huge (160%)"   Tag="1.6"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Animation &amp; walk speed" Style="{StaticResource Head}"/>
+                        <Slider x:Name="SpeedSlider" Minimum="0.3" Maximum="2.5" TickFrequency="0.1"
+                                IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Window opacity" Style="{StaticResource Head}"/>
+                        <Slider x:Name="OpacitySlider" Minimum="0.2" Maximum="1.0" TickFrequency="0.05"
+                                IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
+                        <TextBlock Text="Make Neku semi-transparent so you can see behind." Style="{StaticResource Hint}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── Behaviour ─────────────── -->
+            <TabItem Header="Behavior">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Movement &amp; Interaction" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="AutonomousWanderBox" Content="Autonomous wandering across screen"/>
+                        <CheckBox x:Name="WindowWalkingBox"    Content="Walk on top of window edges"/>
+                        <CheckBox x:Name="CursorChaseBox"      Content="Chase the mouse cursor"/>
+                        <CheckBox x:Name="RandomReactionsBox"  Content="Random expressive remarks &amp; reactions"/>
+                        <CheckBox x:Name="SleepBox"            Content="Take naps when idle"/>
+                        <CheckBox x:Name="ScrollPlayBox"       Content="Unroll toilet paper when scrolling 🧻"/>
+                        <CheckBox x:Name="MoodsBox"            Content="Lifelike moods (energetic / sleepy) 🌙"/>
+                        <CheckBox x:Name="SystemReactionsBox"  Content="React to system load &amp; focus apps 💻"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="🧘 Stretch reminder" Style="{StaticResource Head}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Remind me every" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="StretchIntervalBox" Width="120" VerticalAlignment="Center">
+                                <ComboBoxItem Content="Off"        Tag="0"/>
+                                <ComboBoxItem Content="15 minutes" Tag="15"/>
+                                <ComboBoxItem Content="30 minutes" Tag="30"/>
+                                <ComboBoxItem Content="45 minutes" Tag="45"/>
+                                <ComboBoxItem Content="60 minutes" Tag="60"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock Text="Neku stretches alongside a gentle reminder popup." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── Performance ─────────────── -->
+            <TabItem Header="Performance">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Power &amp; motion savings" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="ReducedMotionBox"    Content="Reduced motion (limits frantic zoomies/spins)"/>
+                        <CheckBox x:Name="BatteryConsciousBox" Content="Battery-conscious mode (slows work on battery)"/>
+                        <CheckBox x:Name="DisableMonitoringBox" Content="Disable optional background monitoring"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Disables keyboard and mouse activity monitors for absolute zero background polling overhead."/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="🤫 Quiet &amp; Presentation Mode" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="QuietModeBox"  Content="Settle down when presenting or gaming"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,6"
+                                   Text="Stops zoomies, hunting, and remarks during screen-sharing, full-screen gaming, or Focus Assist."/>
+                        <CheckBox x:Name="HidePresentBox" Content="Hide Neku completely during presentations" Margin="22,0,0,4"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,0"
+                                   Text="Completely detaches rendering loop when hidden for 0.0% CPU cost."/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── Developer ─────────────── -->
+            <TabItem Header="Developer">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Developer personality integration" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="DevEventsBox" Content="Enable local developer event reactions"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Celebrates build success, stresses over test failures, reacts to commands. Disabled by default."/>
+
+                        <StackPanel x:Name="DevPanel" Margin="0,4,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                <TextBlock Text="Local Port:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="DevPortBox" Width="80" Text="48123" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Trigger test reactions:" Style="{StaticResource Head}"/>
+                            <WrapPanel Margin="0,4,0,10">
+                                <Button x:Name="DevTestBuildSuccessBtn" Content="Build Passed 🎉" Width="105" Margin="0,2,6,2" Click="DevTestBuildSuccess_Click"/>
+                                <Button x:Name="DevTestBuildFailBtn"    Content="Build Failed 💥" Width="105" Margin="0,2,6,2" Click="DevTestBuildFail_Click"/>
+                                <Button x:Name="DevTestPassBtn"         Content="Tests Green ✨"  Width="105" Margin="0,2,6,2" Click="DevTestPass_Click"/>
+                                <Button x:Name="DevTestFailBtn"         Content="Tests Red 😱"   Width="105" Margin="0,2,6,2" Click="DevTestFail_Click"/>
+                            </WrapPanel>
+
+                            <TextBlock Text="Script integration:" Style="{StaticResource Head}"/>
+                            <TextBlock Style="{StaticResource Hint}" Text="Add this to your build or test scripts:"/>
+                            <TextBox Text=".\tools\neku-event.bat build_success &quot;Build completed in 2.1s!&quot;"
+                                     IsReadOnly="True" Margin="0,4,0,4" Background="#FFF5F5F5" FontFamily="Consolas" FontSize="11"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── System ─────────────── -->
+            <TabItem Header="System">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Desktop integration" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="AutostartBox"    Content="Start with Windows"/>
+                        <CheckBox x:Name="ClickThroughBox" Content="Click-through mode (clicks pass through)"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,6"
+                                   Text="Allows clicking on applications directly behind Neku. Toggle off from system tray."/>
+                        <CheckBox x:Name="RememberStateBox" Content="Remember position and mood across restarts"/>
+                        <CheckBox x:Name="AutoUpdateBox"   Content="Check for updates automatically 🔄"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="Controls &amp; Diagnostics" Style="{StaticResource Head}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
+                            <Button x:Name="ResetPositionButton" Content="Reset position" Width="110" Click="ResetPositionButton_Click"/>
+                            <Button x:Name="RestoreDefaultsButton" Content="Restore defaults" Width="110" Margin="8,0,0,0" Click="RestoreDefaultsButton_Click"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                            <Button x:Name="LogsButton" Content="Open log folder" Width="110" Click="LogsButton_Click"/>
+                            <Button x:Name="UpdateCheckButton" Content="Check update" Width="110" Margin="8,0,0,0" Click="UpdateCheckButton_Click"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="VersionText" Style="{StaticResource Hint}" Margin="0,4,0,4"/>
+                        <TextBlock x:Name="UpdateResult" Style="{StaticResource Hint}" Margin="0,0,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── AI Companion ─────────────── -->
+            <TabItem Header="AI">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <CheckBox x:Name="AiEnableBox" Content="Let me chat with Neku"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Optional. When disabled, zero network requests and zero AI code runs."/>
+
+                        <TextBlock Text="Brain" Margin="0,4,0,2"/>
+                        <ComboBox x:Name="AiProviderBox" Width="220" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Google Gemini (cloud, free tier)" Tag="gemini"/>
+                            <ComboBoxItem Content="Ollama (local, private, offline)" Tag="ollama"/>
+                        </ComboBox>
+
+                        <!-- Gemini -->
+                        <StackPanel x:Name="GeminiPanel">
+                            <TextBlock Text="Gemini API key" Margin="0,8,0,2"/>
+                            <PasswordBox x:Name="AiKeyBox" Margin="0,0,0,2"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
+                                       Text="Stored only locally on this machine in settings.json. Never uploaded or tracked."/>
+                            <TextBlock Text="Model" Margin="0,0,0,2"/>
+                            <TextBox x:Name="AiModelBox" Margin="0,0,0,2"/>
+                        </StackPanel>
+
+                        <!-- Ollama -->
+                        <StackPanel x:Name="OllamaPanel" Visibility="Collapsed">
+                            <TextBlock Text="Server URL" Margin="0,8,0,2"/>
+                            <TextBox x:Name="OllamaUrlBox" Margin="0,0,0,6"/>
+                            <TextBlock Text="Model" Margin="0,0,0,2"/>
+                            <TextBox x:Name="OllamaModelBox" Margin="0,0,0,2"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button x:Name="TestButton" Content="Test connection" Width="130" Click="TestButton_Click"/>
+                            <TextBlock x:Name="TestResult" VerticalAlignment="Center" Margin="10,0,0,0"
+                                       Style="{StaticResource Hint}" MaxWidth="200"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,12"/>
+
+                        <CheckBox x:Name="AiToolsBox"     Content="Allow cute tools (time, weather, stats)"/>
+                        <CheckBox x:Name="AiChatterBox"   Content="Let Neku speak up on its own 💬"/>
+                        <CheckBox x:Name="AiStreamingBox" Content="Type replies out progressively ⌨️"/>
+                        <CheckBox x:Name="AiHotkeyBox"    Content="Open chat with keyboard shortcut"/>
+                        <StackPanel Orientation="Horizontal" Margin="22,0,0,4">
+                            <TextBlock Text="Shortcut:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="HotkeyCaptureBox" Width="150" IsReadOnly="True"
+                                     PreviewKeyDown="HotkeyCaptureBox_PreviewKeyDown"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Companion personality prompt" Margin="0,8,0,2"/>
+                        <TextBox x:Name="AiPersonaBox" TextWrapping="Wrap" AcceptsReturn="True" Height="50"
+                                 VerticalScrollBarVisibility="Auto" Margin="0,0,0,8"/>
+
+                        <CheckBox x:Name="AiMemoryBox" Content="Remember chats between sessions 🧠"/>
+                        <Button x:Name="ForgetButton" Content="Forget memory 🧹" Width="140"
+                                HorizontalAlignment="Left" Margin="22,4,0,4" Click="ForgetButton_Click"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
