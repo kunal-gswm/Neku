@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
@@ -70,7 +71,21 @@ public partial class App : Application
         };
 
         _singleInstance = new Mutex(initiallyOwned: true, "Neku.SingleInstance", out bool isNew);
-        if (!isNew) { Shutdown(); return; }
+        if (!isNew)
+        {
+            HandleAlreadyRunningInstance();
+            Shutdown();
+            return;
+        }
+
+        var legacyConflict = CheckLegacyPixelPawsConflict();
+        if (legacyConflict != null)
+        {
+            DebugLog.Write($"[Startup] Legacy PixelPaws conflict detected: {legacyConflict}");
+            MessageBox.Show(legacyConflict, "Neku - Legacy Process Detected", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Shutdown();
+            return;
+        }
 
         _settings = _settingsService.Load();
 
@@ -339,27 +354,34 @@ public partial class App : Application
         foreach (string candidate in new[] { pet, "neku", "cat" })
         {
             if (string.IsNullOrWhiteSpace(candidate)) continue;
-            string dir = $"Assets/pets/{candidate}";
-            string manifestRel = $"{dir}/manifest.json";
-            if (!AssetSource.Exists(manifestRel))
+            try
             {
-                DebugLog.Write($"[LoadPet] Candidate '{candidate}' manifest not found at {manifestRel} (resolved: {AssetSource.ResolveSource(manifestRel)})");
-                continue;
+                string dir = $"Assets/pets/{candidate}";
+                string manifestRel = $"{dir}/manifest.json";
+                if (!AssetSource.Exists(manifestRel))
+                {
+                    DebugLog.Write($"[LoadPet] Candidate '{candidate}' manifest not found at {manifestRel} (resolved: {AssetSource.ResolveSource(manifestRel)})");
+                    continue;
+                }
+
+                string manifestPath = AssetSource.ResolveSource(manifestRel);
+                var manifest = PetManifest.Parse(AssetSource.ReadAllText(manifestRel), dir);
+                string sheetRel = $"{dir}/{manifest.Sheet}";
+                string sheetPath = AssetSource.ResolveSource(sheetRel);
+
+                DebugLog.Write($"[LoadPet] Successfully loaded pack: '{candidate}'");
+                DebugLog.Write($"[LoadPet] Resolved manifest: {manifestPath}");
+                DebugLog.Write($"[LoadPet] Resolved sheet: {sheetPath}");
+                DebugLog.Write($"[LoadPet] Dimensions: {manifest.CellWidth}x{manifest.CellHeight}, Columns: {manifest.Columns}, Scale: {manifest.Scale}");
+
+                var animator = new SpriteAnimator(manifest, AssetSource.ReadAllBytes(sheetRel));
+                DebugLog.Write($"[LoadPet] Initial animation selected: '{animator.CurrentAnimationName}'");
+                return animator;
             }
-
-            string manifestPath = AssetSource.ResolveSource(manifestRel);
-            var manifest = PetManifest.Parse(AssetSource.ReadAllText(manifestRel), dir);
-            string sheetRel = $"{dir}/{manifest.Sheet}";
-            string sheetPath = AssetSource.ResolveSource(sheetRel);
-
-            DebugLog.Write($"[LoadPet] Successfully loaded pack: '{candidate}'");
-            DebugLog.Write($"[LoadPet] Resolved manifest: {manifestPath}");
-            DebugLog.Write($"[LoadPet] Resolved sheet: {sheetPath}");
-            DebugLog.Write($"[LoadPet] Dimensions: {manifest.CellWidth}x{manifest.CellHeight}, Columns: {manifest.Columns}, Scale: {manifest.Scale}");
-
-            var animator = new SpriteAnimator(manifest, AssetSource.ReadAllBytes(sheetRel));
-            DebugLog.Write($"[LoadPet] Initial animation selected: '{animator.CurrentAnimationName}'");
-            return animator;
+            catch (Exception ex)
+            {
+                DebugLog.Write($"[LoadPet] Failed to load candidate '{candidate}': {ex.Message}");
+            }
         }
 
         throw new FileNotFoundException(
@@ -790,7 +812,7 @@ public partial class App : Application
     {
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            $"Neku/{AppVersion.Current} (+https://github.com/jordansbc/pixelpaws)");
+            $"Neku/{AppVersion.Current} (+https://github.com/kunal-gswm/Neku)");
         return http;
     }
 
@@ -944,5 +966,89 @@ public partial class App : Application
         _tray?.Dispose();
         _singleInstance?.Dispose();
         base.OnExit(e);
+    }
+
+    public static string? CheckLegacyPixelPawsConflict()
+    {
+        try
+        {
+            int currentPid = Environment.ProcessId;
+            var legacy = Process.GetProcessesByName("PixelPaws")
+                .Where(p => p.Id != currentPid)
+                .ToList();
+
+            if (legacy.Count > 0)
+            {
+                var p = legacy[0];
+                string path = TryGetProcessPath(p);
+                string version = TryGetProcessVersion(p);
+                return $"A legacy PixelPaws process is currently running (PID {p.Id}{(string.IsNullOrEmpty(version) ? "" : $", version {version}")}).\n\n" +
+                       (string.IsNullOrEmpty(path) ? "" : $"Path: {path}\n\n") +
+                       "Please close PixelPaws from its system tray icon or Task Manager before starting Neku " +
+                       "to prevent conflicting screen overlays, keyboard hooks, and settings.";
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Startup] Error checking legacy process: {ex.Message}");
+        }
+
+        return null;
+    }
+
+    public static void HandleAlreadyRunningInstance()
+    {
+        string? msg = GetRunningConflictMessage();
+        if (string.IsNullOrWhiteSpace(msg))
+        {
+            msg = "Neku is already running.\n\nPlease check your system tray (notification area near the clock) for the Neku icon. Right-click the icon to open Settings, pause, or exit.";
+        }
+
+        DebugLog.Write($"[Startup] Instance already running: {msg}");
+        MessageBox.Show(msg, "Neku - Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    public static string? GetRunningConflictMessage()
+    {
+        try
+        {
+            int currentPid = Environment.ProcessId;
+            var nekuProcesses = Process.GetProcessesByName("Neku")
+                .Where(p => p.Id != currentPid)
+                .ToList();
+
+            if (nekuProcesses.Count > 0)
+            {
+                var p = nekuProcesses[0];
+                string path = TryGetProcessPath(p);
+                string version = TryGetProcessVersion(p);
+                return $"Neku is already running (PID {p.Id}{(string.IsNullOrEmpty(version) ? "" : $", version {version}")}).\n\n" +
+                       (string.IsNullOrEmpty(path) ? "" : $"Path: {path}\n\n") +
+                       "Check your system tray (near the clock) for the Neku icon.\n" +
+                       "Right-click the tray icon to open Settings, pause, or exit.";
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Startup] Error inspecting running processes: {ex.Message}");
+        }
+
+        return null;
+    }
+
+    private static string TryGetProcessPath(Process p)
+    {
+        try { return p.MainModule?.FileName ?? ""; }
+        catch { return ""; }
+    }
+
+    private static string TryGetProcessVersion(Process p)
+    {
+        try
+        {
+            var vi = p.MainModule?.FileVersionInfo;
+            return vi?.ProductVersion ?? vi?.FileVersion ?? "";
+        }
+        catch { return ""; }
     }
 }

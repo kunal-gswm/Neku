@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using DesktopPet.Engine;
 
 namespace DesktopPet.Services;
 
@@ -7,7 +8,7 @@ namespace DesktopPet.Services;
 /// Where the pet's art comes from.
 ///
 /// Assets are compiled into the executable so a release is genuinely one file — a published
-/// PixelPaws.exe with no Assets folder beside it still has all seven cats. A matching file on
+/// Neku.exe with no Assets folder beside it still has all seven cats. A matching file on
 /// disk always wins, though, which keeps the edit-and-rerun loop working during development and
 /// lets anyone drop in a custom pet pack without rebuilding.
 /// </summary>
@@ -138,4 +139,211 @@ public static class AssetSource
 
         return pets.ToList();
     }
+
+    /// <summary>
+    /// Validates a companion pack by ID, verifying that its manifest exists and is valid JSON,
+    /// cell dimensions and columns are positive, required 'idle' animation exists with frames,
+    /// frame indices are non-negative, and the spritesheet image exists and is readable.
+    /// </summary>
+    public static (bool IsValid, string? Error) ValidatePack(string packId)
+    {
+        if (string.IsNullOrWhiteSpace(packId))
+            return (false, "Pack ID cannot be empty");
+
+        string dir = $"Assets/pets/{packId}";
+        string manifestRel = $"{dir}/manifest.json";
+
+        if (!Exists(manifestRel))
+            return (false, $"Manifest not found at {manifestRel}");
+
+        PetManifest manifest;
+        try
+        {
+            string json = ReadAllText(manifestRel);
+            manifest = PetManifest.Parse(json, manifestRel);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Invalid manifest: {ex.Message}");
+        }
+
+        if (manifest.CellWidth <= 0 || manifest.CellHeight <= 0)
+            return (false, $"Invalid cell dimensions: {manifest.CellWidth}x{manifest.CellHeight}");
+
+        if (manifest.Columns <= 0)
+            return (false, $"Invalid column count: {manifest.Columns}");
+
+        if (string.IsNullOrWhiteSpace(manifest.Sheet))
+            return (false, "Manifest sheet filename is missing");
+
+        string sheetRel = $"{dir}/{manifest.Sheet}";
+        if (!Exists(sheetRel))
+            return (false, $"Spritesheet '{manifest.Sheet}' not found");
+
+        if (manifest.Animations == null || manifest.Animations.Count == 0)
+            return (false, "No animations defined");
+
+        if (!manifest.Animations.TryGetValue("idle", out var idleAnim) || idleAnim.Frames == null || idleAnim.Frames.Length == 0)
+            return (false, "Missing required 'idle' animation or idle frames are empty");
+
+        foreach (var (name, anim) in manifest.Animations)
+        {
+            if (anim.Frames == null || anim.Frames.Length == 0)
+                return (false, $"Animation '{name}' has no frames defined");
+
+            foreach (int idx in anim.Frames)
+            {
+                if (idx < 0)
+                    return (false, $"Animation '{name}' has negative frame index: {idx}");
+            }
+        }
+
+        try
+        {
+            byte[] bytes = ReadAllBytes(sheetRel);
+            if (bytes.Length == 0)
+                return (false, $"Spritesheet '{manifest.Sheet}' is empty");
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Failed to read spritesheet '{manifest.Sheet}': {ex.Message}");
+        }
+
+        return (true, null);
+    }
+
+    /// <summary>
+    /// Discovers all available companion packs (embedded and disk-based), validates each,
+    /// and returns them in a consistent display order (primary Neku companion first,
+    /// local personal companion if present, other custom packs, then built-in standard cats).
+    /// </summary>
+    public static IReadOnlyList<CompanionPackInfo> DiscoverPacks()
+    {
+        var packIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Embedded packs
+        const string prefix = "DesktopPet.Assets.pets.";
+        const string suffix = ".manifest.json";
+        var embeddedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var name in Asm.GetManifestResourceNames())
+        {
+            if (!name.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            if (!name.EndsWith(suffix, StringComparison.Ordinal)) continue;
+            string id = name[prefix.Length..^suffix.Length];
+            embeddedSet.Add(id);
+            packIds.Add(id);
+        }
+
+        // 2. Disk packs
+        try
+        {
+            foreach (var petDir in CandidateDiskPaths("Assets/pets"))
+            {
+                if (Directory.Exists(petDir))
+                {
+                    foreach (var d in Directory.EnumerateDirectories(petDir))
+                    {
+                        if (File.Exists(Path.Combine(d, "manifest.json")))
+                        {
+                            packIds.Add(Path.GetFileName(d));
+                        }
+                    }
+                }
+            }
+        }
+        catch { /* best-effort */ }
+
+        var standardOrder = new[]
+        {
+            "cat",
+            "cat-orange",
+            "cat-silver",
+            "cat-cream",
+            "cat-chocolate",
+            "cat-blue",
+            "cat-janet"
+        };
+
+        var result = new List<CompanionPackInfo>();
+
+        void AddPack(string id)
+        {
+            if (!packIds.Contains(id)) return;
+            packIds.Remove(id);
+
+            bool isCustom = !embeddedSet.Contains(id) || id.Equals("neku-personal-local", StringComparison.OrdinalIgnoreCase);
+            var (isValid, error) = ValidatePack(id);
+
+            string displayName = GetDefaultDisplayName(id);
+            if (displayName == id && isValid)
+            {
+                try
+                {
+                    string manifestRel = $"Assets/pets/{id}/manifest.json";
+                    var m = PetManifest.Parse(ReadAllText(manifestRel), manifestRel);
+                    if (!string.IsNullOrWhiteSpace(m.Name) && !m.Name.Equals("cat", StringComparison.OrdinalIgnoreCase))
+                    {
+                        displayName = m.Name;
+                    }
+                }
+                catch { }
+            }
+
+            if (isCustom && id != "neku-personal-local" && !displayName.EndsWith("(Custom)", StringComparison.OrdinalIgnoreCase))
+            {
+                displayName = $"{displayName} (Custom)";
+            }
+
+            result.Add(new CompanionPackInfo(id, displayName, isCustom, isValid, error));
+        }
+
+        AddPack("neku");
+        AddPack("neku-personal-local");
+
+        var customPacks = packIds
+            .Where(id => !embeddedSet.Contains(id) && !standardOrder.Contains(id, StringComparer.OrdinalIgnoreCase))
+            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var id in customPacks)
+        {
+            AddPack(id);
+        }
+
+        foreach (var id in standardOrder)
+        {
+            AddPack(id);
+        }
+
+        foreach (var id in packIds.OrderBy(id => id, StringComparer.OrdinalIgnoreCase).ToList())
+        {
+            AddPack(id);
+        }
+
+        return result;
+    }
+
+    public static string GetDefaultDisplayName(string id) => id.ToLowerInvariant() switch
+    {
+        "neku" => "Neku (Goblin companion)",
+        "neku-personal-local" => "Personal Companion (Local)",
+        "cat" => "Classic Gray Cat",
+        "cat-orange" => "Orange Cat",
+        "cat-silver" => "Silver Tabby Cat",
+        "cat-cream" => "Cream Cat",
+        "cat-chocolate" => "Chocolate Cat",
+        "cat-blue" => "Blue Cat",
+        "cat-janet" => "Janet Cat",
+        _ => System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id.Replace('-', ' ').Replace('_', ' '))
+    };
 }
+
+/// <summary>
+/// Metadata and validation status for a companion pack.
+/// </summary>
+public sealed record CompanionPackInfo(
+    string Id,
+    string DisplayName,
+    bool IsCustom,
+    bool IsValid,
+    string? Error = null);

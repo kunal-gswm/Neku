@@ -149,4 +149,66 @@ public class CompanionPackTests
         reloaded.Load();
         Assert.Equal("neku-personal-local", reloaded.Current.ActivePet);
     }
+
+    [Fact]
+    public void DiscoverPacks_returns_neku_first_and_includes_standard_cats()
+    {
+        var packs = AssetSource.DiscoverPacks();
+        Assert.NotEmpty(packs);
+
+        // Primary companion must be neku
+        Assert.Equal("neku", packs[0].Id);
+        Assert.Equal("Neku (Goblin companion)", packs[0].DisplayName);
+        Assert.True(packs[0].IsValid);
+
+        // Standard cats must be included
+        Assert.Contains(packs, p => p.Id == "cat");
+        Assert.Contains(packs, p => p.Id == "cat-orange");
+        Assert.Contains(packs, p => p.Id == "cat-blue");
+
+        // Every discovered pack must have a non-empty display name
+        Assert.All(packs, p => Assert.False(string.IsNullOrWhiteSpace(p.DisplayName)));
+    }
+
+    [Fact]
+    public void ValidatePack_validates_builtin_packs_successfully()
+    {
+        var (nekuValid, nekuError) = AssetSource.ValidatePack("neku");
+        Assert.True(nekuValid, $"Neku pack failed validation: {nekuError}");
+        Assert.Null(nekuError);
+
+        var (catValid, catError) = AssetSource.ValidatePack("cat");
+        Assert.True(catValid, $"Cat pack failed validation: {catError}");
+        Assert.Null(catError);
+    }
+
+    [Fact]
+    public void ValidatePack_fails_for_nonexistent_and_empty_packs()
+    {
+        var (emptyValid, emptyError) = AssetSource.ValidatePack("");
+        Assert.False(emptyValid);
+        Assert.NotNull(emptyError);
+
+        var (fakeValid, fakeError) = AssetSource.ValidatePack("definitely-nonexistent-pack-999");
+        Assert.False(fakeValid);
+        Assert.NotNull(fakeError);
+        Assert.Contains("not found", fakeError, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void UpdateService_targets_kunal_gswm_neku_repository()
+    {
+        Assert.Equal("kunal-gswm", UpdateService.Owner);
+        Assert.Equal("Neku", UpdateService.Repo);
+        Assert.Equal("https://api.github.com/repos/kunal-gswm/Neku/releases/latest", UpdateService.LatestReleaseUrl);
+    }
+
+    [Fact]
+    public void AppVersion_is_bumped_to_0_2_1()
+    {
+        Assert.Equal("v0.2.1", AppVersion.Display);
+        Assert.Equal(0, AppVersion.Current.Major);
+        Assert.Equal(2, AppVersion.Current.Minor);
+        Assert.Equal(1, AppVersion.Current.Build);
+    }
 }

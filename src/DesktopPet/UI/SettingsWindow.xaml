@@ -45,6 +45,8 @@
                             <ComboBoxItem Content="Blue Cat"                 Tag="cat-blue"/>
                             <ComboBoxItem Content="Janet Cat"                Tag="cat-janet"/>
                         </ComboBox>
+                        <TextBlock x:Name="PackWarningText" Foreground="#D9534F"
+                                   Style="{StaticResource Hint}" Margin="0,2,0,4" Visibility="Collapsed" TextWrapping="Wrap"/>
                         <TextBlock x:Name="ColorRestartNote" Text="Restart Neku to switch character spritesheet."
                                    Style="{StaticResource Hint}" Margin="0,0,0,12" Visibility="Collapsed"/>
 

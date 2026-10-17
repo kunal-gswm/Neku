@@ -4,7 +4,7 @@ name: Release
 #   git tag v1.1.0 && git push origin v1.1.0
 #
 # This builds the self-contained single-file exe and attaches it to a GitHub Release.
-# PixelPaws' in-app updater reads exactly that release asset, so this workflow is what makes
+# Neku's in-app updater reads exactly that release asset, so this workflow is what makes
 # "check for updates" work for users who never cloned the repo.
 on:
   push:

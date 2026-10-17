@@ -140,7 +140,7 @@ Place your pack in `%AppData%\Neku\Assets\pets\<your-pack-name>\` (or beside `Ne
   }
 }
 ```
-Open **Settings > Companion**, select your custom pack from the dropdown, and Neku will immediately adopt the new artwork.
+Open **Settings > Appearance**, select your custom pack from the dropdown, and Neku will immediately adopt the new artwork.
 
 ---
 
@@ -178,7 +178,7 @@ Neku is designed to run silently without impacting games, compilation, or batter
 │       ├── Services/            # Focus timer, notes, settings, tray, developer webhook
 │       └── UI/                  # Pet window, focus HUD, notes window, settings window
 ├── tests/
-│   └── DesktopPet.Tests/        # 112 xUnit automated test suites
+│   └── DesktopPet.Tests/        # 117 xUnit automated test suites
 ├── tools/
 │   ├── benchmark_memory.ps1     # Automated memory & CPU benchmark script
 │   ├── measure_interactive.ps1  # Automated interactive lifecycle benchmark script

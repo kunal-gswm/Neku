@@ -97,15 +97,7 @@ public partial class SettingsWindow : Window
         SelectByTag(BreakDurationBox, settings.BreakDurationMinutes.ToString(), fallbackIndex: 1);
 
 
-        if (AssetSource.Exists("Assets/pets/neku-personal-local/manifest.json"))
-        {
-            CatColorBox.Items.Insert(1, new ComboBoxItem
-            {
-                Content = "Personal Companion (Local)",
-                Tag = "neku-personal-local"
-            });
-        }
-        SelectByTag(CatColorBox, settings.ActivePet, fallbackIndex: 0);
+        PopulateCompanionPacks(settings.ActivePet);
 
         // Size is a double, so match on closeness rather than exact text.
         foreach (ComboBoxItem item in SizeBox.Items)
@@ -169,6 +161,44 @@ public partial class SettingsWindow : Window
             }
         }
         box.SelectedIndex = fallbackIndex;
+    }
+
+    private void PopulateCompanionPacks(string currentPet)
+    {
+        CatColorBox.Items.Clear();
+        var packs = AssetSource.DiscoverPacks();
+        foreach (var pack in packs)
+        {
+            var item = new ComboBoxItem
+            {
+                Content = pack.DisplayName,
+                Tag = pack.Id,
+                ToolTip = pack.IsValid ? null : $"Warning: {pack.Error}"
+            };
+            if (!pack.IsValid)
+            {
+                item.Foreground = System.Windows.Media.Brushes.IndianRed;
+            }
+            CatColorBox.Items.Add(item);
+        }
+
+        SelectByTag(CatColorBox, currentPet, fallbackIndex: 0);
+        UpdatePackWarning();
+    }
+
+    private void UpdatePackWarning()
+    {
+        if (CatColorBox.SelectedItem is ComboBoxItem item && item.Tag is string packId)
+        {
+            var (isValid, error) = AssetSource.ValidatePack(packId);
+            if (!isValid)
+            {
+                PackWarningText.Text = $"Warning: This pack has errors ({error}). Neku will fall back to the default companion if loaded.";
+                PackWarningText.Visibility = Visibility.Visible;
+                return;
+            }
+        }
+        PackWarningText.Visibility = Visibility.Collapsed;
     }
 
     private static string TagOf(ComboBox box) =>
@@ -246,6 +276,7 @@ public partial class SettingsWindow : Window
             ColorRestartNote.Visibility =
                 string.Equals(pet, _initialPet, StringComparison.OrdinalIgnoreCase)
                     ? Visibility.Collapsed : Visibility.Visible;
+            UpdatePackWarning();
         }
 
         _service.Save();

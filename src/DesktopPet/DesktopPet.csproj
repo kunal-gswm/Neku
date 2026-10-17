@@ -14,7 +14,7 @@
 
     <!-- Bump this to cut a release. The updater compares it to the latest GitHub release tag,
          so the tag (v1.1.0) and this value (1.1.0) must stay in step. -->
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <Product>Neku</Product>
     <Company>Neku</Company>
     <Description>A mischievous cat-goblin desktop companion.</Description>
@@ -39,7 +39,7 @@
   <ItemGroup>
     <None Remove="Assets\**\*" />
     <!--
-      Art is embedded, not copied, so a published PixelPaws.exe is genuinely one file.
+      Art is embedded, not copied, so a published Neku.exe is genuinely one file.
       AssetSource still prefers a matching file on disk, so dropping an Assets\pets\<name>
       folder next to the exe overrides or adds a pet pack without rebuilding.
 

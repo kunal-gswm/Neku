@@ -1,7 +1,7 @@
 <Window x:Class="DesktopPet.UI.StretchNotification"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PixelPaws"
+        Title="Neku"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"

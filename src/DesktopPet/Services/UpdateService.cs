@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace DesktopPet.Services;
 
 /// <summary>
-/// Keeps PixelPaws up to date from GitHub Releases.
+/// Keeps Neku up to date from GitHub Releases.
 ///
 /// The old updater assumed every install was a git checkout with the .NET SDK available, and
 /// updated by running `git pull` + a rebuild. That works for developers and nobody else. This
@@ -19,9 +19,9 @@ namespace DesktopPet.Services;
 /// </summary>
 public sealed class UpdateService
 {
-    private const string Owner = "jordansbc";
-    private const string Repo  = "pixelpaws";
-    private const string LatestReleaseUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest";
+    public const string Owner = "kunal-gswm";
+    public const string Repo  = "Neku";
+    public const string LatestReleaseUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest";
 
     private readonly HttpClient _http;
 
