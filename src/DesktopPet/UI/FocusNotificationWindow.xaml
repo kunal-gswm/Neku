@@ -1,0 +1,81 @@
+<Window x:Class="DesktopPet.UI.FocusNotificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Neku"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Focusable="False"
+        ShowActivated="False"
+        Width="380" Height="100"
+        WindowStartupLocation="Manual">
+    <Border Background="#FFF7F3FF"
+            CornerRadius="14"
+            BorderBrush="#FFBEB0E8"
+            BorderThickness="2">
+        <Border.Effect>
+            <DropShadowEffect Color="#443366" BlurRadius="12" ShadowDepth="2" Opacity="0.28"/>
+        </Border.Effect>
+        <Grid Margin="14,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Icon -->
+            <TextBlock x:Name="IconText"
+                       Grid.Column="0"
+                       Text="🍅"
+                       FontSize="28"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+
+            <!-- Message & Button -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock x:Name="TitleText"
+                           Text="Focus session complete! 🎉"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Foreground="#FF4A2A7A"/>
+                <TextBlock x:Name="SubText"
+                           Text="Great work! Time for a refreshing 5m break."
+                           FontSize="11"
+                           Foreground="#FF6B4D9B"
+                           Margin="0,2,0,6"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="ActionButton"
+                            Content="Start 5m Break ☕"
+                            FontSize="11"
+                            Padding="8,3"
+                            Background="#FF8B5CF6"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Click="ActionButton_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Dismiss button -->
+            <Button Grid.Column="2"
+                    Content="✕"
+                    Width="24" Height="24"
+                    FontSize="12"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Foreground="#FF9A85B8"
+                    Cursor="Hand"
+                    Click="DismissButton_Click"/>
+        </Grid>
+    </Border>
+</Window>

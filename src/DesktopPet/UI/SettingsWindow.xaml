@@ -96,7 +96,41 @@
                             </ComboBox>
                         </StackPanel>
                         <TextBlock Text="Neku stretches alongside a gentle reminder popup." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="🍅 Pomodoro Focus Timer" Style="{StaticResource Head}"/>
+                        <Grid Margin="0,4,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Focus session:" VerticalAlignment="Center" Margin="0,0,12,6"/>
+                            <ComboBox x:Name="FocusDurationBox" Grid.Row="0" Grid.Column="1" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6">
+                                <ComboBoxItem Content="15 minutes" Tag="15"/>
+                                <ComboBoxItem Content="20 minutes" Tag="20"/>
+                                <ComboBoxItem Content="25 minutes" Tag="25"/>
+                                <ComboBoxItem Content="30 minutes" Tag="30"/>
+                                <ComboBoxItem Content="45 minutes" Tag="45"/>
+                                <ComboBoxItem Content="60 minutes" Tag="60"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Break duration:" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <ComboBox x:Name="BreakDurationBox" Grid.Row="1" Grid.Column="1" Width="140" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="3 minutes" Tag="3"/>
+                                <ComboBoxItem Content="5 minutes" Tag="5"/>
+                                <ComboBoxItem Content="10 minutes" Tag="10"/>
+                                <ComboBoxItem Content="15 minutes" Tag="15"/>
+                            </ComboBox>
+                        </Grid>
+                        <TextBlock Text="Neku keeps you company and celebrates completed sessions." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
                     </StackPanel>
+
                 </ScrollViewer>
             </TabItem>
 

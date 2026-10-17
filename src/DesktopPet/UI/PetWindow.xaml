@@ -1,13 +1,15 @@
 <Window x:Class="DesktopPet.UI.PetWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PixelPaws"
+        Title="Neku"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         ShowInTaskbar="False"
         Topmost="True"
         ResizeMode="NoResize"
+        Focusable="False"
+        ShowActivated="False"
         SizeToContent="WidthAndHeight">
     <Grid Background="Transparent">
         <!-- Sprite -->

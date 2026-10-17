@@ -1,0 +1,85 @@
+<Window x:Class="DesktopPet.UI.DeveloperEventsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Developer Events"
+        Width="440" Height="360"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF1E1A29"
+        Foreground="#FFF3E8FF"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#FF8B5CF6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#FF9F75FF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#FF282337"/>
+            <Setter Property="Foreground" Value="#FFF3E8FF"/>
+            <Setter Property="BorderBrush" Value="#FF483C66"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="16">
+        <TextBlock Text="⚡ Developer Event Integration" FontSize="16" FontWeight="Bold"
+                   Foreground="#FFF3E8FF" Margin="0,0,0,4"/>
+        <TextBlock Text="Trigger real-time companion reactions from your build scripts or test runners."
+                   FontSize="11" Foreground="#FFA78BFA" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+        <!-- Listener Status & Toggle -->
+        <Border Background="#FF282337" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="StatusText" Text="Status: Listening on port 48123"
+                               FontWeight="SemiBold" FontSize="12" Foreground="#FF34D399"/>
+                    <TextBlock x:Name="EndpointText" Text="http://127.0.0.1:48123/"
+                               FontSize="11" Foreground="#FFA78BFA" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Button x:Name="ToggleListenerBtn" Grid.Column="1" Content="Disable"
+                        Padding="12,5" Click="ToggleListenerBtn_Click"/>
+            </Grid>
+        </Border>
+
+        <!-- Test Triggers -->
+        <TextBlock Text="Test Reactions:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6"/>
+        <WrapPanel Margin="0,0,0,12">
+            <Button Content="Build Success 🎉" Margin="0,0,6,6" Click="BuildSuccess_Click"/>
+            <Button Content="Build Failed 💥" Margin="0,0,6,6" Background="#FFDC2626" Click="BuildFailure_Click"/>
+            <Button Content="Tests Green ✨" Margin="0,0,6,6" Click="TestsPass_Click"/>
+            <Button Content="Tests Red 😱" Margin="0,0,6,6" Background="#FFD97706" Click="TestsFail_Click"/>
+        </WrapPanel>
+
+        <!-- Quick Curl Snippet -->
+        <TextBlock Text="Command Line / Script Trigger:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <TextBox x:Name="CommandSnippetBox" IsReadOnly="True" FontSize="11"
+                 FontFamily="Consolas" TextWrapping="Wrap" Margin="0,0,0,8"
+                 Text="curl -s http://127.0.0.1:48123/?type=build_success"/>
+
+        <TextBlock Text="Works with any CLI tool, pre-commit hook, or task runner."
+                   FontSize="10" Foreground="#FFA78BFA"/>
+    </StackPanel>
+</Window>

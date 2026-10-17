@@ -98,15 +98,59 @@ def draw_with_pillow(output_path: str):
         highlight_box = [cx + 28, cy + 32, cx + 64, cy + 56]
         draw.ellipse(highlight_box, fill=TEAL_HIGHLIGHT)
 
-        # Frame number text with shadow
-        text = str(idx)
-        # Shadow
-        draw.text((center_x + 1, center_y + 1), text, fill=TEXT_SHADOW, font=font, anchor="mm")
-        # Main text
-        draw.text((center_x, center_y), text, fill=TEXT_COLOR, font=font, anchor="mm")
+        # Cheeks blush
+        draw.ellipse([cx + 30, cy + 72, cx + 44, cy + 82], fill=(255, 160, 180, 160))
+        draw.ellipse([cx + 84, cy + 72, cx + 98, cy + 82], fill=(255, 160, 180, 160))
 
-        # Label "neku" at bottom of cell
-        draw.text((center_x, cy + 108), "neku", fill=TEAL_OUTLINE, font=small_font, anchor="mm")
+        # Facial expressions per frame type
+        is_sleeping = idx in (8, 9)
+        is_happy = idx in (12, 13)
+        is_surprised = idx == 10
+        is_blink = idx == 1
+
+        if is_sleeping or is_happy:
+            # Curved ^ ^ happy / sleeping eyes
+            draw.arc([cx + 40, cy + 54, cx + 56, cy + 68], start=180, end=360, fill=TEAL_OUTLINE, width=3)
+            draw.arc([cx + 72, cy + 54, cx + 88, cy + 68], start=180, end=360, fill=TEAL_OUTLINE, width=3)
+        elif is_blink:
+            # Closed - - eyes
+            draw.line([cx + 40, cy + 62, cx + 56, cy + 62], fill=TEAL_OUTLINE, width=3)
+            draw.line([cx + 72, cy + 62, cx + 88, cy + 62], fill=TEAL_OUTLINE, width=3)
+        elif is_surprised:
+            # Big wide round eyes
+            draw.ellipse([cx + 40, cy + 52, cx + 56, cy + 70], fill=(15, 23, 42, 255), outline=TEAL_OUTLINE)
+            draw.ellipse([cx + 72, cy + 52, cx + 88, cy + 70], fill=(15, 23, 42, 255), outline=TEAL_OUTLINE)
+            draw.ellipse([cx + 44, cy + 56, cx + 48, cy + 60], fill=(255, 255, 255, 255))
+            draw.ellipse([cx + 76, cy + 56, cx + 80, cy + 60], fill=(255, 255, 255, 255))
+        else:
+            # Standard alert cat eyes with highlights
+            draw.ellipse([cx + 42, cy + 54, cx + 56, cy + 68], fill=(15, 23, 42, 255))
+            draw.ellipse([cx + 72, cy + 54, cx + 86, cy + 68], fill=(15, 23, 42, 255))
+            draw.ellipse([cx + 45, cy + 56, cx + 49, cy + 60], fill=(255, 255, 255, 255))
+            draw.ellipse([cx + 75, cy + 56, cx + 79, cy + 60], fill=(255, 255, 255, 255))
+
+        # Nose & cat :3 mouth
+        draw.polygon([(center_x - 3, cy + 72), (center_x + 3, cy + 72), (center_x, cy + 76)], fill=EAR_INNER)
+        draw.arc([center_x - 8, cy + 74, center_x, cy + 82], start=0, end=180, fill=TEAL_OUTLINE, width=2)
+        draw.arc([center_x, cy + 74, center_x + 8, cy + 82], start=0, end=180, fill=TEAL_OUTLINE, width=2)
+
+        # Whiskers
+        draw.line([cx + 22, cy + 72, cx + 36, cy + 70], fill=TEAL_OUTLINE, width=2)
+        draw.line([cx + 22, cy + 78, cx + 36, cy + 78], fill=TEAL_OUTLINE, width=2)
+        draw.line([cx + 92, cy + 70, cx + 106, cy + 72], fill=TEAL_OUTLINE, width=2)
+        draw.line([cx + 92, cy + 78, cx + 106, cy + 78], fill=TEAL_OUTLINE, width=2)
+
+        # Little paws at bottom
+        paw_y = cy + 104
+        if idx in (4, 6): # Walk frame step
+            draw.ellipse([cx + 42, paw_y - 2, cx + 56, paw_y + 10], fill=EAR_INNER, outline=TEAL_OUTLINE)
+            draw.ellipse([cx + 72, paw_y, cx + 86, paw_y + 12], fill=EAR_INNER, outline=TEAL_OUTLINE)
+        elif idx in (5, 7): # Walk frame alternate step
+            draw.ellipse([cx + 42, paw_y, cx + 56, paw_y + 12], fill=EAR_INNER, outline=TEAL_OUTLINE)
+            draw.ellipse([cx + 72, paw_y - 2, cx + 86, paw_y + 10], fill=EAR_INNER, outline=TEAL_OUTLINE)
+        else:
+            draw.ellipse([cx + 42, paw_y, cx + 56, paw_y + 12], fill=EAR_INNER, outline=TEAL_OUTLINE)
+            draw.ellipse([cx + 72, paw_y, cx + 86, paw_y + 12], fill=EAR_INNER, outline=TEAL_OUTLINE)
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     sheet.save(output_path, "PNG")

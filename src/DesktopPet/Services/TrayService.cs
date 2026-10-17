@@ -8,10 +8,11 @@ namespace DesktopPet.Services;
 /// <summary>System-tray icon with Settings / Pause / Hide / Reset / Exit menu.</summary>
 public sealed class TrayService : IDisposable
 {
-    /// <summary>Where the "Support Neku" menu item sends people.</summary>
-    private const string DonateUrl = "https://www.paypal.me/jordanschoner";
-
     private readonly NotifyIcon _icon;
+    private readonly ToolStripMenuItem _focusItem;
+    private readonly ToolStripMenuItem _focusCancelItem;
+    private readonly ToolStripMenuItem _quickNoteItem;
+    private readonly ToolStripMenuItem _devEventsItem;
     private readonly ToolStripMenuItem _pauseItem;
     private readonly ToolStripMenuItem _hideItem;
     private readonly ToolStripMenuItem _clickThroughItem;
@@ -22,15 +23,33 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem _talkItem;
     private readonly Action _onUpdate;
 
-    public TrayService(Action onSettings, Action<bool> onPauseToggled, Action<bool> onHideToggled,
-                       Action<bool> onClickThroughToggled, Action<bool> onReducedMotionToggled,
-                       Action<bool> onQuietModeToggled, Action onResetPosition, Action onQuit,
-                       Action onUpdate, Action<bool> onAiToggled, Action onTalk, AppSettings settings)
+    public TrayService(
+        Action onFocusToggle, Func<string> getFocusLabel,
+        Action onFocusCancel, Func<bool> isFocusActive,
+        Action onQuickNote,
+        Action onDeveloperEvents,
+        Action onSettings,
+        Action<bool> onPauseToggled, Action<bool> onHideToggled,
+        Action<bool> onClickThroughToggled, Action<bool> onReducedMotionToggled,
+        Action<bool> onQuietModeToggled, Action onResetPosition, Action onQuit,
+        Action onUpdate, Action<bool> onAiToggled, Action onTalk, AppSettings settings)
     {
         _onUpdate = onUpdate;
         var menu = new ContextMenuStrip();
 
-        var settingsItem = new ToolStripMenuItem("Settings…");
+        _focusItem = new ToolStripMenuItem(getFocusLabel());
+        _focusItem.Click += (_, _) => onFocusToggle();
+
+        _focusCancelItem = new ToolStripMenuItem("Cancel Focus Session");
+        _focusCancelItem.Click += (_, _) => onFocusCancel();
+
+        _quickNoteItem = new ToolStripMenuItem("Quick Note…");
+        _quickNoteItem.Click += (_, _) => onQuickNote();
+
+        _devEventsItem = new ToolStripMenuItem("Developer Events…");
+        _devEventsItem.Click += (_, _) => onDeveloperEvents();
+
+        var settingsItem = new ToolStripMenuItem("Character and Behavior Settings…");
         settingsItem.Click += (_, _) => onSettings();
 
         _pauseItem = new ToolStripMenuItem("Pause") { CheckOnClick = true };
@@ -56,21 +75,36 @@ public sealed class TrayService : IDisposable
         _aiItem.Click += (_, _) => { onAiToggled(_aiItem.Checked); _talkItem.Enabled = _aiItem.Checked; };
         _talkItem.Click += (_, _) => onTalk();
 
-        var donateItem = new ToolStripMenuItem("Support Neku ☕");
-        donateItem.Click += (_, _) => OpenUrl(DonateUrl);
-
         _updateItem = new ToolStripMenuItem("Update available — install now") { Visible = false };
         _updateItem.Click += (_, _) => onUpdate();
 
         var quitItem = new ToolStripMenuItem("Exit");
         quitItem.Click += (_, _) => onQuit();
 
+        menu.Opening += (_, _) =>
+        {
+            _focusItem.Text = getFocusLabel();
+            _focusCancelItem.Visible = isFocusActive();
+            _pauseItem.Text = _pauseItem.Checked ? "Resume" : "Pause";
+        };
+
+        // 1. Focus Session
+        menu.Items.Add(_focusItem);
+        menu.Items.Add(_focusCancelItem);
+        menu.Items.Add(new ToolStripSeparator());
+
+        // 2. Quick Note & Developer Events
+        menu.Items.Add(_quickNoteItem);
+        menu.Items.Add(_devEventsItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new ToolStripSeparator());
+
+        // 3. Pause & Hide
         menu.Items.Add(_pauseItem);
         menu.Items.Add(_hideItem);
         menu.Items.Add(_clickThroughItem);
         menu.Items.Add(new ToolStripSeparator());
+
         menu.Items.Add(_quietModeItem);
         menu.Items.Add(_reducedMotionItem);
         menu.Items.Add(resetPosItem);
@@ -78,7 +112,6 @@ public sealed class TrayService : IDisposable
         menu.Items.Add(_aiItem);
         menu.Items.Add(_talkItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(donateItem);
         menu.Items.Add(_updateItem);
         menu.Items.Add(quitItem);
 
@@ -91,6 +124,7 @@ public sealed class TrayService : IDisposable
         };
         _icon.DoubleClick += (_, _) => onSettings();
     }
+
 
     /// <summary>Open a URL in the user's default browser. Best-effort — never throws into the UI.</summary>
     private static void OpenUrl(string url)

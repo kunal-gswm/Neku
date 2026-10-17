@@ -72,7 +72,35 @@ public partial class PetWindow : Window, IPetView
         if (!double.IsNaN(_left)) PlaceAt(_left, _top);
     }
 
+    private const int WM_MOUSEACTIVATE = 0x0021;
+    private const int MA_NOACTIVATE = 3;
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        IntPtr hwnd = Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            int ex = Win32.GetWindowLong(hwnd, Win32.GWL_EXSTYLE);
+            Win32.SetWindowLong(hwnd, Win32.GWL_EXSTYLE, ex | Win32.WS_EX_NOACTIVATE);
+
+            var source = HwndSource.FromHwnd(hwnd);
+            source?.AddHook(WndProc);
+        }
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_MOUSEACTIVATE)
+        {
+            handled = true;
+            return new IntPtr(MA_NOACTIVATE);
+        }
+        return IntPtr.Zero;
+    }
+
     private bool _renderLoopRunning;
+
 
     public void Attach(PetEngine engine, double w, double h)
     {
@@ -230,8 +258,12 @@ public partial class PetWindow : Window, IPetView
     /// <summary>Raised when the user taps the cat and the AI companion is enabled — App opens the chat box.</summary>
     public event Action? ChatRequested;
 
+    /// <summary>Raised whenever user clicks or interacts with the pet (used to dismiss onboarding).</summary>
+    public event Action? PetInteracted;
+
     /// <summary>When true, a tap on the cat opens the AI chat box (in addition to the happy boop).</summary>
     public bool AiTapOpensChat { get; set; }
+
 
     // ── Mouse events ──────────────────────────────────────────────────────────
 
@@ -255,6 +287,7 @@ public partial class PetWindow : Window, IPetView
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonDown(e);
+        PetInteracted?.Invoke();
         // Don't start a drag yet — wait to see if this is a tap (boop) or a drag.
         _downPos  = PointToScreen(e.GetPosition(this));
         _pressing = true;
@@ -262,6 +295,13 @@ public partial class PetWindow : Window, IPetView
         CaptureMouse();
         e.Handled = true;
     }
+
+    protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnMouseRightButtonDown(e);
+        PetInteracted?.Invoke();
+    }
+
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
@@ -308,6 +348,11 @@ public partial class PetWindow : Window, IPetView
 
     /// <summary>Configures the right-click context menu on the pet window.</summary>
     public void SetupContextMenu(
+        Action onFocusToggle, Func<string> getFocusLabel,
+        Action onFocusCancel, Func<bool> isFocusActive,
+        Action onToggleFocusHud,
+        Action onQuickNote,
+        Action onDeveloperEvents,
         Action onSettings,
         Action onTogglePause, Func<bool> isPaused,
         Action onHide,
@@ -319,15 +364,37 @@ public partial class PetWindow : Window, IPetView
     {
         var menu = new ContextMenu();
 
-        var settingsItem = new MenuItem { Header = "Settings…" };
+        // 1. Focus Session
+        var focusItem = new MenuItem { Header = getFocusLabel() };
+        focusItem.Click += (_, _) => onFocusToggle();
+
+        var focusCancelItem = new MenuItem { Header = "Cancel Focus Session" };
+        focusCancelItem.Click += (_, _) => onFocusCancel();
+
+        var focusHudItem = new MenuItem { Header = "Toggle Focus HUD" };
+        focusHudItem.Click += (_, _) => onToggleFocusHud();
+
+        // 2. Quick Note
+        var quickNoteItem = new MenuItem { Header = "Quick Note…" };
+        quickNoteItem.Click += (_, _) => onQuickNote();
+
+        // 3. Developer Events
+        var devEventsItem = new MenuItem { Header = "Developer Events…" };
+        devEventsItem.Click += (_, _) => onDeveloperEvents();
+
+        // 4. Character and Behavior Settings
+        var settingsItem = new MenuItem { Header = "Character and Behavior Settings…" };
         settingsItem.Click += (_, _) => onSettings();
 
+        // 5. Pause / Resume
         var pauseItem = new MenuItem { Header = "Pause", IsCheckable = true };
         pauseItem.Click += (_, _) => onTogglePause();
 
+        // 6. Hide
         var hideItem = new MenuItem { Header = "Hide" };
         hideItem.Click += (_, _) => onHide();
 
+        // Optional convenience items
         var clickThroughItem = new MenuItem { Header = "Click-Through Mode", IsCheckable = true };
         clickThroughItem.Click += (_, _) => onToggleClickThrough();
 
@@ -340,17 +407,28 @@ public partial class PetWindow : Window, IPetView
         var resetPosItem = new MenuItem { Header = "Reset Position" };
         resetPosItem.Click += (_, _) => onResetPosition();
 
+        // 7. Exit
         var exitItem = new MenuItem { Header = "Exit" };
         exitItem.Click += (_, _) => onExit();
 
         menu.Opened += (_, _) =>
         {
+            focusItem.Header = getFocusLabel();
+            bool active = isFocusActive();
+            focusCancelItem.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
             pauseItem.IsChecked = isPaused();
+            pauseItem.Header = isPaused() ? "Resume" : "Pause";
             clickThroughItem.IsChecked = isClickThrough();
             reducedMotionItem.IsChecked = isReducedMotion();
             quietModeItem.IsChecked = isQuietMode();
         };
 
+        menu.Items.Add(focusItem);
+        menu.Items.Add(focusCancelItem);
+        menu.Items.Add(focusHudItem);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(quickNoteItem);
+        menu.Items.Add(devEventsItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(pauseItem);
@@ -365,4 +443,5 @@ public partial class PetWindow : Window, IPetView
 
         ContextMenu = menu;
     }
+
 }

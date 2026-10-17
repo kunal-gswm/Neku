@@ -19,6 +19,7 @@ public sealed class SpriteAnimator
     private double _accumulator;
 
     public PetManifest Manifest => _manifest;
+    public string CurrentAnimationName => _currentName;
 
     /// <summary>True once a non-looping animation has shown its final frame.</summary>
     public bool Finished { get; private set; }
@@ -82,6 +83,7 @@ public sealed class SpriteAnimator
         _frameIndex = 0;
         _accumulator = 0;
         Finished = false;
+        DesktopPet.Services.DebugLog.Write($"[SpriteAnimator] Selected animation: '{name}'");
     }
 
     /// <summary>Advance by <paramref name="dt"/> seconds and return the current frame image.</summary>

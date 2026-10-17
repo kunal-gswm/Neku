@@ -46,7 +46,7 @@
       LogicalName is set explicitly because MSBuild's default resource naming mangles
       characters that aren't valid in identifiers — the dash in "cat-orange" among them.
     -->
-    <EmbeddedResource Include="Assets\**\*">
+    <EmbeddedResource Include="Assets\**\*" Exclude="Assets\pets\neku-personal-local\**\*">
       <LogicalName>DesktopPet.Assets.$([System.String]::Copy('%(RecursiveDir)').Replace('\','.'))%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

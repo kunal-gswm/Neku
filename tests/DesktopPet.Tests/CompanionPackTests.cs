@@ -128,4 +128,25 @@ public class CompanionPackTests
 
         Assert.Equal("neku", resolved);
     }
+
+    [Fact]
+    public void Personal_pack_is_never_embedded_in_assembly_resources()
+    {
+        var asm = typeof(AssetSource).Assembly;
+        var embedded = asm.GetManifestResourceNames();
+        Assert.DoesNotContain(embedded, name => name.Contains("personal", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SettingsService_loads_and_persists_personal_companion()
+    {
+        var svc = new SettingsService();
+        svc.Load();
+        svc.Current.ActivePet = "neku-personal-local";
+        svc.Save();
+
+        var reloaded = new SettingsService();
+        reloaded.Load();
+        Assert.Equal("neku-personal-local", reloaded.Current.ActivePet);
+    }
 }

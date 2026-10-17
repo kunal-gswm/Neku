@@ -97,7 +97,105 @@ public sealed class Personality
         "watch this—",
     ];
 
+    private static readonly string[] FocusStartedLines =
+    [
+        "Focus session started! Let's lock in! 🎯",
+        "Timer's running! Shh, I'll be super quiet 🤫",
+        "Time to build something awesome! ✨",
+        "Focus mode ON! No distractions allowed 🛡️",
+        "25 minutes of greatness starts now! 🚀",
+        "I'll keep watch over your screen while you focus 👀",
+    ];
+
+    private static readonly string[] FocusCompletedLines =
+    [
+        "Ding! Focus session complete! Amazing work! 🎉",
+        "High five! You crushed that session! 🌟",
+        "Session done! Stretch those paws and take a break ☕",
+        "Focus goal achieved! Look at you go! 🏆",
+        "Great focus! Time to rest your eyes for a bit 🌸",
+        "You did it! Take 5 and enjoy the win ✨",
+    ];
+
+    private static readonly string[] BreakCompletedLines =
+    [
+        "Break's over! Feeling refreshed? ✨",
+        "Batteries recharged! Ready when you are 🚀",
+        "Hope you stretched! Time to get back in the zone 💪",
+        "Break time finished! What's next on the list? 📝",
+        "Welcome back! Let's crush this next session! 🐾",
+    ];
+
+    private static readonly string[] BuildSuccessLines =
+    [
+        "Build succeeded! Clean compile! 🎉",
+        "Zero errors, zero warnings! Ship it! 🚢",
+        "Look at you go! Build is green! ✨",
+        "Compiled like a charm! High five! 🐾",
+        "Code compiled cleanly! Smooth as butter 🧈",
+    ];
+
+    private static readonly string[] TestFailureLines =
+    [
+        "Test red?! Don't worry, we'll fix it! 🔧",
+        "Assert failed... was it a missing null check? 🐛",
+        "Don't sweat it, the tests caught it early! 💪",
+        "A test broke?! Wasn't me, I swear! 🙀",
+        "Time to debug! I'll provide moral support 🐱",
+    ];
+
+    private static readonly string[] BoopLines =
+    [
+        "*chirps happily*",
+        "Boop received! 💕",
+        "Hehe tickles!",
+        "Again! Boop me again!",
+        "What's up, human? :3",
+        "Boop! System online ✨",
+        "*blinks curiously*",
+    ];
+
+    private static readonly string[] PetLines =
+    [
+        "*purrs softly*",
+        "Aww, warm hands~",
+        "Best human ever 💕",
+        "*leans into the pet*",
+        "Head scratches are the best!",
+        "*happy purrs*",
+    ];
+
+    private static readonly string[] DragLines =
+    [
+        "Wheee! Flying!",
+        "Where are we relocating to?",
+        "Hold on tight!",
+        "Air traffic control, clearing for landing ✈️",
+        "Put me down gently please! :3",
+    ];
+
     private readonly Random _rng = new();
+    private readonly Queue<string> _recentLines = new();
+    private const int MaxRecentHistory = 6;
+
+    private string PickNonRepeating(string[] pool)
+    {
+        if (pool == null || pool.Length == 0) return "...";
+        if (pool.Length == 1) return pool[0];
+
+        // Find items not recently spoken
+        var candidates = pool.Where(l => !_recentLines.Contains(l)).ToArray();
+        string chosen = candidates.Length > 0
+            ? candidates[_rng.Next(candidates.Length)]
+            : pool[_rng.Next(pool.Length)];
+
+        _recentLines.Enqueue(chosen);
+        while (_recentLines.Count > MaxRecentHistory)
+            _recentLines.Dequeue();
+
+        return chosen;
+    }
+
 
     public double Mood        => _mood;
     public double Energy      => _energy;
@@ -228,11 +326,36 @@ public sealed class Personality
         else
             pool = NeutralLines;
 
-        return pool[_rng.Next(pool.Length)];
+        return PickNonRepeating(pool);
     }
 
     /// <summary>Get a surprised reaction line.</summary>
-    public string GetSurprisedLine() => SurprisedLines[_rng.Next(SurprisedLines.Length)];
+    public string GetSurprisedLine() => PickNonRepeating(SurprisedLines);
+
+    /// <summary>Reaction line when a focus session starts.</summary>
+    public string GetFocusStartedLine() => PickNonRepeating(FocusStartedLines);
+
+    /// <summary>Reaction line when a focus session completes successfully.</summary>
+    public string GetFocusCompletedLine() => PickNonRepeating(FocusCompletedLines);
+
+    /// <summary>Reaction line when a break finishes.</summary>
+    public string GetBreakCompletedLine() => PickNonRepeating(BreakCompletedLines);
+
+    /// <summary>Reaction line when a developer build passes.</summary>
+    public string GetBuildSuccessLine() => PickNonRepeating(BuildSuccessLines);
+
+    /// <summary>Reaction line when a developer test fails.</summary>
+    public string GetTestFailureLine() => PickNonRepeating(TestFailureLines);
+
+    /// <summary>Reaction line when the pet is booped (tapped).</summary>
+    public string GetBoopLine() => PickNonRepeating(BoopLines);
+
+    /// <summary>Reaction line when the pet is petted.</summary>
+    public string GetPetLine() => PickNonRepeating(PetLines);
+
+    /// <summary>Reaction line when the pet is dragged.</summary>
+    public string GetDragLine() => PickNonRepeating(DragLines);
+
 
     /// <summary>Determine the dominant emotional state for animation selection.</summary>
     public PetState SuggestEmotionalState()

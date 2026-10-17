@@ -19,16 +19,58 @@ public static class AssetSource
     private static string ResourceName(string relativePath) =>
         "DesktopPet." + relativePath.Replace('\\', '/').Replace('/', '.');
 
-    private static string DiskPath(string relativePath) =>
+    public static string DiskPath(string relativePath) =>
         Path.Combine(AppContext.BaseDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+    private static IEnumerable<string> CandidateDiskPaths(string relativePath)
+    {
+        string normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+        // 1. Directly in AppContext.BaseDirectory (portable deployment beside exe)
+        yield return Path.Combine(AppContext.BaseDirectory, normalized);
+
+        // 2. User-customizable AppData directory (%AppData%\Neku\...)
+        string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Neku", normalized);
+        yield return appData;
+
+        // 3. Search upward from AppContext.BaseDirectory (up to 8 parent levels)
+        DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
+        for (int i = 0; i < 8 && dir != null; i++)
+        {
+            yield return Path.Combine(dir.FullName, normalized);
+            yield return Path.Combine(dir.FullName, "src", "DesktopPet", normalized);
+            dir = dir.Parent;
+        }
+    }
+
+    /// <summary>Returns the resolved source location (disk path or embedded resource name) for diagnostics.</summary>
+    public static string ResolveSource(string relativePath)
+    {
+        try
+        {
+            foreach (string disk in CandidateDiskPaths(relativePath))
+            {
+                if (File.Exists(disk)) return disk;
+            }
+        }
+        catch { }
+
+        string res = ResourceName(relativePath);
+        if (Asm.GetManifestResourceNames().Contains(res))
+            return $"[embedded:{res}]";
+
+        return "[not found]";
+    }
 
     /// <summary>Open an asset, preferring a file on disk over the embedded copy. Null if neither exists.</summary>
     public static Stream? TryOpen(string relativePath)
     {
         try
         {
-            string disk = DiskPath(relativePath);
-            if (File.Exists(disk)) return File.OpenRead(disk);
+            foreach (string disk in CandidateDiskPaths(relativePath))
+            {
+                if (File.Exists(disk)) return File.OpenRead(disk);
+            }
         }
         catch { /* unreadable on disk — fall through to the embedded copy */ }
 
@@ -80,11 +122,17 @@ public static class AssetSource
 
         try
         {
-            string dir = DiskPath("Assets/pets");
-            if (Directory.Exists(dir))
-                foreach (var d in Directory.EnumerateDirectories(dir))
-                    if (File.Exists(Path.Combine(d, "manifest.json")))
-                        pets.Add(Path.GetFileName(d));
+            foreach (var petDir in CandidateDiskPaths("Assets/pets"))
+            {
+                if (Directory.Exists(petDir))
+                {
+                    foreach (var d in Directory.EnumerateDirectories(petDir))
+                    {
+                        if (File.Exists(Path.Combine(d, "manifest.json")))
+                            pets.Add(Path.GetFileName(d));
+                    }
+                }
+            }
         }
         catch { /* best-effort */ }
 

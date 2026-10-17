@@ -33,8 +33,14 @@ public partial class App : Application
     private bool _hiddenForQuiet;
     private bool _userHidden;
     private DeveloperEventService? _developerEvents;
+    private FocusTimerService _focusTimer = new();
+    private FocusHudWindow? _focusHudWindow;
+    private NotesService _notesService = new();
+    private QuickNotesWindow? _notesWindow;
+    private DeveloperEventsWindow? _devEventsWindow;
 
     // ── AI companion (built lazily, only when enabled) ──
+
     private HttpClient?      _http;
     private AiChatService?   _ai;
     private AiMemory?        _aiMemory;
@@ -123,10 +129,23 @@ public partial class App : Application
         _stateSaveTimer.Tick += (_, _) => SavePetState();
         _stateSaveTimer.Start();
 
+        _focusTimer = new FocusTimerService(Dispatcher);
+        _focusTimer.LoadState(_settings);
+        _focusTimer.FocusCompleted += OnFocusCompleted;
+        _focusTimer.BreakCompleted += OnBreakCompleted;
+        _notesService = new NotesService();
+
         _petWindow.SetClickThrough(_settings.ClickThrough);
         _petWindow.Opacity = _settings.Opacity;
 
         _petWindow.SetupContextMenu(
+            onFocusToggle: OnFocusToggle,
+            getFocusLabel: GetFocusLabel,
+            onFocusCancel: OnFocusCancel,
+            isFocusActive: () => _focusTimer.IsActive,
+            onToggleFocusHud: ToggleFocusHud,
+            onQuickNote: OpenQuickNotes,
+            onDeveloperEvents: OpenDeveloperEvents,
             onSettings: ShowSettings,
             onTogglePause: () => OnPauseToggled(_engine?.Paused != true),
             isPaused: () => _engine?.Paused == true,
@@ -141,6 +160,12 @@ public partial class App : Application
             onExit: QuitApp);
 
         _tray = new TrayService(
+            onFocusToggle: OnFocusToggle,
+            getFocusLabel: GetFocusLabel,
+            onFocusCancel: OnFocusCancel,
+            isFocusActive: () => _focusTimer.IsActive,
+            onQuickNote: OpenQuickNotes,
+            onDeveloperEvents: OpenDeveloperEvents,
             onSettings: ShowSettings,
             onPauseToggled: OnPauseToggled,
             onHideToggled: OnHideToggled,
@@ -154,9 +179,28 @@ public partial class App : Application
             onTalk: OpenChat,
             settings: _settings);
 
+        _petWindow.PetInteracted += DismissOnboarding;
+
+        if (!_settings.OnboardingDismissed)
+        {
+            var onboardingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.2) };
+            onboardingTimer.Tick += (_, _) =>
+            {
+                onboardingTimer.Stop();
+                if (!_settings.OnboardingDismissed && _engine != null)
+                {
+                    _engine.ShowSpeech(
+                        "👋 Hi! I'm Neku!\n• Click to interact\n• Right-click for actions\n• Drag to move me\n• Use tray icon to control\n(Click to dismiss)",
+                        15.0);
+                }
+            };
+            onboardingTimer.Start();
+        }
+
         _developerEvents = new DeveloperEventService(_engine, _settings, Dispatcher);
         if (_settings.EnableDeveloperEvents)
             _developerEvents.Start();
+
 
         Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
 
@@ -263,21 +307,161 @@ public partial class App : Application
     /// </summary>
     private static SpriteAnimator LoadPet(string pet)
     {
+        DebugLog.Write($"[LoadPet] Requested activePet: '{pet}'");
         foreach (string candidate in new[] { pet, "neku", "cat" })
         {
             if (string.IsNullOrWhiteSpace(candidate)) continue;
             string dir = $"Assets/pets/{candidate}";
-            if (!AssetSource.Exists($"{dir}/manifest.json")) continue;
+            string manifestRel = $"{dir}/manifest.json";
+            if (!AssetSource.Exists(manifestRel))
+            {
+                DebugLog.Write($"[LoadPet] Candidate '{candidate}' manifest not found at {manifestRel} (resolved: {AssetSource.ResolveSource(manifestRel)})");
+                continue;
+            }
 
-            var manifest = PetManifest.Parse(AssetSource.ReadAllText($"{dir}/manifest.json"), dir);
-            return new SpriteAnimator(manifest, AssetSource.ReadAllBytes($"{dir}/{manifest.Sheet}"));
+            string manifestPath = AssetSource.ResolveSource(manifestRel);
+            var manifest = PetManifest.Parse(AssetSource.ReadAllText(manifestRel), dir);
+            string sheetRel = $"{dir}/{manifest.Sheet}";
+            string sheetPath = AssetSource.ResolveSource(sheetRel);
+
+            DebugLog.Write($"[LoadPet] Successfully loaded pack: '{candidate}'");
+            DebugLog.Write($"[LoadPet] Resolved manifest: {manifestPath}");
+            DebugLog.Write($"[LoadPet] Resolved sheet: {sheetPath}");
+            DebugLog.Write($"[LoadPet] Dimensions: {manifest.CellWidth}x{manifest.CellHeight}, Columns: {manifest.Columns}, Scale: {manifest.Scale}");
+
+            var animator = new SpriteAnimator(manifest, AssetSource.ReadAllBytes(sheetRel));
+            DebugLog.Write($"[LoadPet] Initial animation selected: '{animator.CurrentAnimationName}'");
+            return animator;
         }
 
         throw new FileNotFoundException(
             $"No pet pack found for '{pet}', and the built-in cat is missing too.");
     }
 
+    private string GetFocusLabel()
+    {
+        return _focusTimer.State switch
+        {
+            FocusTimerState.Focusing => $"Focusing ({_focusTimer.FormattedRemaining}) - Click to Pause",
+            FocusTimerState.FocusPaused => $"Focus Paused ({_focusTimer.FormattedRemaining}) - Click to Resume",
+            FocusTimerState.Break => $"Break ({_focusTimer.FormattedRemaining}) - Click to Pause",
+            FocusTimerState.BreakPaused => $"Break Paused ({_focusTimer.FormattedRemaining}) - Click to Resume",
+            _ => $"Start Focus Session ({_settings.FocusDurationMinutes}m)"
+        };
+    }
+
+    private void OnFocusToggle()
+    {
+        DismissOnboarding();
+        switch (_focusTimer.State)
+        {
+            case FocusTimerState.Idle:
+                _focusTimer.StartFocus(_settings.FocusDurationMinutes);
+                _engine?.Personality.OnPositiveEvent();
+                if (_engine != null)
+                    _engine.ShowSpeech(_engine.Personality.GetFocusStartedLine(), 3.5);
+                break;
+            case FocusTimerState.Focusing:
+                _focusTimer.Pause();
+                break;
+            case FocusTimerState.FocusPaused:
+                _focusTimer.Resume();
+                break;
+            case FocusTimerState.Break:
+                _focusTimer.Pause();
+                break;
+            case FocusTimerState.BreakPaused:
+                _focusTimer.Resume();
+                break;
+        }
+    }
+
+    private void OnFocusCancel()
+    {
+        _focusTimer.Cancel();
+        _engine?.ShowSpeech("Focus session canceled.", 2.5);
+    }
+
+    private void ToggleFocusHud()
+    {
+        DismissOnboarding();
+        if (_focusHudWindow == null)
+            _focusHudWindow = new FocusHudWindow(_focusTimer);
+
+        if (_focusHudWindow.IsVisible)
+            _focusHudWindow.Hide();
+        else
+            _focusHudWindow.Show();
+    }
+
+    private void OnFocusCompleted()
+    {
+        _engine?.Personality.OnPositiveEvent();
+        _engine?.TriggerDeveloperReaction(PetState.Happy, _engine.Personality.GetFocusCompletedLine());
+        _petWindow?.SpawnHearts();
+
+        var notif = new FocusNotificationWindow(
+            "Focus session complete! 🎉",
+            "Great work! Time for a 5m break.",
+            "🍅",
+            "Start 5m Break ☕",
+            () => _focusTimer.StartBreak(_settings.BreakDurationMinutes));
+        notif.Show();
+    }
+
+    private void OnBreakCompleted()
+    {
+        _engine?.TriggerDeveloperReaction(PetState.Jump, _engine.Personality.GetBreakCompletedLine());
+
+        var notif = new FocusNotificationWindow(
+            "Break finished! ✨",
+            "Feeling refreshed? Ready for another session?",
+            "☕",
+            "Start Focus 🎯",
+            () => _focusTimer.StartFocus(_settings.FocusDurationMinutes));
+        notif.Show();
+    }
+
+    private void OpenQuickNotes()
+    {
+        DismissOnboarding();
+        if (_notesWindow == null || !_notesWindow.IsLoaded)
+        {
+            _notesWindow = new QuickNotesWindow(_notesService);
+            _notesWindow.Show();
+        }
+        else
+        {
+            _notesWindow.Activate();
+        }
+    }
+
+    private void OpenDeveloperEvents()
+    {
+        DismissOnboarding();
+        if (_devEventsWindow == null || !_devEventsWindow.IsLoaded)
+        {
+            _devEventsWindow = new DeveloperEventsWindow(_developerEvents, _engine!, _settings, _settingsService);
+            _devEventsWindow.Show();
+        }
+        else
+        {
+            _devEventsWindow.Activate();
+        }
+    }
+
+    private void DismissOnboarding()
+    {
+        if (!_settings.OnboardingDismissed)
+        {
+            _settings.OnboardingDismissed = true;
+            _settingsService.Save();
+            _engine?.ClearSpeech();
+        }
+    }
+
     private void ShowSettings()
+
     {
         if (_settingsWindow is { IsLoaded: true }) { _settingsWindow.Activate(); return; }
 
@@ -447,13 +631,15 @@ public partial class App : Application
         _petWindow.SetRenderLoopEnabled(!shouldHide);
     }
 
-    /// <summary>Write the cat's position and mood into settings and save.</summary>
+    /// <summary>Write the cat's position, mood, and focus timer into settings and save.</summary>
     private void SavePetState()
     {
+        _focusTimer?.SaveState(_settings);
         if (_engine == null || !_settings.RememberPetState) return;
         _engine.CaptureStateInto(_settings);
         _settingsService.Save();
     }
+
 
     /// <summary>Re-sync everything to the current AI on/off state. Rebuilds the service so a
     /// new key/model/persona takes effect, and tears the chat UI down when disabled.</summary>
@@ -686,6 +872,10 @@ public partial class App : Application
         _keyboard?.Dispose();
         _mouse?.Dispose();
         _stretchTimer?.Stop();
+        _focusTimer?.Dispose();
+        _focusHudWindow?.Close();
+        _notesWindow?.Close();
+        _devEventsWindow?.Close();
         _tray?.Dispose();
         Shutdown();
     }
@@ -700,6 +890,10 @@ public partial class App : Application
         _developerEvents?.Dispose();
         _hotkey?.Dispose();
         _chatWindow?.Close();
+        _focusTimer?.Dispose();
+        _focusHudWindow?.Close();
+        _notesWindow?.Close();
+        _devEventsWindow?.Close();
         _http?.Dispose();
         _hookWatchdog?.Dispose();
         _keyboard?.Dispose();

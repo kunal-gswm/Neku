@@ -307,6 +307,11 @@ public sealed class PetEngine
             var line = _personality.GetDialogueLine();
             if (line != null) ShowSpeech(line, 2.0);
         }
+        else if (_sm.Chance(0.35))
+        {
+            var line = _personality.GetDragLine();
+            if (line != null) ShowSpeech(line, 2.0);
+        }
         EnterState(PetState.Drag);
     }
 
@@ -330,6 +335,11 @@ public sealed class PetEngine
         {
             _heartTimer = 0;  // spawn hearts immediately
             EnterState(PetState.Pet);
+            if (_sm.Chance(0.30))
+            {
+                var line = _personality.GetPetLine();
+                if (line != null) ShowSpeech(line, 2.0);
+            }
         }
     }
 
@@ -349,13 +359,14 @@ public sealed class PetEngine
         _view.SpawnHearts();
         _view.SpawnHearts();
         _heartTimer = 0;
-        if (_sm.Chance(0.40))
+        if (_sm.Chance(0.50))
         {
-            var line = _personality.GetDialogueLine();
+            var line = _personality.GetBoopLine();
             if (line != null) ShowSpeech(line, 2.2);
         }
         EnterState(PetState.Pet);   // brief happy face; reverts on mouse-leave
     }
+
 
     // ── main loop ─────────────────────────────────────────────────────────────
 

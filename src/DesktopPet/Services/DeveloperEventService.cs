@@ -133,7 +133,7 @@ public sealed class DeveloperEventService : IDisposable
             case "build_ok":
                 _engine.Personality.OnPositiveEvent();
                 _engine.TriggerDeveloperReaction(PetState.Happy,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "Build succeeded! Let's go! 🎉");
+                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetBuildSuccessLine());
                 break;
 
             case "build_failure":
@@ -157,8 +157,9 @@ public sealed class DeveloperEventService : IDisposable
             case "test_failure":
                 _engine.Personality.OnNegativeEvent();
                 _engine.TriggerDeveloperReaction(PetState.Surprised,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "Tests failed?! Panic! 😱");
+                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetTestFailureLine());
                 break;
+
 
             case "command_complete":
             case "command_done":

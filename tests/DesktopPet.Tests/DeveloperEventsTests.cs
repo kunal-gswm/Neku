@@ -62,4 +62,18 @@ public class DeveloperEventsTests
         Assert.Equal(eventType, payload.Type);
         Assert.Equal("Test message", payload.Message);
     }
+
+    [Fact]
+    public void DeveloperEvents_is_disabled_by_default_in_settings()
+    {
+        var settings = new AppSettings();
+        Assert.False(settings.EnableDeveloperEvents);
+    }
+
+    [Fact]
+    public void DeveloperEvents_default_port_is_48123()
+    {
+        var settings = new AppSettings();
+        Assert.Equal(48123, settings.DeveloperPort);
+    }
 }

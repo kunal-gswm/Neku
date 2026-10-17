@@ -140,4 +140,16 @@ public sealed class AppSettings
     /// <summary>Enable local developer event reactions (builds, tests, commands).</summary>
     [JsonPropertyName("enableDeveloperEvents")] public bool EnableDeveloperEvents { get; set; } = false;
     [JsonPropertyName("developerPort")] public int DeveloperPort { get; set; } = 48123;
+
+    // ── Focus Timer (Pomodoro) ────────────────────────────────────────────────
+    [JsonPropertyName("focusDurationMinutes")] public int FocusDurationMinutes { get; set; } = 25;
+    [JsonPropertyName("breakDurationMinutes")] public int BreakDurationMinutes { get; set; } = 5;
+    [JsonPropertyName("focusTimerActive")] public bool FocusTimerActive { get; set; } = false;
+    [JsonPropertyName("focusTimerState")] public string FocusTimerState { get; set; } = "Idle";
+    [JsonPropertyName("focusTimerDeadlineUtc")] public DateTime? FocusTimerDeadlineUtc { get; set; }
+    [JsonPropertyName("focusTimerRemainingSeconds")] public double FocusTimerRemainingSeconds { get; set; } = 0;
+
+    // ── Onboarding ────────────────────────────────────────────────────────────
+    /// <summary>Whether the first-run onboarding speech bubble has been dismissed.</summary>
+    [JsonPropertyName("onboardingDismissed")] public bool OnboardingDismissed { get; set; } = false;
 }

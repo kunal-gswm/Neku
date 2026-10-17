@@ -92,6 +92,9 @@ public partial class SettingsWindow : Window
 
         SelectByTag(StretchIntervalBox, settings.StretchIntervalMinutes.ToString(), fallbackIndex: 0);
         SelectByTag(AiProviderBox, settings.AiProvider, fallbackIndex: 0);
+        SelectByTag(FocusDurationBox, settings.FocusDurationMinutes.ToString(), fallbackIndex: 2);
+        SelectByTag(BreakDurationBox, settings.BreakDurationMinutes.ToString(), fallbackIndex: 1);
+
 
         if (AssetSource.Exists("Assets/pets/neku-personal-local/manifest.json"))
         {
@@ -142,8 +145,9 @@ public partial class SettingsWindow : Window
             box.Unchecked += (_, _) => Apply();
         }
 
-        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, AiProviderBox })
+        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, AiProviderBox, FocusDurationBox, BreakDurationBox })
             combo.SelectionChanged += (_, _) => Apply();
+
 
         DevPortBox.TextChanged    += (_, _) => Apply();
         AiKeyBox.PasswordChanged  += (_, _) => Apply();
@@ -226,8 +230,11 @@ public partial class SettingsWindow : Window
         AutostartService.Set(autostart);
 
         if (int.TryParse(TagOf(StretchIntervalBox), out int mins)) _settings.StretchIntervalMinutes = mins;
+        if (int.TryParse(TagOf(FocusDurationBox), out int focusMins) && focusMins > 0) _settings.FocusDurationMinutes = focusMins;
+        if (int.TryParse(TagOf(BreakDurationBox), out int breakMins) && breakMins > 0) _settings.BreakDurationMinutes = breakMins;
 
         if (double.TryParse(TagOf(SizeBox), System.Globalization.CultureInfo.InvariantCulture, out double size))
+
             _settings.SizeScale = size;
 
         string pet = TagOf(CatColorBox);
