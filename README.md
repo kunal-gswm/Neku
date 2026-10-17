@@ -1,39 +1,47 @@
-# Neku — A Lightweight, Playful Windows Desktop Companion
+# Neku v0.2 — A Lightweight, Playful & Productive Windows Desktop Companion
 
-**Neku** is a tiny, mischievous desktop companion that lives right on your Windows desktop. Native, feather-light, and expressive, Neku brings your workspace to life with retro pixel animations, desktop physics, deterministic personality drives, and optional developer build/test event reactions.
+**Neku** is a tiny, mischievous desktop companion that lives right on your Windows desktop. Native, feather-light, and expressive, Neku combines playful desktop pet physics with a local Pomodoro focus timer, a quick-notes scratchpad, and developer event reactions.
 
 Built with **C# / WPF on .NET 10**.
 
 ---
 
-## 🌟 Highlights
+## 🌟 What's New in v0.2
 
-- **Native & Feather-Light:** Runs lean on the Windows desktop. When paused, hidden, or in quiet mode, rendering callbacks are detached completely — dropping CPU usage to **0.0%**.
-- **Playful Character & Personality:** Neku is an original, expressive cat-like goblin with local state drives (`Mood`, `Energy`, `Familiarity`, `Mischief`) and original dialogue lines. No AI models or internet connections required for normal operation.
-- **Desktop Physics & Window Walking:** Walks along the top edges of open application windows and the taskbar. Gravity, momentum-bounded throwing on drag release, and collision detection keep Neku grounded.
-- **Developer Event Reactions (Optional):** Celebrate green builds and panic at test failures! Neku includes a local HTTP endpoint and CLI tools (`tools/neku-event.ps1`, `tools/neku-event.bat`) to hook into your CI, build scripts, or terminal workflows. Disabled by default with zero background threads.
-- **Respectful of Your Focus:** Automatically enters Quiet Mode during full-screen games, video calls, or presentations. Supports optional **Click-Through Mode** so Neku never intercepts your work.
-- **Multi-Monitor & Mixed DPI:** Smoothly roams multi-monitor workspaces and handles mixed DPI scaling factors.
+- ⏱️ **Focus Timer (Pomodoro):** Stay in flow with a 25-minute focus session and 5-minute break timer. Includes a sleek HUD pill overlay, deadline recovery across restarts, and subtle companion dialogue reactions.
+- 📝 **Quick Notes:** Built-in lightweight desktop scratchpad with real-time search, autosave, and keyboard navigation. Stored 100% locally.
+- 🎯 **Native Action Menu:** Compact, non-activating WPF menu accessible from right-clicking Neku or the system tray. Never steals keyboard focus from active code or terminal windows (`WS_EX_NOACTIVATE`).
+- ⚡ **Optimized Memory & Lifecycle:** On-demand full-screen composition surfaces, direct memory-mapped single-file publishing, and an optional software rendering pipeline (`--software-rendering`) to eliminate GPU driver RAM overhead on laptops.
+- 🛡️ **Privacy & Custom Pack Isolation:** 100% offline, zero telemetry. Supports custom local character packs without modifying repository files or public builds.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Requirements
-- Windows 10 (version 1809+) or Windows 11.
-- .NET 10 Runtime (or install the .NET 10 SDK if building from source).
+### Option A: Download Pre-built Release (Recommended)
+1. Download **`Neku.exe`** from the latest [GitHub Releases](https://github.com/kunal-gswm/Neku/releases).
+2. Run `Neku.exe`. That's it!
+   - Neku is packaged as a **single self-contained executable** (~156 MB).
+   - No .NET runtime installation, Git, or external folders required.
+   - *Note on first launch:* Windows SmartScreen may show an unrecognized app prompt. Click **More info → Run anyway**.
 
-### 2. Building from Source
+### Option B: Build from Source
+**Requirements:** Windows 10 (1809+) or Windows 11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+
 ```powershell
+# Clone the repository
 git clone https://github.com/kunal-gswm/Neku.git
 cd Neku
+
+# Build and run tests
 dotnet build DesktopPet.sln -c Release
 dotnet test DesktopPet.sln -c Release
-```
 
-To launch Neku after building:
-```powershell
+# Run the compiled binary
 .\src\DesktopPet\bin\Release\net10.0-windows\win-x64\Neku.exe
+
+# Or publish the single-file release artifact
+.\scripts\publish.ps1
 ```
 
 ---
@@ -45,16 +53,33 @@ To launch Neku after building:
 | **Boop (Click)** | Left-Click | Triggers an immediate playful reaction and dialogue bubble. |
 | **Drag & Throw** | Left-Click & Drag | Pick up Neku and move anywhere. Release with velocity to toss Neku into a gentle arc! |
 | **Pet** | Mouse Hover | Hover over Neku to show floating hearts and boost mood. |
-| **Context Menu** | Right-Click | Access quick controls: Settings, Pause/Resume, Hide, Click-through, Quiet mode, Reset position. |
-| **Tray Menu** | System Tray Icon | Right-click the cat paw in the taskbar notification area for full application control. |
-| **Click-Through** | Tray / Context Menu | Allows mouse clicks to pass straight through Neku to underlying windows. |
-| **Reset Position** | Tray / Context Menu | Instantly returns Neku to the center of the primary display work area if lost. |
+| **Action Menu** | Right-Click | Native WPF menu for Focus Timer, Quick Notes, Settings, Pause, Hide, and Exit. |
+| **System Tray** | Tray Icon | Right-click the cat paw in the taskbar notification area for full application control. |
+| **Start / Pause Focus** | Action Menu / Tray | Starts or pauses the Pomodoro focus timer with matching companion reactions. |
+| **Quick Notes** | Action Menu / Tray | Opens the persistent local notes scratchpad. |
+| **Click-Through** | Settings / Action Menu | Allows mouse clicks to pass straight through Neku to underlying windows. |
+| **Reset Position** | Action Menu / Tray | Instantly returns Neku to the center of the primary display work area if lost. |
+
+---
+
+## ⏱️ Focus Timer & Quick Notes
+
+### Pomodoro Focus Timer
+- **Default Durations:** 25-minute focus session, 5-minute restorative break (configurable in Settings).
+- **HUD Overlay:** Small floating timer pill attached above or below Neku showing elapsed/remaining time.
+- **Deadline-Based:** Timers compute absolute UTC deadlines. If you lock your PC, sleep your laptop, or restart the app, Neku recovers the remaining time seamlessly.
+- **Restrained Notifications:** When a session or break ends, Neku displays a gentle dialogue balloon and bottom-right toast banner.
+
+### Quick Notes Scratchpad
+- **Fast & Responsive:** Instant load with live search filtering across titles and note bodies.
+- **Autosave & Persistence:** All changes are automatically saved to `%AppData%\Neku\notes.json`.
+- **Keyboard Friendly:** Use `Ctrl+N` to create a note, `Ctrl+F` to search, and `Delete` to remove.
 
 ---
 
 ## 🛠️ Developer Event Integration
 
-Neku can react to your development environment events (builds, test suites, deployments) via a local HTTP listener on port `48123`.
+Neku can react to development lifecycle events (builds, test suites, deployments) via a local HTTP listener on port `48123` (disabled by default for zero resource usage).
 
 ### Enabling:
 1. Open **Settings** (Right-click Neku → **Settings**).
@@ -73,13 +98,7 @@ Neku can react to your development environment events (builds, test suites, depl
 .\tools\neku-event.ps1 command_complete "Docker container deployed! ⚡"
 ```
 
-### Triggering Events from Batch / CMD:
-```cmd
-tools\neku-event.bat build_success "Compilation succeeded!"
-tools\neku-event.bat test_fail "Tests red!"
-```
-
-### Triggering via cURL or any HTTP client:
+### Triggering via cURL:
 ```bash
 curl -X POST http://127.0.0.1:48123/event -H "Content-Type: application/json" -d '{"type":"build_success","message":"Great job!"}'
 ```
@@ -88,28 +107,58 @@ Supported event types: `build_success`, `build_failure`, `test_pass`, `test_fail
 
 ---
 
-## 🧠 Personality & State Machine
+## 🎨 Custom Companion Packs (Local Characters)
 
-Neku's behavior is guided by an explicit deterministic state machine and local emotional drives:
+Public releases of Neku ship exclusively with the generic mascot (`neku`) and standard cats (`cat`, `cat-orange`, `cat-silver`, etc.). You can easily create and load your own personalized companion pack locally without modifying the code or rebuilding:
 
-- **States:** `Idle`, `Blink`, `LookAround`, `Walk`, `Sit`, `Sleep`, `Loaf`, `Zoomies`, `Fall`, `Drag`, `Happy`, `Annoyed`, `Surprised`, `Typing`, `TypingFast`, `Play`.
-- **Drives:**
-  - `Mood` (0.0 to 1.0): Influenced by petting, dragging, boops, and developer events. Drives dialogue choices.
-  - `Energy` (0.0 to 1.0): Depletes during runs and zoomies, recharges during sleep and sit.
-  - `Familiarity` (0.0 to 1.0): Increases gradually with interactions, unlocking more expressive lines.
-  - `Mischief` (0.0 to 1.0): Governs spontaneity and chaotic reactions.
-- **Original Dialogue:** Neku speaks through humorous, quirky speech bubbles tailored to its current mood.
+### Directory Structure
+Place your pack in `%AppData%\Neku\Assets\pets\<your-pack-name>\` (or beside `Neku.exe` in `Assets\pets\<your-pack-name>\`):
+```
+%AppData%\Neku\Assets\pets\my-custom-companion\
+├── manifest.json
+└── spritesheet.png
+```
+
+### Manifest Format (`manifest.json`):
+```json
+{
+  "name": "My Companion",
+  "sheet": "spritesheet.png",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 4,
+  "scale": 1.0,
+  "animations": {
+    "idle": { "frames": [0, 1], "fps": 2.0, "loop": true },
+    "walk": { "frames": [2, 3, 4, 5], "fps": 6.0, "loop": true },
+    "sleep": { "frames": [6, 7], "fps": 1.0, "loop": true },
+    "fall": { "frames": [8, 9], "fps": 4.0, "loop": true },
+    "drag": { "frames": [10], "fps": 1.0, "loop": true },
+    "happy": { "frames": [11, 12], "fps": 3.0, "loop": true },
+    "annoyed": { "frames": [13, 14], "fps": 3.0, "loop": true },
+    "surprised": { "frames": [15], "fps": 1.0, "loop": false }
+  }
+}
+```
+Open **Settings > Companion**, select your custom pack from the dropdown, and Neku will immediately adopt the new artwork.
 
 ---
 
-## ⚡ Performance Profile
+## 🔒 Privacy & Offline First
 
-Neku is strictly engineered to minimize hardware and battery impact:
-- **Zero-Cost Pause & Quiet Mode:** When paused, hidden, or presenting, `CompositionTarget.Rendering` is detached entirely (0.0% CPU).
-- **Throttled Surface Scanning:** Window edge detection is evaluated every 3 seconds while stationary, and every 0.25 seconds while moving.
-- **Cached Visuals:** Spritesheets are loaded and decoded into memory once at startup.
-- **Memory Footprint:** ~40–55 MB working set under .NET 10.
-- See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for detailed benchmarks and architectural notes.
+- **Zero Telemetry:** Neku has zero analytics, crash reporters, or tracking identifiers.
+- **Offline By Default:** Neku makes no outbound network connections. The developer event listener binds strictly to loopback (`127.0.0.1`).
+- **Private Asset Isolation:** Local personal companion packs remain strictly outside git tracking and are never embedded into public release binaries.
+
+---
+
+## ⚡ Performance & Power Efficiency
+
+Neku is designed to run silently without impacting games, compilation, or battery life:
+- **Detached Render Loop:** Inactive, paused, or quiet modes completely disconnect from `CompositionTarget.Rendering` for **0.0% CPU** consumption.
+- **On-Demand Effects Overlay:** Full-screen transparent DirectX swap chains are only created when particles or dialogue bubbles are actively visible, freeing DWM composition surfaces during idle.
+- **Optional Software Rendering:** Run Neku with `--software-rendering` or toggle Software Rendering in **Settings > Performance** to run via CPU rasterization, saving ~75 MB of NVIDIA/GPU driver memory on lightweight laptops.
+- See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for full empirical benchmarks, memory profiling, and architecture details.
 
 ---
 
@@ -117,23 +166,26 @@ Neku is strictly engineered to minimize hardware and battery impact:
 
 ```
 ├── docs/
-│   ├── ARCHITECTURE.md          # Complete architecture and component diagrams
+│   ├── ARCHITECTURE.md          # Architecture and component diagrams
 │   ├── BASELINE_AUDIT.md        # Technical baseline audit of original codebase
-│   ├── PERFORMANCE.md           # Rendering, lifecycle, and power consumption guide
+│   ├── PERFORMANCE.md           # Rendering, memory profiling, and power consumption guide
 │   └── TESTING.md               # Unit testing matrix and verification checklist
 ├── src/
 │   └── DesktopPet/              # Main Neku WPF Application (.NET 10)
-│       ├── Assets/pets/neku/    # Neku spritesheet and animation manifests
+│       ├── Assets/pets/neku/    # Generic mascot spritesheet and animation manifests
 │       ├── Engine/              # Physics, state machine, personality, platform geometry
-│       ├── Native/              # Win32 P/Invoke interop wrappers
-│       ├── Services/            # Settings, tray, monitors, developer event endpoint
-│       └── UI/                  # Pet window, settings window, effects overlay
+│       ├── Native/              # Win32 P/Invoke interop wrappers (WS_EX_NOACTIVATE, hooks)
+│       ├── Services/            # Focus timer, notes, settings, tray, developer webhook
+│       └── UI/                  # Pet window, focus HUD, notes window, settings window
 ├── tests/
-│   └── DesktopPet.Tests/        # 90 xUnit automated test suites
+│   └── DesktopPet.Tests/        # 112 xUnit automated test suites
 ├── tools/
+│   ├── benchmark_memory.ps1     # Automated memory & CPU benchmark script
+│   ├── measure_interactive.ps1  # Automated interactive lifecycle benchmark script
 │   ├── neku-event.ps1           # PowerShell developer event trigger CLI
-│   ├── neku-event.bat           # Batch developer event trigger CLI
-│   └── gen_neku_placeholder.py  # Original sprite asset generation tool
+│   └── neku-event.bat           # Batch developer event trigger CLI
+├── scripts/
+│   └── publish.ps1              # Self-contained single-file publish script
 ├── THIRD_PARTY_NOTICES.md       # Attribution to PixelPaws and third-party notices
 ├── LICENSE                      # MIT License
 └── README.md                    # Project overview

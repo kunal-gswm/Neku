@@ -1,8 +1,16 @@
 param(
-    [string]$Pack = "neku-personal-local"
+    [string]$Pack = "neku",
+    [string]$ExePath = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+$root = Split-Path -Parent $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($ExePath)) {
+    $distExe  = Join-Path $root "dist\Neku.exe"
+    $buildExe = Join-Path $root "src\DesktopPet\bin\Release\net10.0-windows\win-x64\Neku.exe"
+    $ExePath  = if (Test-Path $distExe) { $distExe } else { $buildExe }
+}
 
 # Ensure settings.json has the requested pack and clean state
 $appData = "$env:APPDATA\Neku"
@@ -20,7 +28,7 @@ if (Test-Path $settingsFile) {
 Get-Process -Name Neku -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 500
 
-$proc = Start-Process -FilePath "d:\Neku\pixelpaws\src\DesktopPet\bin\Release\net10.0-windows\win-x64\Neku.exe" -ArgumentList "--test-interactive" -PassThru
+$proc = Start-Process -FilePath $ExePath -ArgumentList "--test-interactive" -PassThru
 $pidNum = $proc.Id
 
 Add-Type -TypeDefinition @"
