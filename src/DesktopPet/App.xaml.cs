@@ -74,6 +74,11 @@ public partial class App : Application
 
         _settings = _settingsService.Load();
 
+        if (e.Args.Contains("--software-rendering") || _settings.UseSoftwareRendering)
+        {
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+        }
+
         SpriteAnimator animator;
         try
         {
@@ -95,10 +100,9 @@ public partial class App : Application
                        $"VirtualScreen=({SystemParameters.VirtualScreenLeft},{SystemParameters.VirtualScreenTop}) " +
                        $"{SystemParameters.VirtualScreenWidth}x{SystemParameters.VirtualScreenHeight}");
 
-        // Persistent effects overlay (hearts/sparkles) — created here on the UI thread,
-        // safely, NOT during the render loop.
+        // Persistent effects overlay (hearts/sparkles/bubbles) — created here on the UI thread,
+        // kept hidden until an effect or speech bubble is actively rendered.
         var overlay = new EffectsOverlay();
-        overlay.Show();
         _petWindow.Effects = overlay;
 
         // Input monitors — installed on the UI thread so the hook callbacks run here.
@@ -219,6 +223,30 @@ public partial class App : Application
 
         // Auto-update — quietly check GitHub, surface a tray prompt if a newer build exists.
         CheckForUpdates();
+
+        if (e.Args.Contains("--test-interactive"))
+        {
+            var openTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            openTimer.Tick += (_, _) =>
+            {
+                openTimer.Stop();
+                OnFocusToggle();
+                ToggleFocusHud();
+                OpenQuickNotes();
+
+                var closeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+                closeTimer.Tick += (_, _) =>
+                {
+                    closeTimer.Stop();
+                    _notesWindow?.Close();
+                    if (_focusHudWindow?.IsVisible == true)
+                        ToggleFocusHud();
+                    OnFocusCancel();
+                };
+                closeTimer.Start();
+            };
+            openTimer.Start();
+        }
     }
 
     private UpdateService Updater() => _updateService ??= new UpdateService(Http());
@@ -428,6 +456,7 @@ public partial class App : Application
         if (_notesWindow == null || !_notesWindow.IsLoaded)
         {
             _notesWindow = new QuickNotesWindow(_notesService);
+            _notesWindow.Closed += (_, _) => _notesWindow = null;
             _notesWindow.Show();
         }
         else
@@ -442,6 +471,7 @@ public partial class App : Application
         if (_devEventsWindow == null || !_devEventsWindow.IsLoaded)
         {
             _devEventsWindow = new DeveloperEventsWindow(_developerEvents, _engine!, _settings, _settingsService);
+            _devEventsWindow.Closed += (_, _) => _devEventsWindow = null;
             _devEventsWindow.Show();
         }
         else
@@ -636,8 +666,20 @@ public partial class App : Application
     {
         _focusTimer?.SaveState(_settings);
         if (_engine == null || !_settings.RememberPetState) return;
+
+        double oldX = _settings.LastPetX;
+        double oldY = _settings.LastPetY;
+        double oldEnergy = _settings.LastEnergy;
+        double oldHunger = _settings.LastHunger;
         _engine.CaptureStateInto(_settings);
-        _settingsService.Save();
+
+        if (Math.Abs(oldX - _settings.LastPetX) > 1.0 ||
+            Math.Abs(oldY - _settings.LastPetY) > 1.0 ||
+            Math.Abs(oldEnergy - _settings.LastEnergy) > 0.05 ||
+            Math.Abs(oldHunger - _settings.LastHunger) > 0.05)
+        {
+            _settingsService.Save();
+        }
     }
 
 

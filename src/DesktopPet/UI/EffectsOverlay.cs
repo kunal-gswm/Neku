@@ -42,6 +42,24 @@ public sealed class EffectsOverlay : Window
         Closed += (_, _) => Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
     }
 
+    /// <summary>Show the full-screen overlay only when there are active effects to draw.</summary>
+    public void EnsureVisible()
+    {
+        if (!IsVisible)
+        {
+            Show();
+        }
+    }
+
+    /// <summary>Hide the full-screen overlay when empty so DWM/WPF do not composite a dormant full-screen window.</summary>
+    public void CheckHide()
+    {
+        if (_canvas.Children.Count == 0 && IsVisible)
+        {
+            Hide();
+        }
+    }
+
     private void OnDisplaySettingsChanged(object? sender, EventArgs e)
     {
         // Raised on a system thread; the bounds are WPF properties, so marshal to the UI thread.
@@ -142,12 +160,17 @@ public sealed class EffectsOverlay : Window
             _tpHole  = new Ellipse { Fill = new SolidColorBrush(Color.FromRgb(150, 150, 168)), IsHitTestVisible = false };
             _tpPile  = new Ellipse { Fill = Brushes.White, Stroke = PaperOutline, StrokeThickness = 1.5, IsHitTestVisible = false, Effect = SoftShadow() };
 
+            EnsureVisible();
             // z-order: pole/base behind, then sheet, then roll + hole on top.
             foreach (var e in new FrameworkElement[] { _tpPole, _tpBase, _tpPile, _tpSheet, _tpRoll, _tpHole })
             {
                 _canvas.Children.Add(e);
                 _tpParts.Add(e);
             }
+        }
+        else
+        {
+            EnsureVisible();
         }
 
         // Local (overlay) coordinates.
@@ -191,11 +214,13 @@ public sealed class EffectsOverlay : Window
         foreach (var e in _tpParts) _canvas.Children.Remove(e);
         _tpParts.Clear();
         _tpPole = null; _tpBase = null; _tpRoll = null; _tpHole = null; _tpPile = null; _tpSheet = null;
+        CheckHide();
     }
 
     /// <summary>A little pebble tumbles down from (x,y) with gravity and fades out.</summary>
     public void DropPebble(double screenX, double screenY)
     {
+        EnsureVisible();
         var pebble = new Ellipse
         {
             Width = 12, Height = 12,
@@ -217,7 +242,12 @@ public sealed class EffectsOverlay : Window
             y += vy * 0.016; x += vx * 0.016;
             Canvas.SetTop(pebble, y); Canvas.SetLeft(pebble, x);
             if (++tick > 55) { pebble.Opacity = Math.Max(0, pebble.Opacity - 0.08); }
-            if (tick > 70) { timer.Stop(); _canvas.Children.Remove(pebble); }
+            if (tick > 70)
+            {
+                timer.Stop();
+                _canvas.Children.Remove(pebble);
+                CheckHide();
+            }
         };
         timer.Start();
     }
@@ -233,6 +263,7 @@ public sealed class EffectsOverlay : Window
     /// <summary>Draw/refresh a speech bubble centred above the cat. Re-called every frame so it tracks the cat.</summary>
     public void DrawSpeechBubble(double catLeft, double catTop, double catW, double catH, string text)
     {
+        EnsureVisible();
         if (_bubble == null)
         {
             _bubbleInk = new TextBlock
@@ -277,11 +308,13 @@ public sealed class EffectsOverlay : Window
     {
         if (_bubble != null) { _canvas.Children.Remove(_bubble); _bubble = null; _bubbleInk = null; }
         _bubbleCurrent = "";
+        CheckHide();
     }
 
     /// <summary>Emit a small burst of hearts/sparkles. Coordinates are screen DIPs.</summary>
     public void Burst(double screenCenterX, double screenTopY)
     {
+        EnsureVisible();
         int count = 2 + _rng.Next(2);
         for (int i = 0; i < count; i++)
             SpawnOne(screenCenterX, screenTopY);
@@ -321,6 +354,7 @@ public sealed class EffectsOverlay : Window
             {
                 timer.Stop();
                 _canvas.Children.Remove(tb);
+                CheckHide();
             }
         };
         timer.Start();

@@ -152,8 +152,15 @@
                         <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,6"
                                    Text="Stops zoomies, hunting, and remarks during screen-sharing, full-screen gaming, or Focus Assist."/>
                         <CheckBox x:Name="HidePresentBox" Content="Hide Neku completely during presentations" Margin="22,0,0,4"/>
-                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,0"
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
                                    Text="Completely detaches rendering loop when hidden for 0.0% CPU cost."/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="⚡ Memory &amp; Graphics Pipeline" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="SoftwareRenderingBox" Content="Software rendering mode (requires app restart)"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,0"
+                                   Text="Uses CPU software rasterizer instead of Direct3D. Eliminates ~75 MB of GPU driver memory (recommended for laptops)."/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

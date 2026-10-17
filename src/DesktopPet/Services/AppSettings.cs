@@ -56,6 +56,7 @@ public sealed class AppSettings
     /// the simulation would otherwise run several times more often than anything can show.
     /// </summary>
     [JsonPropertyName("targetFps")] public int TargetFps { get; set; } = 60;
+    [JsonPropertyName("useSoftwareRendering")] public bool UseSoftwareRendering { get; set; } = false;
 
     // ── Continuity: remember where the cat was and how it felt ──────────────────
 

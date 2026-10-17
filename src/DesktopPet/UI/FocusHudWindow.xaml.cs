@@ -22,7 +22,20 @@ public partial class FocusHudWindow : Window
 
         PositionDefault();
         UpdateDisplay();
-        _displayTimer.Start();
+        if (IsVisible) _displayTimer.Start();
+
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                UpdateDisplay();
+                _displayTimer.Start();
+            }
+            else
+            {
+                _displayTimer.Stop();
+            }
+        };
 
         Closed += (_, _) =>
         {

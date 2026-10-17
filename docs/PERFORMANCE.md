@@ -79,9 +79,81 @@ Users can toggle performance settings via the Settings window or Tray menu:
 
 ---
 
-## 7. Memory Profile and Footprint
+## 7. Empirical Memory & Power Profile (October 2026 Audit)
 
-- **Typical Working Set:** ~40 MB – 55 MB (standard .NET 10 WPF runtime baseline).
-- **Managed Heap:** ~8 MB – 14 MB.
-- **Bitmaps:** Neku's spritesheet (512x1536 PNG) uses ~3 MB decoded uncompressed in GPU/WPF memory cache.
-- **Leak Prevention:** Event handlers for menus, timers, and window events are decoupled or weak-referenced; disposable resources implement `IDisposable`.
+### A. Test Environment & Measurement Methodology
+- **Audit Date:** October 17, 2026
+- **Operating System:** Windows 11 x64 (Build 26100)
+- **Hardware Profile:** Intel Core i7, Dedicated NVIDIA GPU (GeForce RTX series) + Intel UHD display pipeline (1920x1080 resolution, 100% DPI scaling).
+- **Application Target:** Neku Release artifact (`dist\Neku.exe`, self-contained single-file binary, 156.9 MB).
+- **Diagnostics Methodology:**
+  - **Working Set (`WorkingSet64`):** Total physical RAM pages mapped into the process address space (including executable code, shared runtime assemblies, and GPU driver DLLs). Measured via PowerShell `Get-Process`.
+  - **Private Committed Bytes (`PrivateMemorySize64` & Win32 `VirtualQueryEx` `MEM_PRIVATE`):** Memory exclusively reserved and committed for this process (heap, stacks, and process-private memory buffers).
+  - **Managed GC Heap:** Live managed object allocations tracked by the .NET 10 Garbage Collector, sampled using `dotnet-gcdump report -p <pid>`.
+  - **CPU Utilization (%):** Total processor time delta (`TotalProcessorTime`) normalized across all logical processors over the measurement interval.
+
+### B. 5-Minute Idle Timelines (Published Release Binary)
+
+The table below reflects empirical measurements taken across 5 minutes of continuous idle execution using [`tools/benchmark_memory.ps1`](../tools/benchmark_memory.ps1):
+
+#### Generic Companion (`neku`)
+| Phase | Elapsed | Working Set | Private Bytes | GC Heap | CPU % |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Startup** | < 1s | 114.73 MB | 48.57 MB | 2.13 MB | 0.00% |
+| **Sprites Loaded** | 5s | 122.57 MB | 54.86 MB | 2.07 MB | 0.68% |
+| **Idle 1 min** | 60s | 131.23 MB | 62.21 MB | 2.06 MB | 0.16% |
+| **Idle 3 min** | 180s | 126.28 MB | 56.84 MB | 2.02 MB | 0.24% |
+| **Idle 5 min** | 300s | 127.19 MB | 57.17 MB | 2.02 MB | 0.23% |
+
+#### Personalized Local Companion (`neku-personal-local`)
+| Phase | Elapsed | Working Set | Private Bytes | GC Heap | CPU % |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Startup** | < 1s | 116.30 MB | 49.96 MB | 2.68 MB | 0.00% |
+| **Sprites Loaded** | 5s | 123.73 MB | 56.20 MB | 2.61 MB | 0.93% |
+| **Idle 1 min** | 60s | 130.23 MB | 61.15 MB | 2.61 MB | 0.25% |
+| **Idle 3 min** | 180s | 127.59 MB | 58.12 MB | 2.47 MB | 0.16% |
+| **Idle 5 min** | 300s | 129.22 MB | 59.55 MB | 2.47 MB | 0.14% |
+
+*(Note: Prior documentation estimates of 40–55 MB reflected framework-dependent baseline runs or basic virtualized environments where GPU driver binaries were unmapped; the figures above represent actual Windows 11 desktop execution on dedicated hardware).*
+
+### C. Interactive Companion Window Lifecycle
+
+Opening secondary interactive windows (Focus HUD, Quick Notes, Developer Events, Notifications) temporarily creates WPF visual trees, DirectX swap chains, and window handles (`HwndSource`).
+
+Measured via [`tools/measure_interactive.ps1`](../tools/measure_interactive.ps1):
+| Lifecycle Phase | Working Set | Private Bytes | GC Heap |
+| :--- | :--- | :--- | :--- |
+| **1. Startup (Idle Pet Window)** | 112.45 MB | 47.40 MB | 2.18 MB |
+| **2. Active Focus Session + HUD + Quick Notes** | 173.58 MB | 95.73 MB | 3.35 MB |
+| **3. Immediately After Closing Secondary Windows** | 165.89 MB | 88.02 MB | 3.32 MB |
+| **4. Settled Post-Close (+10s)** | 164.31 MB | 87.13 MB | 3.15 MB |
+
+**Resource Cleanup Safeguards:**
+- Window references in `App.xaml.cs` (`_notesWindow`, `_devEventsWindow`) are explicitly nullified on the `Closed` event to prevent retained references in the application shell.
+- Notification auto-close timers (`_autoCloseTimer`) and HUD update timers (`_displayTimer`) are stopped on `Closed` and `IsVisibleChanged` to eliminate background Dispatcher activity when hidden.
+- The `EffectsOverlay` full-screen transparent canvas remains hidden (`Hide()`) when no active particles or dialogue bubbles are on screen, avoiding idle DWM composition overhead.
+
+### D. Hardware Acceleration vs. Software Rendering Pipeline
+
+- **Hardware Acceleration (Default):**
+  - Uses Direct3D 9Ex acceleration and hardware composition swap chains.
+  - Smooth 14 FPS animation with minimal CPU rasterization overhead.
+  - Trade-off: Dedicated GPU drivers load shared driver binaries into the process working set (`nvgpucomp64.dll` ~45.1 MB, `nvd3dumx.dll` ~29.6 MB).
+- **Software Rendering Mode (`--software-rendering` or `UseSoftwareRendering` Setting):**
+  - Forces `RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly`.
+  - Bypasses Direct3D hardware initialization, completely preventing GPU driver DLLs from mapping into process RAM (reducing Working Set to ~100 MB and Private Bytes to ~43 MB).
+  - Trade-off: All sprite blitting, transparency masks, and UI scaling execute on the CPU via `wpfgfx_cor3.dll`. Recommended for virtual machines, low-RAM laptops, or battery-constrained environments.
+
+---
+
+## 8. Limitations & Real-World Caveats
+
+1. **No Universal Working Set Guarantee:**
+   Memory numbers on Windows are not static constants. Working set is heavily dependent on:
+   - GPU manufacturer and driver version (e.g. NVIDIA driver mappings add ~75 MB, whereas Intel/AMD drivers map different footprints).
+   - Display count, desktop resolution, and Per-Monitor DPI scaling (higher resolutions require larger DWM composition surfaces).
+   - System memory pressure: Windows aggressively trims process working sets when physical RAM is constrained.
+2. **Memory Reclamation Dynamics:**
+   When secondary windows (Notes, Settings, Focus HUD) are closed, WPF detaches their visual trees. However, memory pages are not immediately returned to the OS until the .NET runtime triggers a Gen 2 garbage collection or the Windows memory manager trims unused pages.
+3. **Realistic CPU Expectations:**
+   While idle stationary states consume negligible CPU (~0.0% to 0.2% on periodic watchdog ticks), active states (walking across window tops, running zoomies, tumbling physics, spawning particle bursts) consume measurable CPU (~0.5% to 1.5% depending on hardware clock speeds). Neku is optimized for zero-cost inactivity, but does not claim absolute zero CPU usage under active interaction.

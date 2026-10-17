@@ -26,6 +26,7 @@ public partial class FocusNotificationWindow : Window
             Close();
         };
         _autoCloseTimer.Start();
+        Closed += (_, _) => _autoCloseTimer.Stop();
     }
 
     private void PositionAtBottomRight()

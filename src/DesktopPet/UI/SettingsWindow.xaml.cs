@@ -62,6 +62,7 @@ public partial class SettingsWindow : Window
         DisableMonitoringBox.IsChecked = settings.DisableOptionalMonitoring;
         QuietModeBox.IsChecked         = settings.EnableQuietMode;
         HidePresentBox.IsChecked       = settings.HideWhenPresenting;
+        SoftwareRenderingBox.IsChecked = settings.UseSoftwareRendering;
 
         // Developer
         DevEventsBox.IsChecked = settings.EnableDeveloperEvents;
@@ -199,6 +200,7 @@ public partial class SettingsWindow : Window
         _settings.DisableOptionalMonitoring  = DisableMonitoringBox.IsChecked == true;
         _settings.EnableQuietMode            = QuietModeBox.IsChecked        == true;
         _settings.HideWhenPresenting         = HidePresentBox.IsChecked      == true;
+        _settings.UseSoftwareRendering       = SoftwareRenderingBox.IsChecked == true;
         _settings.EnableDeveloperEvents      = DevEventsBox.IsChecked        == true;
         if (int.TryParse(DevPortBox.Text.Trim(), out int port) && port > 1024 && port < 65535)
             _settings.DeveloperPort = port;
