@@ -245,9 +245,9 @@ public static class AssetSource
     }
 
     /// <summary>
-    /// Loads a preview ImageSource of the pack's idle frame for UI previews.
+    /// Creates an isolated SpriteAnimator for a companion pack, or null if loading fails.
     /// </summary>
-    public static ImageSource? GetPackPreview(string packId)
+    public static SpriteAnimator? CreateAnimator(string packId)
     {
         try
         {
@@ -260,8 +260,22 @@ public static class AssetSource
             if (!Exists(sheetRel)) return null;
 
             byte[] bytes = ReadAllBytes(sheetRel);
-            var animator = new SpriteAnimator(manifest, bytes);
-            return animator.GetPreviewFrame("idle");
+            return new SpriteAnimator(manifest, bytes);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Loads a preview ImageSource of the pack's idle frame for UI previews.
+    /// </summary>
+    public static ImageSource? GetPackPreview(string packId)
+    {
+        try
+        {
+            return CreateAnimator(packId)?.GetPreviewFrame("idle");
         }
         catch
         {
@@ -332,16 +346,32 @@ public static class AssetSource
             var (isValid, error) = ValidatePack(id);
 
             string displayName = GetDefaultDisplayName(id);
-            if (displayName == id && isValid)
+            string? description = GetDefaultDescription(id);
+            int animCount = 0;
+            IReadOnlyList<string>? animations = null;
+            int cellW = 64;
+            int cellH = 64;
+            double scale = 1.0;
+
+            if (isValid)
             {
                 try
                 {
                     string manifestRel = $"Assets/pets/{id}/manifest.json";
                     var m = PetManifest.Parse(ReadAllText(manifestRel), manifestRel);
-                    if (!string.IsNullOrWhiteSpace(m.Name) && !m.Name.Equals("cat", StringComparison.OrdinalIgnoreCase))
+                    if (displayName == id && !string.IsNullOrWhiteSpace(m.Name) && !m.Name.Equals("cat", StringComparison.OrdinalIgnoreCase))
                     {
                         displayName = m.Name;
                     }
+                    if (!string.IsNullOrWhiteSpace(m.Description))
+                    {
+                        description = m.Description;
+                    }
+                    animCount = m.Animations?.Count ?? 0;
+                    animations = m.Animations?.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
+                    cellW = m.CellWidth;
+                    cellH = m.CellHeight;
+                    scale = m.Scale;
                 }
                 catch { }
             }
@@ -351,7 +381,18 @@ public static class AssetSource
                 displayName = $"{displayName} (Custom)";
             }
 
-            result.Add(new CompanionPackInfo(id, displayName, isCustom, isValid, error));
+            result.Add(new CompanionPackInfo(
+                id,
+                displayName,
+                isCustom,
+                isValid,
+                error,
+                description,
+                animCount,
+                animations,
+                cellW,
+                cellH,
+                scale));
         }
 
         AddPack("neku");
@@ -393,6 +434,20 @@ public static class AssetSource
         "cat-janet" => "Janet Cat",
         _ => System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(id.Replace('-', ' ').Replace('_', ' '))
     };
+
+    public static string GetDefaultDescription(string id) => id.ToLowerInvariant() switch
+    {
+        "neku" => "The spirited green goblin companion who reacts to your focus sessions and code builds.",
+        "neku-personal-local" => "Your private personalized companion loaded securely from your local AppData.",
+        "cat" => "The classic pixel cat companion who loves to nap, walk, and chase your cursor.",
+        "cat-orange" => "Energetic orange tabby companion who loves playful naps and exploration.",
+        "cat-silver" => "Sleek silver tabby companion with a calm and gentle demeanor.",
+        "cat-cream" => "Soft cream companion that radiates warmth and gentle curiosity.",
+        "cat-chocolate" => "Playful chocolate brown cat who loves treats and lounging.",
+        "cat-blue" => "Quiet dusky blue companion with expressive reactions.",
+        "cat-janet" => "Calico companion with vibrant patches and inquisitive charm.",
+        _ => "Custom desktop companion pack."
+    };
 }
 
 /// <summary>
@@ -403,4 +458,10 @@ public sealed record CompanionPackInfo(
     string DisplayName,
     bool IsCustom,
     bool IsValid,
-    string? Error = null);
+    string? Error = null,
+    string? Description = null,
+    int AnimationCount = 0,
+    IReadOnlyList<string>? Animations = null,
+    int CellWidth = 64,
+    int CellHeight = 64,
+    double Scale = 1.0);

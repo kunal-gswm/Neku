@@ -35,6 +35,7 @@ public sealed class SettingsService
         {
             Current = new AppSettings();
         }
+        Current.Validate();
         return Current;
     }
 

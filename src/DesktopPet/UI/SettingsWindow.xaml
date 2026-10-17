@@ -46,6 +46,8 @@
                                 <ComboBox x:Name="CatColorBox" Width="220" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                                 <TextBlock x:Name="PackWarningText" Foreground="#D9534F"
                                            Style="{StaticResource Hint}" Margin="0,2,0,4" Visibility="Collapsed" TextWrapping="Wrap" MaxWidth="220"/>
+                                <Button x:Name="OpenStudioButton" Content="🎨 Open Companion Studio…" Margin="0,4,0,4"
+                                        Padding="8,4" HorizontalAlignment="Left" Click="OpenStudioButton_Click"/>
                                 <TextBlock x:Name="ColorRestartNote" Text="Restart Neku to switch character spritesheet."
                                            Style="{StaticResource Hint}" Margin="0,0,0,4" Visibility="Collapsed" MaxWidth="220"/>
                             </StackPanel>

@@ -11,6 +11,7 @@ namespace DesktopPet.Engine;
 public sealed class PetManifest
 {
     [JsonPropertyName("name")] public string Name { get; set; } = "cat";
+    [JsonPropertyName("description")] public string? Description { get; set; }
     [JsonPropertyName("sheet")] public string Sheet { get; set; } = "spritesheet.png";
     [JsonPropertyName("cellWidth")] public int CellWidth { get; set; } = 64;
     [JsonPropertyName("cellHeight")] public int CellHeight { get; set; } = 64;

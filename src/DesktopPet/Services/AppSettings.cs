@@ -153,4 +153,43 @@ public sealed class AppSettings
     // ── Onboarding ────────────────────────────────────────────────────────────
     /// <summary>Whether the first-run onboarding speech bubble has been dismissed.</summary>
     [JsonPropertyName("onboardingDismissed")] public bool OnboardingDismissed { get; set; } = false;
+
+    // ── Companion Studio & Reaction Toggles ────────────────────────────────────
+    /// <summary>Named personality preset: "Calm", "Playful", "Expressive", or "Custom".</summary>
+    [JsonPropertyName("personalityPreset")] public string PersonalityPreset { get; set; } = "Expressive";
+
+    /// <summary>Whether focus session start and completion trigger companion reactions.</summary>
+    [JsonPropertyName("enableFocusReactions")] public bool EnableFocusReactions { get; set; } = true;
+
+    /// <summary>Whether break session start and completion trigger companion reactions.</summary>
+    [JsonPropertyName("enableBreakReactions")] public bool EnableBreakReactions { get; set; } = true;
+
+    /// <summary>Whether petting and tapping spawn heart bursts and affection reactions.</summary>
+    [JsonPropertyName("enablePettingReactions")] public bool EnablePettingReactions { get; set; } = true;
+
+    /// <summary>Whether developer build success/failure triggers companion reactions.</summary>
+    [JsonPropertyName("enableDevBuildReactions")] public bool EnableDevBuildReactions { get; set; } = true;
+
+    /// <summary>Whether developer test pass/fail triggers companion reactions.</summary>
+    [JsonPropertyName("enableDevTestReactions")] public bool EnableDevTestReactions { get; set; } = true;
+
+    /// <summary>
+    /// Validates all configuration values, clamping numbers within safe limits and falling back
+    /// to sensible defaults for corrupt or missing values.
+    /// </summary>
+    public void Validate()
+    {
+        SizeScale = Math.Clamp(SizeScale, 0.5, 2.0);
+        Speed = Math.Clamp(Speed, 0.3, 2.5);
+        Opacity = Math.Clamp(Opacity, 0.2, 1.0);
+        PersonalityMood = Math.Clamp(PersonalityMood, 0.0, 1.0);
+        PersonalityEnergy = Math.Clamp(PersonalityEnergy, 0.0, 1.0);
+        PersonalityFamiliarity = Math.Clamp(PersonalityFamiliarity, 0.0, 1.0);
+        PersonalityMischief = Math.Clamp(PersonalityMischief, 0.0, 1.0);
+        if (string.IsNullOrWhiteSpace(ActivePet)) ActivePet = "neku";
+        if (PersonalityPreset is not ("Calm" or "Playful" or "Expressive" or "Custom"))
+            PersonalityPreset = "Expressive";
+        if (FocusDurationMinutes <= 0) FocusDurationMinutes = 25;
+        if (BreakDurationMinutes <= 0) BreakDurationMinutes = 5;
+    }
 }

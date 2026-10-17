@@ -50,7 +50,7 @@ public sealed class PetEngine
 
     // ── injected ──────────────────────────────────────────────────────────────
     private readonly IPetView          _view;
-    private readonly SpriteAnimator    _anim;
+    private SpriteAnimator             _anim;
     private readonly SurfaceProvider   _surfaceProvider;
     private readonly StateMachine      _sm;
     private readonly AppSettings       _settings;
@@ -335,6 +335,26 @@ public sealed class PetEngine
         _view.SetPetSize(_w, _h);
     }
 
+    /// <summary>Returns the currently loaded sprite animator.</summary>
+    public SpriteAnimator Animator => _anim;
+
+    /// <summary>
+    /// Switches the active companion's sprite sheet and animation definitions live at runtime.
+    /// Resizes the pet window to the new pack's cell dimensions and scale, preserving the foot position.
+    /// </summary>
+    public void SwitchAnimator(SpriteAnimator newAnim)
+    {
+        double feet = FeetY, cx = CenterX;
+        _anim = newAnim;
+        _w = _anim.Manifest.CellWidth  * _anim.Manifest.Scale * _sizeScale;
+        _h = _anim.Manifest.CellHeight * _anim.Manifest.Scale * _sizeScale;
+        SetCenterX(cx);
+        SetFeet(feet);
+        _view.SetPetSize(_w, _h);
+        ClearDecorations();
+        EnterState(PetState.Idle);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
     private double CenterX      => _x + _w / 2;
     private double FeetY        => _y + _h;
@@ -403,10 +423,13 @@ public sealed class PetEngine
     {
         if (_state == PetState.Drag || _state == PetState.Fall) return;
         _personality.OnBooped();
-        _view.SpawnHearts();
-        _view.SpawnHearts();
+        if (_settings.EnablePettingReactions)
+        {
+            _view.SpawnHearts();
+            _view.SpawnHearts();
+        }
         _heartTimer = 0;
-        if (_sm.Chance(0.50))
+        if (_settings.EnablePettingReactions && _sm.Chance(0.50))
         {
             var line = _personality.GetBoopLine();
             if (line != null) ShowSpeech(line, 2.2);
@@ -515,7 +538,7 @@ public sealed class PetEngine
             _heartTimer -= dt;
             if (_heartTimer <= 0)
             {
-                _view.SpawnHearts();
+                if (_settings.EnablePettingReactions) _view.SpawnHearts();
                 _heartTimer = HeartInterval;
             }
         }

@@ -230,6 +230,117 @@ public sealed class Personality
         settings.ReactionsUnlocked      = _reactionsUnlocked;
     }
 
+    /// <summary>
+    /// Applies a standard personality preset ("Calm", "Playful", "Expressive", or "Custom")
+    /// to the local drives and updates corresponding configuration flags if settings are provided.
+    /// </summary>
+    public void ApplyPresetDrives(string presetName, AppSettings? settings = null)
+    {
+        switch (presetName?.ToLowerInvariant())
+        {
+            case "calm":
+                _mood = 0.7;
+                _energy = 0.3;
+                _mischief = 0.1;
+                _familiarity = 0.5;
+                if (settings != null)
+                {
+                    settings.PersonalityPreset = "Calm";
+                    settings.EnableRandomReactions = false;
+                    settings.EnableScrollPlay = false;
+                }
+                break;
+
+            case "playful":
+                _mood = 0.8;
+                _energy = 0.75;
+                _mischief = 0.65;
+                _familiarity = 0.6;
+                if (settings != null)
+                {
+                    settings.PersonalityPreset = "Playful";
+                    settings.EnableRandomReactions = true;
+                    settings.EnableScrollPlay = true;
+                }
+                break;
+
+            case "expressive":
+                _mood = 0.9;
+                _energy = 0.85;
+                _mischief = 0.4;
+                _familiarity = 0.85;
+                if (settings != null)
+                {
+                    settings.PersonalityPreset = "Expressive";
+                    settings.EnableRandomReactions = true;
+                    settings.EnableScrollPlay = true;
+                    settings.EnableFocusReactions = true;
+                    settings.EnableBreakReactions = true;
+                    settings.EnablePettingReactions = true;
+                }
+                break;
+
+            case "custom":
+            default:
+                if (settings != null)
+                    settings.PersonalityPreset = "Custom";
+                break;
+        }
+
+        if (settings != null)
+            SaveInto(settings);
+    }
+
+    /// <summary>Restores default personality drives and sensible interaction settings.</summary>
+    public void ResetDrivesToDefault(AppSettings? settings = null)
+    {
+        _mood = 0.6;
+        _energy = 0.7;
+        _mischief = 0.3;
+        _familiarity = 0.1;
+
+        if (settings != null)
+        {
+            settings.PersonalityPreset = "Expressive";
+            settings.SizeScale = 1.0;
+            settings.Speed = 1.0;
+            settings.Opacity = 1.0;
+            settings.EnableAutonomousWandering = true;
+            settings.EnableRandomReactions = true;
+            settings.EnableScrollPlay = true;
+            settings.EnableFocusReactions = true;
+            settings.EnableBreakReactions = true;
+            settings.EnablePettingReactions = true;
+            // Accessibility preferences (ReducedMotion, EnableQuietMode) remain preserved
+            // to avoid overriding user accessibility needs when tuning companion personality.
+            SaveInto(settings);
+        }
+    }
+
+    /// <summary>Static helper to apply a preset to AppSettings.</summary>
+    public static void ApplyPreset(string presetName, AppSettings? settings)
+    {
+        var p = new Personality();
+        p.ApplyPresetDrives(presetName, settings);
+    }
+
+    /// <summary>Static helper to restore defaults on AppSettings.</summary>
+    public static void RestoreDefaults(AppSettings? settings)
+    {
+        var p = new Personality();
+        p.ResetDrivesToDefault(settings);
+    }
+
+    /// <summary>Get human-readable description for a preset.</summary>
+    public static string GetPresetDescription(string preset) => preset?.ToLowerInvariant() switch
+    {
+        "calm" => "Gentle and quiet companion with relaxed movement, rare random remarks, and peaceful naps.",
+        "playful" => "Energetic and curious companion who loves chasing the cursor, wandering, and lively chatter.",
+        "expressive" => "Rich emotional range, celebrating achievements and reacting to focus sessions and code builds.",
+        "custom" => "Fine-tune individual reactions, triggers, and appearance settings.",
+        _ => "Balanced desktop companion behavior."
+    };
+
     /// <summary>Evolve drives each frame based on elapsed time.</summary>
     public void Tick(double dt, PetState state)
     {

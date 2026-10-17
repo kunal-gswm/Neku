@@ -16,6 +16,8 @@ namespace DesktopPet;
 
 public partial class App : Application
 {
+    public static App? CurrentApp => Application.Current as App;
+
     private Mutex?           _singleInstance;
     private SettingsService  _settingsService = new();
     private AppSettings      _settings        = new();
@@ -166,6 +168,7 @@ public partial class App : Application
             onToggleFocusHud: ToggleFocusHud,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
+            onCompanionStudio: OpenCompanionStudio,
             onSettings: ShowSettings,
             onTogglePause: () => OnPauseToggled(_engine?.Paused != true),
             isPaused: () => _engine?.Paused == true,
@@ -186,6 +189,7 @@ public partial class App : Application
             isFocusActive: () => _focusTimer.IsActive,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
+            onCompanionStudio: OpenCompanionStudio,
             onSettings: ShowSettings,
             onPauseToggled: OnPauseToggled,
             onHideToggled: OnHideToggled,
@@ -263,6 +267,47 @@ public partial class App : Application
             };
             openTimer.Start();
         }
+
+        if (e.Args.Contains("--test-studio") || Environment.GetCommandLineArgs().Contains("--test-studio"))
+        {
+            DebugLog.Write("[Startup] --test-studio detected; starting automation sequence");
+            string initialPet = _settings.ActivePet;
+            var openTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            openTimer.Tick += (_, _) =>
+            {
+                openTimer.Stop();
+                DebugLog.Write("[Startup] --test-studio opening Companion Studio");
+                OpenCompanionStudio();
+
+                var testTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                testTimer.Tick += (_, _) =>
+                {
+                    testTimer.Stop();
+                    DebugLog.Write("[Startup] --test-studio switching companion to cat");
+                    TrySwitchPet("cat");
+                    DebugLog.Write("[Startup] --test-studio switching companion to neku");
+                    TrySwitchPet("neku");
+                    if (!string.IsNullOrEmpty(initialPet) && !initialPet.Equals("neku", StringComparison.OrdinalIgnoreCase))
+                    {
+                        DebugLog.Write($"[Startup] --test-studio restoring original pet: {initialPet}");
+                        TrySwitchPet(initialPet);
+                    }
+                    _studioWindow?.Close();
+
+                    var exitTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                    exitTimer.Tick += (_, _) =>
+                    {
+                        exitTimer.Stop();
+                        DebugLog.Write("[Startup] --test-studio automation completed successfully. Exiting.");
+                        QuitApp();
+                        Environment.Exit(0);
+                    };
+                    exitTimer.Start();
+                };
+                testTimer.Start();
+            };
+            openTimer.Start();
+        }
     }
 
     private UpdateService Updater() => _updateService ??= new UpdateService(Http());
@@ -336,7 +381,8 @@ public partial class App : Application
 
     private void TriggerStretch()
     {
-        _engine?.RequestStretch();
+        if (_settings.EnableBreakReactions)
+            _engine?.RequestStretch();
 
         // Show the cute notification
         var notification = new StretchNotification();
@@ -389,6 +435,35 @@ public partial class App : Application
             $"No pet pack found for '{pet}', and the built-in cat is missing too.");
     }
 
+    /// <summary>
+    /// Switches the active desktop companion live at runtime. Returns true on success,
+    /// or false if the requested pack cannot be loaded (preserving the current selection).
+    /// </summary>
+    public bool TrySwitchPet(string pet)
+    {
+        try
+        {
+            var (isValid, error) = AssetSource.ValidatePack(pet);
+            if (!isValid)
+            {
+                DebugLog.Write($"[SwitchPet] Refusing to switch to invalid pack '{pet}': {error}");
+                return false;
+            }
+
+            var animator = LoadPet(pet);
+            _engine?.SwitchAnimator(animator);
+            _settings.ActivePet = pet;
+            _settingsService.Save();
+            DebugLog.Write($"[SwitchPet] Live-switched active pet to '{pet}'");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[SwitchPet] Failed to switch to '{pet}': {ex.Message}");
+            return false;
+        }
+    }
+
     private string GetFocusLabel()
     {
         return _focusTimer.State switch
@@ -409,7 +484,8 @@ public partial class App : Application
             case FocusTimerState.Idle:
                 _focusTimer.StartFocus(_settings.FocusDurationMinutes);
                 _engine?.Personality.OnPositiveEvent();
-                _engine?.TriggerReaction(PetState.Typing, _engine.Personality.GetFocusStartedLine(), 2.0);
+                if (_settings.EnableFocusReactions)
+                    _engine?.TriggerReaction(PetState.Typing, _engine.Personality.GetFocusStartedLine(), 2.0);
                 break;
             case FocusTimerState.Focusing:
                 _focusTimer.Pause();
@@ -447,8 +523,11 @@ public partial class App : Application
     private void OnFocusCompleted()
     {
         _engine?.Personality.OnPositiveEvent();
-        _engine?.TriggerReaction(PetState.Celebrate, _engine.Personality.GetFocusCompletedLine(), 2.0);
-        _petWindow?.SpawnHearts();
+        if (_settings.EnableFocusReactions)
+        {
+            _engine?.TriggerReaction(PetState.Celebrate, _engine.Personality.GetFocusCompletedLine(), 2.0);
+            _petWindow?.SpawnHearts();
+        }
 
         var notif = new FocusNotificationWindow(
             "Focus session complete! 🎉",
@@ -458,7 +537,8 @@ public partial class App : Application
             () =>
             {
                 _focusTimer.StartBreak(_settings.BreakDurationMinutes);
-                _engine?.TriggerReaction(PetState.Stretch, "Break time! Stretch those paws and rest your eyes 🌸", 2.0);
+                if (_settings.EnableBreakReactions)
+                    _engine?.TriggerReaction(PetState.Stretch, "Break time! Stretch those paws and rest your eyes 🌸", 2.0);
             });
         notif.Show();
     }
@@ -466,7 +546,8 @@ public partial class App : Application
     private void OnBreakCompleted()
     {
         _engine?.Personality.OnPositiveEvent();
-        _engine?.TriggerReaction(PetState.Wave, _engine.Personality.GetBreakCompletedLine(), 2.0);
+        if (_settings.EnableBreakReactions)
+            _engine?.TriggerReaction(PetState.Wave, _engine.Personality.GetBreakCompletedLine(), 2.0);
 
         var notif = new FocusNotificationWindow(
             "Break finished! ✨",
@@ -536,6 +617,21 @@ public partial class App : Application
             ResetStretchTimer(); // interval may have changed
         };
         _settingsWindow.Show();
+    }
+
+    private CompanionStudioWindow? _studioWindow;
+
+    public void OpenCompanionStudio()
+    {
+        if (_studioWindow is { IsLoaded: true })
+        {
+            _studioWindow.Activate();
+            return;
+        }
+
+        _studioWindow = new CompanionStudioWindow(_settings, _settingsService, OnSettingsChanged);
+        _studioWindow.Closed += (_, _) => _studioWindow = null;
+        _studioWindow.Show();
     }
 
     private void OnPauseToggled(bool paused)

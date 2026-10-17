@@ -110,7 +110,16 @@ public partial class SettingsWindow : Window
                 break;
             }
         }
-        if (SizeBox.SelectedItem == null) SizeBox.SelectedIndex = 1; // Medium
+        if (SizeBox.SelectedItem == null)
+        {
+            var customItem = new ComboBoxItem
+            {
+                Content = $"Custom ({Math.Round(settings.SizeScale * 100)}%)",
+                Tag = settings.SizeScale.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            };
+            SizeBox.Items.Add(customItem);
+            SizeBox.SelectedItem = customItem;
+        }
 
         UpdateProviderPanels();
 
@@ -294,12 +303,17 @@ public partial class SettingsWindow : Window
             _settings.SizeScale = size;
 
         string pet = TagOf(CatColorBox);
-        if (pet.Length > 0)
+        if (pet.Length > 0 && !string.Equals(pet, _settings.ActivePet, StringComparison.OrdinalIgnoreCase))
         {
-            _settings.ActivePet = pet;
-            ColorRestartNote.Visibility =
-                string.Equals(pet, _initialPet, StringComparison.OrdinalIgnoreCase)
-                    ? Visibility.Collapsed : Visibility.Visible;
+            if (App.CurrentApp != null)
+            {
+                App.CurrentApp.TrySwitchPet(pet);
+            }
+            else
+            {
+                _settings.ActivePet = pet;
+            }
+            ColorRestartNote.Visibility = Visibility.Collapsed;
             UpdatePackWarning();
         }
 
@@ -446,6 +460,11 @@ public partial class SettingsWindow : Window
             "Forget memory", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer == MessageBoxResult.Yes)
             _onForgetMemory?.Invoke();
+    }
+
+    private void OpenStudioButton_Click(object sender, RoutedEventArgs e)
+    {
+        App.CurrentApp?.OpenCompanionStudio();
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

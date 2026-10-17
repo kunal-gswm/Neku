@@ -353,6 +353,7 @@ public partial class PetWindow : Window, IPetView
         Action onToggleFocusHud,
         Action onQuickNote,
         Action onDeveloperEvents,
+        Action onCompanionStudio,
         Action onSettings,
         Action onTogglePause, Func<bool> isPaused,
         Action onHide,
@@ -382,7 +383,10 @@ public partial class PetWindow : Window, IPetView
         var devEventsItem = new MenuItem { Header = "Developer Events…" };
         devEventsItem.Click += (_, _) => onDeveloperEvents();
 
-        // 4. Character and Behavior Settings
+        // 4. Companion Studio & Settings
+        var studioItem = new MenuItem { Header = "🎨 Companion Studio…" };
+        studioItem.Click += (_, _) => onCompanionStudio();
+
         var settingsItem = new MenuItem { Header = "Character and Behavior Settings…" };
         settingsItem.Click += (_, _) => onSettings();
 
@@ -429,6 +433,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(new Separator());
         menu.Items.Add(quickNoteItem);
         menu.Items.Add(devEventsItem);
+        menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(pauseItem);

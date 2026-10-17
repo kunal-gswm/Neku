@@ -132,32 +132,44 @@ public sealed class DeveloperEventService : IDisposable
             case "build_pass":
             case "build_ok":
                 _engine.Personality.OnPositiveEvent();
-                _engine.TriggerDeveloperReaction(PetState.Celebrate,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetBuildSuccessLine());
+                if (_settings.EnableDevBuildReactions)
+                {
+                    _engine.TriggerDeveloperReaction(PetState.Celebrate,
+                        !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetBuildSuccessLine());
+                }
                 break;
 
             case "build_failure":
             case "build_fail":
             case "build_error":
                 _engine.Personality.OnNegativeEvent();
-                _engine.TriggerDeveloperReaction(PetState.Annoyed,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "Build broke?! Wasn't me! 💥");
+                if (_settings.EnableDevBuildReactions)
+                {
+                    _engine.TriggerDeveloperReaction(PetState.Annoyed,
+                        !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "Build broke?! Wasn't me! 💥");
+                }
                 break;
 
             case "test_pass":
             case "tests_pass":
             case "test_success":
                 _engine.Personality.OnPositiveEvent();
-                _engine.TriggerDeveloperReaction(PetState.Proud,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "All tests green! Ship it! ✨");
+                if (_settings.EnableDevTestReactions)
+                {
+                    _engine.TriggerDeveloperReaction(PetState.Proud,
+                        !string.IsNullOrWhiteSpace(customMessage) ? customMessage : "All tests green! Ship it! ✨");
+                }
                 break;
 
             case "test_fail":
             case "tests_fail":
             case "test_failure":
                 _engine.Personality.OnNegativeEvent();
-                _engine.TriggerDeveloperReaction(PetState.Surprised,
-                    !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetTestFailureLine());
+                if (_settings.EnableDevTestReactions)
+                {
+                    _engine.TriggerDeveloperReaction(PetState.Surprised,
+                        !string.IsNullOrWhiteSpace(customMessage) ? customMessage : _engine.Personality.GetTestFailureLine());
+                }
                 break;
 
 

@@ -28,6 +28,7 @@ public sealed class TrayService : IDisposable
         Action onFocusCancel, Func<bool> isFocusActive,
         Action onQuickNote,
         Action onDeveloperEvents,
+        Action onCompanionStudio,
         Action onSettings,
         Action<bool> onPauseToggled, Action<bool> onHideToggled,
         Action<bool> onClickThroughToggled, Action<bool> onReducedMotionToggled,
@@ -48,6 +49,9 @@ public sealed class TrayService : IDisposable
 
         _devEventsItem = new ToolStripMenuItem("Developer Events…");
         _devEventsItem.Click += (_, _) => onDeveloperEvents();
+
+        var studioItem = new ToolStripMenuItem("🎨 Companion Studio…");
+        studioItem.Click += (_, _) => onCompanionStudio();
 
         var settingsItem = new ToolStripMenuItem("Character and Behavior Settings…");
         settingsItem.Click += (_, _) => onSettings();
@@ -93,9 +97,10 @@ public sealed class TrayService : IDisposable
         menu.Items.Add(_focusCancelItem);
         menu.Items.Add(new ToolStripSeparator());
 
-        // 2. Quick Note & Developer Events
+        // 2. Quick Note, Developer Events & Companion Studio
         menu.Items.Add(_quickNoteItem);
         menu.Items.Add(_devEventsItem);
+        menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new ToolStripSeparator());
 
