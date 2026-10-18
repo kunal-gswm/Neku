@@ -299,15 +299,11 @@ public partial class App : Application
         _hotkey.Pressed += OpenChat;
 
         // Global exit hotkey (Ctrl + Alt + Q)
-        bool exitRegistered = _hotkey.Register(
-            HotkeyService.ExitHotkeyId,
-            ModifierKeys.Control | ModifierKeys.Alt,
-            Key.Q,
-            () =>
-            {
-                DebugLog.Write("[Hotkey] Global exit shortcut (Ctrl+Alt+Q) triggered. Gracefully quitting.");
-                QuitApp();
-            });
+        bool exitRegistered = _hotkey.RegisterExit(() =>
+        {
+            DebugLog.Write("[Hotkey] Global exit shortcut (Ctrl+Alt+Q) triggered. Gracefully quitting.");
+            QuitApp();
+        });
 
         if (exitRegistered)
         {
@@ -365,6 +361,8 @@ public partial class App : Application
                 testTimer.Tick += (_, _) =>
                 {
                     testTimer.Stop();
+                    DebugLog.Write("[Startup] --test-studio switching companion to billu");
+                    TrySwitchPet("billu");
                     DebugLog.Write("[Startup] --test-studio switching companion to cat");
                     TrySwitchPet("cat");
                     DebugLog.Write("[Startup] --test-studio switching companion to neku");

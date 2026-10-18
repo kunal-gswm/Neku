@@ -205,6 +205,7 @@ public sealed class PetEngine
 
         _personality = new Personality();
         _personality.LoadFrom(settings);
+        _personality.SetActivePet(anim.Manifest.Name);
 
         _sizeScale = Math.Clamp(settings.SizeScale, 0.5, 2.0);
         _w = anim.Manifest.CellWidth  * anim.Manifest.Scale * _sizeScale;
@@ -364,6 +365,7 @@ public sealed class PetEngine
     {
         double feet = FeetY, cx = CenterX;
         _anim = newAnim;
+        _personality.SetActivePet(_anim.Manifest.Name);
         _w = _anim.Manifest.CellWidth  * _anim.Manifest.Scale * _sizeScale;
         _h = _anim.Manifest.CellHeight * _anim.Manifest.Scale * _sizeScale;
         SetCenterX(cx);
@@ -1147,7 +1149,7 @@ public sealed class PetEngine
                 _vx = _facing * ZoomSpeed;
                 _vy = 0;
                 _stateTimer = _sm.ZoomiesDuration();
-                _anim.Play("walk");
+                _anim.Play("zoomies");
                 break;
             case PetState.Bat:
                 _vx = 0; _vy = 0;

@@ -77,6 +77,21 @@ public sealed class HotkeyService : IDisposable
         Unregister(ChatHotkeyId);
     }
 
+    /// <summary>
+    /// Register the global graceful exit hotkey (Ctrl + Alt + Q).
+    /// Returns false if the combination is taken, invalid, or window is unattached.
+    /// </summary>
+    public bool RegisterExit(Action action)
+    {
+        return Register(ExitHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.Q, action);
+    }
+
+    /// <summary>Unregister the global graceful exit hotkey.</summary>
+    public void UnregisterExit()
+    {
+        Unregister(ExitHotkeyId);
+    }
+
     /// <summary>Unregister a specific hotkey ID.</summary>
     public void Unregister(int id)
     {

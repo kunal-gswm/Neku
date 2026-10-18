@@ -93,6 +93,12 @@ public sealed class SpriteAnimator
         ["happy"]       = ["pet", "idle"],
         ["annoyed"]     = ["idle"],
         ["surprised"]   = ["idle"],
+        ["sideeye"]       = ["annoyed", "lookaround", "idle"],
+        ["stare"]         = ["lookaround", "blink", "idle"],
+        ["dramaticblink"] = ["blink", "idle"],
+        ["facepaw"]       = ["facepalm", "confused", "annoyed", "idle"],
+        ["flop"]          = ["siderest", "loaf", "sleep", "idle"],
+        ["zoomies"]       = ["walk", "idle"],
     };
 
     /// <summary>

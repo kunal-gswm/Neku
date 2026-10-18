@@ -133,4 +133,122 @@ public class PersonalityTests
         Assert.Equal(1.0, p3.Mood);
         Assert.Equal(0.0, p3.Energy);
     }
+
+    [Fact]
+    public void Personality_tracks_active_companion_and_switches_dialogue()
+    {
+        var p = new Personality();
+        Assert.Equal("neku", p.ActivePet);
+        Assert.False(p.IsBillu);
+
+        p.SetActivePet("billu");
+        Assert.Equal("billu", p.ActivePet);
+        Assert.True(p.IsBillu);
+
+        // Gather lines from dialogue getters to confirm Billu-specific quips are returned
+        var billuLines = new HashSet<string>();
+        for (int i = 0; i < 50; i++)
+        {
+            var line = p.GetDialogueLine();
+            if (line != null) billuLines.Add(line);
+        }
+
+        // Verify key Billu quips appear in pool
+        Assert.Contains(billuLines, l =>
+            l.Contains("buffering", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("afternoon", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("unemployed", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("loafing", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("power-saving", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("main character", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("algorithm", StringComparison.OrdinalIgnoreCase) ||
+            l.Contains("vibe check", StringComparison.OrdinalIgnoreCase));
+
+        // Reaction lines
+        string boops = string.Concat(Enumerable.Range(0, 10).Select(_ => p.GetBoopLine()));
+        Assert.Contains("aura points", boops, StringComparison.OrdinalIgnoreCase);
+
+        string focus = string.Concat(Enumerable.Range(0, 10).Select(_ => p.GetFocusCompletedLine()));
+        Assert.Contains("doomscroll", focus, StringComparison.OrdinalIgnoreCase);
+
+        string tests = string.Concat(Enumerable.Range(0, 10).Select(_ => p.GetTestFailureLine()));
+        Assert.Contains("skill issue", tests, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Personality_supports_chaotic_preset()
+    {
+        var settings = new AppSettings();
+        var p = new Personality();
+        p.ApplyPresetDrives("Chaotic", settings);
+
+        Assert.Equal("Chaotic", settings.PersonalityPreset);
+        Assert.True(settings.EnableRandomReactions);
+        Assert.True(settings.EnableScrollPlay);
+        Assert.True(settings.EnableFocusReactions);
+
+        Assert.InRange(p.Mood, 0.8, 1.0);
+        Assert.InRange(p.Energy, 0.9, 1.0);
+        Assert.InRange(p.Mischief, 0.9, 1.0);
+
+        string desc = Personality.GetPresetDescription("Chaotic");
+        Assert.Contains("Unhinged", desc, StringComparison.OrdinalIgnoreCase);
+
+        // AppSettings validation keeps Chaotic
+        settings.Validate();
+        Assert.Equal("Chaotic", settings.PersonalityPreset);
+    }
+
+    [Fact]
+    public void Switching_from_billu_restores_normal_personality_dialogue()
+    {
+        var p = new Personality();
+        p.SetActivePet("neku");
+        Assert.False(p.IsBillu);
+
+        // Under neku, boop does not mention aura points
+        for (int i = 0; i < 20; i++)
+        {
+            Assert.DoesNotContain("aura points", p.GetBoopLine(), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("doomscroll", p.GetFocusCompletedLine(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Switch to billu
+        p.SetActivePet("billu");
+        Assert.True(p.IsBillu);
+        string billuBoops = string.Concat(Enumerable.Range(0, 15).Select(_ => p.GetBoopLine()));
+        Assert.Contains("aura points", billuBoops, StringComparison.OrdinalIgnoreCase);
+
+        // Switch back to classic cat
+        p.SetActivePet("cat");
+        Assert.False(p.IsBillu);
+        Assert.Equal("cat", p.ActivePet);
+        for (int i = 0; i < 20; i++)
+        {
+            Assert.DoesNotContain("aura points", p.GetBoopLine(), StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("doomscroll", p.GetFocusCompletedLine(), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Dialogue_does_not_repeat_immediately()
+    {
+        var p = new Personality();
+        p.SetActivePet("billu");
+
+        string? prev = null;
+        int nonDuplicates = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            var current = p.GetDialogueLine();
+            if (prev != null && current != null && current != prev)
+            {
+                nonDuplicates++;
+            }
+            prev = current;
+        }
+
+        // Non-repeating queue should ensure majority of transitions are distinct
+        Assert.True(nonDuplicates >= 25, $"Expected at least 25 non-duplicate transitions out of 30, got {nonDuplicates}");
+    }
 }

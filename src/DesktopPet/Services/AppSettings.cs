@@ -187,7 +187,7 @@ public sealed class AppSettings
         PersonalityFamiliarity = Math.Clamp(PersonalityFamiliarity, 0.0, 1.0);
         PersonalityMischief = Math.Clamp(PersonalityMischief, 0.0, 1.0);
         if (string.IsNullOrWhiteSpace(ActivePet)) ActivePet = "neku";
-        if (PersonalityPreset is not ("Calm" or "Playful" or "Expressive" or "Custom"))
+        if (PersonalityPreset is not ("Calm" or "Playful" or "Expressive" or "Chaotic" or "Custom"))
             PersonalityPreset = "Expressive";
         if (FocusDurationMinutes <= 0) FocusDurationMinutes = 25;
         if (BreakDurationMinutes <= 0) BreakDurationMinutes = 5;

@@ -58,6 +58,37 @@ public class HotkeyServiceTests
         // Without HWND, registration fails gracefully without throwing
         bool registered = service.Register(HotkeyService.ExitHotkeyId, mods, key, () => { });
         Assert.False(registered);
+
+        // RegisterExit helper also fails gracefully without HWND
+        bool helperRegistered = service.RegisterExit(() => { });
+        Assert.False(helperRegistered);
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+    }
+
+    [Fact]
+    public void HotkeyService_UnregisterExit_SucceedsSafely()
+    {
+        using var service = new HotkeyService();
+        service.UnregisterExit();
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+    }
+
+    [Fact]
+    public void HotkeyService_RegistrationConflict_DoesNotCorruptServiceState()
+    {
+        using var service = new HotkeyService();
+        // Simulate registration conflict failure on unattached window
+        bool first = service.RegisterExit(() => { });
+        Assert.False(first);
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+
+        // Re-attempting or switching actions does not throw or corrupt state
+        bool second = service.RegisterExit(() => { });
+        Assert.False(second);
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+
+        service.UnregisterExit();
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
     }
 
     [Fact]
@@ -73,6 +104,7 @@ public class HotkeyServiceTests
     {
         var service = new HotkeyService();
         service.Register(HotkeyService.ExitHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.Q, () => { });
+        service.RegisterExit(() => { });
         service.Dispose();
 
         Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));

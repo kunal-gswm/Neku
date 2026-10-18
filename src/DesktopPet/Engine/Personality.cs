@@ -9,6 +9,16 @@ namespace DesktopPet.Engine;
 /// </summary>
 public sealed class Personality
 {
+    // ── Active companion tracking ──────────────────────────────────────────
+    private string _activePet = "neku";
+    public string ActivePet => _activePet;
+    public bool IsBillu => string.Equals(_activePet, "billu", StringComparison.OrdinalIgnoreCase);
+
+    public void SetActivePet(string? pet)
+    {
+        _activePet = string.IsNullOrWhiteSpace(pet) ? "neku" : pet.Trim().ToLowerInvariant();
+    }
+
     // ── Core drives (0..1) ──────────────────────────────────────────────────
     private double _mood        = 0.6;   // 0 = grumpy, 1 = delighted
     private double _energy      = 0.7;   // 0 = exhausted, 1 = wired
@@ -174,6 +184,135 @@ public sealed class Personality
         "Put me down gently please! :3",
     ];
 
+    // ── Billu ("Reel Goblin") dialogue lines ────────────────────────────────
+    private static readonly string[] BilluHappyLines =
+    [
+        "Vibe check passed. You get to live another day ✨",
+        "I contribute nothing and receive everything. Flawless system.",
+        "Certified loaf. 10/10 no notes.",
+        "The algorithm finally blessed my feed today ✨",
+        "Look at me living my best drama-free nine lives.",
+        "Bro, dopamine hit just landed.",
+        "Unbothered. Moisturized. In my lane. Loafing.",
+    ];
+
+    private static readonly string[] BilluNeutralLines =
+    [
+        "Opened one reel. There goes my entire afternoon.",
+        "Bro, my last brain cell is buffering.",
+        "I contribute nothing and judge everyone.",
+        "Mentally offline. Physically loafing.",
+        "The way I'm unemployed in every possible sense.",
+        "I'm not lazy. I'm in power-saving mode.",
+        "Respectfully, what is bro doing?",
+        "Bro thinks he's the main character.",
+        "The algorithm knows too much.",
+        "Just sitting here looking like a whole meme template.",
+        "My brain has 48 tabs open and 47 of them are spinning cat videos.",
+    ];
+
+    private static readonly string[] BilluAnnoyedLines =
+    [
+        "Skill issue. Have you tried taking a nap?",
+        "Side-eyeing so hard my pupils need GPS.",
+        "Unsubscribe from whatever you just did.",
+        "Do not perceive me right now.",
+        "L + ratio + touch cat grass.",
+        "Excuse me, who authorized this disturbance?",
+        "My disappointment is unmeasurable and my afternoon is ruined.",
+    ];
+
+    private static readonly string[] BilluSleepyLines =
+    [
+        "Battery at 1%. Initiating emergency desk flop.",
+        "Sleep schedule? Never heard of her.",
+        "Brain cell fully drained. Do not disturb.",
+        "My bedtime was yesterday. Goodnight.",
+        "Physically present, mentally on airplane mode.",
+    ];
+
+    private static readonly string[] BilluMischievousLines =
+    [
+        "About to do something completely chaotic and blame orange cat genetics.",
+        "Chaos isn't a glitch, it's a feature 😈",
+        "They told me to behave. I left that on delivered.",
+        "Zoomies loading: 99% complete...",
+        "Woke up and chose maximum desktop mischief.",
+        "I know I shouldn't knock that off your desk. Counterpoint: gravity test.",
+    ];
+
+    private static readonly string[] BilluFocusStartedLines =
+    [
+        "Focus session? Let's see how long before you check your feed 👀",
+        "25 minutes of zero doomscrolling. I believe in you (mostly).",
+        "Lock in bro. I'll supervise from this loaf position 🎯",
+        "Do not open another tab. I see everything.",
+    ];
+
+    private static readonly string[] BilluFocusCompletedLines =
+    [
+        "Session completed! You actually didn't doomscroll! 🏆",
+        "Look at bro being productive. Certified main character moment ✨",
+        "Focus goal unlocked! Now you've earned a quick meme break.",
+        "High five. You cooked that session!",
+    ];
+
+    private static readonly string[] BilluBreakCompletedLines =
+    [
+        "Break's over! Put the phone down, respectfully.",
+        "Back to work! That reel wasn't even that good anyway.",
+        "Recharge complete. Back to the grind, chief.",
+        "Time to lock back in. Don't make me side-eye you.",
+    ];
+
+    private static readonly string[] BilluBuildSuccessLines =
+    [
+        "Zero errors?! Bro actually cooked! 👨‍🍳🔥",
+        "Green build! The algorithm smiles upon this code ✨",
+        "Clean compile! Look at you writing working software!",
+        "Build succeeded! We are so unbelievably back.",
+    ];
+
+    private static readonly string[] BilluTestFailureLines =
+    [
+        "Test red? Skill issue detected 🐛",
+        "Bro... what did that assert ever do to you?",
+        "Emotional damage in line 42 🙀",
+        "Tests failed. Have you tried taking a nap and seeing if it fixes itself?",
+    ];
+
+    private static readonly string[] BilluBoopLines =
+    [
+        "Bro booped the screen. Revolutionary.",
+        "Did you really just poke my nose?",
+        "Boop registered. Deducting 10 aura points.",
+        "Boop back! Don't tempt the orange cat.",
+        "*suspicious side-eye intensifies*",
+    ];
+
+    private static readonly string[] BilluPetLines =
+    [
+        "Acceptable. My dopamine levels have risen 3%.",
+        "Keep the scratches coming and nobody gets roasted.",
+        "Okay fine, you're my favorite human for the next 10 seconds 💕",
+        "*smug purr intensifies*",
+    ];
+
+    private static readonly string[] BilluDragLines =
+    [
+        "Help, I'm being relocated against my will!",
+        "Bro is literally dragging me across the desktop.",
+        "Air freight? For free? Luxury travel.",
+        "Put me down gently or I'm deleting your browser cache.",
+    ];
+
+    private static readonly string[] BilluSurprisedLines =
+    [
+        "WHAT WAS THAT?! Bro startled my soul.",
+        "JUMP SCARE WARNING NEXT TIME PLEASE.",
+        "My orange ears picked up an unregistered frequency.",
+    ];
+
     private readonly Random _rng = new();
     private readonly Queue<string> _recentLines = new();
     private const int MaxRecentHistory = 6;
@@ -215,6 +354,8 @@ public sealed class Personality
         _totalBoops  = Math.Max(0, settings.TotalBoops);
         _totalDrags  = Math.Max(0, settings.TotalDrags);
         _reactionsUnlocked = Math.Max(0, settings.ReactionsUnlocked);
+        if (!string.IsNullOrWhiteSpace(settings.ActivePet))
+            _activePet = settings.ActivePet.Trim().ToLowerInvariant();
     }
 
     /// <summary>Save personality state into settings for persistence.</summary>
@@ -280,6 +421,22 @@ public sealed class Personality
                 }
                 break;
 
+            case "chaotic":
+                _mood = 0.85;
+                _energy = 0.95;
+                _mischief = 0.95;
+                _familiarity = 0.75;
+                if (settings != null)
+                {
+                    settings.PersonalityPreset = "Chaotic";
+                    settings.EnableRandomReactions = true;
+                    settings.EnableScrollPlay = true;
+                    settings.EnableFocusReactions = true;
+                    settings.EnableBreakReactions = true;
+                    settings.EnablePettingReactions = true;
+                }
+                break;
+
             case "custom":
             default:
                 if (settings != null)
@@ -337,6 +494,7 @@ public sealed class Personality
         "calm" => "Gentle and quiet companion with relaxed movement, rare random remarks, and peaceful naps.",
         "playful" => "Energetic and curious companion who loves chasing the cursor, wandering, and lively chatter.",
         "expressive" => "Rich emotional range, celebrating achievements and reacting to focus sessions and code builds.",
+        "chaotic" => "Unhinged energy, maximum mischief, rapid reactions, and meme-worthy quips.",
         "custom" => "Fine-tune individual reactions, triggers, and appearance settings.",
         _ => "Balanced desktop companion behavior."
     };
@@ -426,46 +584,62 @@ public sealed class Personality
     public string? GetDialogueLine()
     {
         string[] pool;
-        if (_energy < 0.2)
-            pool = SleepyLines;
-        else if (_mischief > 0.7)
-            pool = MischievousLines;
-        else if (_mood > 0.7)
-            pool = HappyLines;
-        else if (_mood < 0.3)
-            pool = AnnoyedLines;
+        if (IsBillu)
+        {
+            if (_energy < 0.2)
+                pool = BilluSleepyLines;
+            else if (_mischief > 0.7)
+                pool = BilluMischievousLines;
+            else if (_mood > 0.7)
+                pool = BilluHappyLines;
+            else if (_mood < 0.3)
+                pool = BilluAnnoyedLines;
+            else
+                pool = BilluNeutralLines;
+        }
         else
-            pool = NeutralLines;
+        {
+            if (_energy < 0.2)
+                pool = SleepyLines;
+            else if (_mischief > 0.7)
+                pool = MischievousLines;
+            else if (_mood > 0.7)
+                pool = HappyLines;
+            else if (_mood < 0.3)
+                pool = AnnoyedLines;
+            else
+                pool = NeutralLines;
+        }
 
         return PickNonRepeating(pool);
     }
 
     /// <summary>Get a surprised reaction line.</summary>
-    public string GetSurprisedLine() => PickNonRepeating(SurprisedLines);
+    public string GetSurprisedLine() => PickNonRepeating(IsBillu ? BilluSurprisedLines : SurprisedLines);
 
     /// <summary>Reaction line when a focus session starts.</summary>
-    public string GetFocusStartedLine() => PickNonRepeating(FocusStartedLines);
+    public string GetFocusStartedLine() => PickNonRepeating(IsBillu ? BilluFocusStartedLines : FocusStartedLines);
 
     /// <summary>Reaction line when a focus session completes successfully.</summary>
-    public string GetFocusCompletedLine() => PickNonRepeating(FocusCompletedLines);
+    public string GetFocusCompletedLine() => PickNonRepeating(IsBillu ? BilluFocusCompletedLines : FocusCompletedLines);
 
     /// <summary>Reaction line when a break finishes.</summary>
-    public string GetBreakCompletedLine() => PickNonRepeating(BreakCompletedLines);
+    public string GetBreakCompletedLine() => PickNonRepeating(IsBillu ? BilluBreakCompletedLines : BreakCompletedLines);
 
     /// <summary>Reaction line when a developer build passes.</summary>
-    public string GetBuildSuccessLine() => PickNonRepeating(BuildSuccessLines);
+    public string GetBuildSuccessLine() => PickNonRepeating(IsBillu ? BilluBuildSuccessLines : BuildSuccessLines);
 
     /// <summary>Reaction line when a developer test fails.</summary>
-    public string GetTestFailureLine() => PickNonRepeating(TestFailureLines);
+    public string GetTestFailureLine() => PickNonRepeating(IsBillu ? BilluTestFailureLines : TestFailureLines);
 
     /// <summary>Reaction line when the pet is booped (tapped).</summary>
-    public string GetBoopLine() => PickNonRepeating(BoopLines);
+    public string GetBoopLine() => PickNonRepeating(IsBillu ? BilluBoopLines : BoopLines);
 
     /// <summary>Reaction line when the pet is petted.</summary>
-    public string GetPetLine() => PickNonRepeating(PetLines);
+    public string GetPetLine() => PickNonRepeating(IsBillu ? BilluPetLines : PetLines);
 
     /// <summary>Reaction line when the pet is dragged.</summary>
-    public string GetDragLine() => PickNonRepeating(DragLines);
+    public string GetDragLine() => PickNonRepeating(IsBillu ? BilluDragLines : DragLines);
 
 
     /// <summary>Determine the dominant emotional state for animation selection.</summary>
@@ -473,6 +647,7 @@ public sealed class Personality
     {
         if (_energy < 0.15) return PetState.Sleep;
         if (_mood > 0.8 && _mischief > 0.6) return PetState.Zoomies;
+        if (IsBillu && _mischief > 0.7 && _energy > 0.5) return PetState.Zoomies;
         if (_mood > 0.7) return PetState.Pet;  // happy face
         if (_mood < 0.25) return PetState.Idle; // grumpy just sits
         return PetState.Idle;
@@ -483,7 +658,8 @@ public sealed class Personality
     {
         double chance = 0.005 * chanceMultiplier;
         if (_familiarity > 0.5) chance *= 1.5;  // more expressive with familiar users
-        if (_mischief > 0.6) chance *= 2.0;     // mischievous Neku reacts more
+        if (_mischief > 0.6) chance *= 2.0;     // mischievous companion reacts more
+        if (IsBillu) chance *= 1.4;             // Billu has extra reactive meme energy
         return _rng.NextDouble() < chance;
     }
 }

@@ -328,6 +328,7 @@ public static class AssetSource
         {
             "cat",
             "cat-orange",
+            "billu",
             "cat-silver",
             "cat-cream",
             "cat-chocolate",
@@ -427,6 +428,7 @@ public static class AssetSource
         "neku-personal-local" => "Personal Companion (Local)",
         "cat" => "Classic Gray Cat",
         "cat-orange" => "Orange Cat",
+        "billu" => "Billu",
         "cat-silver" => "Silver Tabby Cat",
         "cat-cream" => "Cream Cat",
         "cat-chocolate" => "Chocolate Cat",
@@ -441,6 +443,7 @@ public static class AssetSource
         "neku-personal-local" => "Your private personalized companion loaded securely from your local AppData.",
         "cat" => "The classic pixel cat companion who loves to nap, walk, and chase your cursor.",
         "cat-orange" => "Energetic orange tabby companion who loves playful naps and exploration.",
+        "billu" => "Reel Goblin — chaotic orange cat with doomscrolling Reels humor, dramatic side-eyes, and buffering brain cells.",
         "cat-silver" => "Sleek silver tabby companion with a calm and gentle demeanor.",
         "cat-cream" => "Soft cream companion that radiates warmth and gentle curiosity.",
         "cat-chocolate" => "Playful chocolate brown cat who loves treats and lounging.",

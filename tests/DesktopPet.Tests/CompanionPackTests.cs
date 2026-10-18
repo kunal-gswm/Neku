@@ -161,10 +161,17 @@ public class CompanionPackTests
         Assert.Equal("Neku (Goblin companion)", packs[0].DisplayName);
         Assert.True(packs[0].IsValid);
 
-        // Standard cats must be included
+        // Standard companions must be included
         Assert.Contains(packs, p => p.Id == "cat");
         Assert.Contains(packs, p => p.Id == "cat-orange");
+        Assert.Contains(packs, p => p.Id == "billu");
         Assert.Contains(packs, p => p.Id == "cat-blue");
+
+        var billuPack = packs.FirstOrDefault(p => p.Id == "billu");
+        Assert.NotNull(billuPack);
+        Assert.Equal("Billu", billuPack.DisplayName);
+        Assert.NotNull(billuPack.Description);
+        Assert.StartsWith("Reel Goblin", billuPack.Description);
 
         // Every discovered pack must have a non-empty display name
         Assert.All(packs, p => Assert.False(string.IsNullOrWhiteSpace(p.DisplayName)));
@@ -264,5 +271,83 @@ public class CompanionPackTests
         Assert.Equal(0, AppVersion.Current.Major);
         Assert.Equal(4, AppVersion.Current.Minor);
         Assert.Equal(0, AppVersion.Current.Build);
+    }
+
+    [Fact]
+    public void Billu_pack_manifest_is_valid_and_contains_meme_animations()
+    {
+        string path = "Assets/pets/billu/manifest.json";
+        Assert.True(AssetSource.Exists(path));
+        var manifest = PetManifest.Parse(AssetSource.ReadAllText(path), path);
+
+        Assert.Equal("billu", manifest.Name);
+        Assert.Equal(210, manifest.CellWidth);
+        Assert.Equal(300, manifest.CellHeight);
+        Assert.Equal(4, manifest.Columns);
+
+        string[] requiredMeme = ["sideeye", "dramaticblink", "facepaw", "flop", "stare", "zoomies"];
+        foreach (var req in requiredMeme)
+        {
+            Assert.True(manifest.Animations.ContainsKey(req), $"Billu pack missing meme animation: {req}");
+            Assert.NotEmpty(manifest.Animations[req].Frames);
+            Assert.True(manifest.Animations[req].Fps > 0);
+        }
+
+        // Validate pack through AssetSource validation
+        var (isValid, error) = AssetSource.ValidatePack("billu");
+        Assert.True(isValid, $"Billu pack validation failed: {error}");
+        Assert.Null(error);
+
+        // Preview loads
+        var preview = AssetSource.GetPackPreview("billu");
+        Assert.NotNull(preview);
+    }
+
+    [Fact]
+    public void All_packs_safely_resolve_meme_animations_via_fallback_chain()
+    {
+        var packs = AssetSource.DiscoverPacks().Where(p => p.IsValid).Select(p => p.Id).ToList();
+        string[] memeAnims = ["sideeye", "dramaticblink", "facepaw", "flop", "stare", "zoomies"];
+
+        foreach (var pack in packs)
+        {
+            var animator = AssetSource.CreateAnimator(pack);
+            Assert.NotNull(animator);
+
+            foreach (var anim in memeAnims)
+            {
+                animator.Play(anim);
+                Assert.False(string.IsNullOrEmpty(animator.CurrentAnimationName), $"Pack '{pack}' resolved '{anim}' to empty");
+                Assert.True(animator.Manifest.Animations.ContainsKey(animator.CurrentAnimationName),
+                    $"Pack '{pack}' resolved '{anim}' to undefined animation '{animator.CurrentAnimationName}'");
+            }
+        }
+    }
+
+    [Fact]
+    public void Billu_switching_and_settings_persistence()
+    {
+        var settings = new AppSettings { ActivePet = "billu" };
+        settings.Validate();
+        Assert.Equal("billu", settings.ActivePet);
+
+        string json = JsonSerializer.Serialize(settings, SettingsService.Options);
+        var loaded = JsonSerializer.Deserialize<AppSettings>(json, SettingsService.Options);
+        Assert.NotNull(loaded);
+        Assert.Equal("billu", loaded.ActivePet);
+
+        // Check animator instantiation and dimension scaling
+        var animator = AssetSource.CreateAnimator("billu");
+        Assert.NotNull(animator);
+        Assert.Equal(210, animator.Manifest.CellWidth);
+        Assert.Equal(300, animator.Manifest.CellHeight);
+        Assert.Equal(0.6, animator.Manifest.Scale);
+
+        // Check all 37 animations can be played without error
+        foreach (var animName in animator.Manifest.Animations.Keys)
+        {
+            animator.Play(animName);
+            Assert.Equal(animName, animator.CurrentAnimationName);
+        }
     }
 }
