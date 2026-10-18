@@ -906,6 +906,7 @@ public sealed class ProductivityHubTests : IDisposable
                 dashboard.SelectTab("History");
                 dashboard.SelectTab("Insights");
                 dashboard.SelectTab("Goals");
+                dashboard.SelectTab("Agent");
 
                 dashboard.Close();
             }
@@ -987,7 +988,7 @@ public sealed class ProductivityHubTests : IDisposable
 
                 var content = (System.Windows.FrameworkElement)dashboard.Content;
 
-                string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals"];
+                string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals", "Agent"];
                 foreach (var tab in tabs)
                 {
                     dashboard.SelectTab(tab);
@@ -1237,7 +1238,16 @@ public sealed class ProductivityHubTests : IDisposable
                 Assert.Equal(System.Windows.Visibility.Visible, dashboard.GoalsView.Visibility);
                 dashboard.GoalsDailyFocusTargetBox.Text = "120";
 
-                // (g) Test Window Resizing (Min: 780x520, Standard: 960x640, Large: 1280x800)
+                // (g) Agent View Interactions
+                dashboard.SelectTab("Agent");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.AgentView.Visibility);
+                dashboard.AgentFilterAllBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.AgentFilterActiveBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.AgentFilterWaitingBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.AgentFilterCompletedBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.AgentFilterFailedBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+
+                // (h) Test Window Resizing (Min: 780x520, Standard: 960x640, Large: 1280x800)
                 dashboard.SelectTab("Overview");
                 dashContent.Measure(new System.Windows.Size(780, 520));
                 dashContent.Arrange(new System.Windows.Rect(0, 0, 780, 520));

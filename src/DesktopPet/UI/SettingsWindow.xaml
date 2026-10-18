@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Neku Settings"
-        Width="440" Height="640"
+        Width="480" Height="640"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
@@ -217,6 +217,77 @@
                             <TextBlock Style="{StaticResource Hint}" Text="Add this to your build or test scripts:"/>
                             <TextBox Text=".\tools\neku-event.bat build_success &quot;Build completed in 2.1s!&quot;"
                                      IsReadOnly="True" Margin="0,4,0,4" Background="#FFF5F5F5" FontFamily="Consolas" FontSize="11"/>
+
+                            <Separator Margin="0,12"/>
+
+                            <TextBlock Text="Coding Agent Companion (Local Hooks)" Style="{StaticResource Head}"/>
+                            <CheckBox x:Name="AgentCompanionBox" Content="Enable Coding Agent Companion"/>
+                            <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                       Text="Observes activity from local Claude Code hooks and coding agents. Runs completely locally without API keys or models. Disabled by default."/>
+
+                            <StackPanel x:Name="AgentPanel" Margin="22,0,0,0">
+                                <CheckBox x:Name="AgentReactionsBox" Content="Enable companion reactions (speech &amp; animations)"/>
+                                <CheckBox x:Name="AgentStartedBox" Content="React when session starts" Margin="20,2,0,2"/>
+                                <CheckBox x:Name="AgentWaitingBox" Content="React when waiting for user input" Margin="20,2,0,2"/>
+                                <CheckBox x:Name="AgentCompletedBox" Content="React on turn/task completion" Margin="20,2,0,2"/>
+                                <CheckBox x:Name="AgentFailedBox" Content="React on turn/task error" Margin="20,2,0,2"/>
+                                <CheckBox x:Name="AgentIdleBox" Content="React when all sessions become idle" Margin="20,2,0,2"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ─────────────── DeskSense & Radar ─────────────── -->
+            <TabItem Header="DeskSense &amp; Radar">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="🧠 DeskSense Context Awareness" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="DeskSenseBox" Content="Enable DeskSense context detection"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Non-intrusively detects foreground development apps, idle state, and presentations. Runs 100% locally."/>
+
+                        <StackPanel x:Name="DeskSensePanel" Margin="22,0,0,0">
+                            <CheckBox x:Name="DeskSenseForegroundBox" Content="Detect foreground active application"/>
+                            <CheckBox x:Name="DeskSenseIdleBox" Content="Detect user idle and return"/>
+
+                            <StackPanel Margin="0,6,0,8">
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock Text="Idle Threshold:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DeskSenseIdleValText" Text="120s" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </DockPanel>
+                                <Slider x:Name="DeskSenseIdleSlider" Minimum="30" Maximum="600" TickFrequency="15"
+                                        IsSnapToTickEnabled="True" Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <Separator Margin="0,8"/>
+
+                            <TextBlock Text="DeskSense Companion Reactions" Style="{StaticResource Head}"/>
+                            <CheckBox x:Name="DeskSenseReactionsBox" Content="Enable context transition reactions"/>
+                            <CheckBox x:Name="DeskSenseCodingBox" Content="React when coding starts 💻" Margin="20,2,0,2"/>
+                            <CheckBox x:Name="DeskSenseTerminalBox" Content="React when terminal is active ⚡" Margin="20,2,0,2"/>
+                            <CheckBox x:Name="DeskSenseIdleReactionBox" Content="React when user goes idle 💤" Margin="20,2,0,2"/>
+                            <CheckBox x:Name="DeskSenseReturnedBox" Content="React when user returns 👋" Margin="20,2,0,2"/>
+                            <CheckBox x:Name="DeskSensePresentationBox" Content="Quiet down during presentation 🤫" Margin="20,2,0,2"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="📡 Developer Radar &amp; HUD" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="RadarEnabledBox" Content="Enable Developer Radar workspace monitoring"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Monitors local Git repositories, build/test status, and active coding agent count."/>
+
+                        <StackPanel x:Name="RadarPanel" Margin="22,0,0,0">
+                            <CheckBox x:Name="RadarHudBox" Content="Show floating Developer HUD pill 🪟"/>
+                            <CheckBox x:Name="RadarPauseBox" Content="Pause Git repository polling"/>
+
+                            <TextBlock Text="Monitored Repositories" Style="{StaticResource Head}" Margin="0,8,0,4"/>
+                            <ListBox x:Name="RadarSettingsRepoListBox" Height="80" Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,8">
+                                <Button x:Name="RadarSettingsAddRepoBtn" Content="+ Add Folder" Padding="8,3" FontSize="11" Click="RadarSettingsAddRepoBtn_Click"/>
+                                <Button x:Name="RadarSettingsRemoveRepoBtn" Content="Remove" Style="{StaticResource DangerButton}" Padding="8,3" FontSize="11" Margin="6,0,0,0" Click="RadarSettingsRemoveRepoBtn_Click"/>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -250,6 +321,16 @@
                         <Separator Margin="0,12"/>
 
                         <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="CommandPaletteHotkeyBox" Content="Enable Command Palette shortcut (Quick Actions)"/>
+                        <StackPanel Orientation="Horizontal" Margin="22,4,0,10">
+                            <TextBlock Text="Shortcut:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="PaletteHotkeyCaptureBox" Width="150" IsReadOnly="True"
+                                     PreviewKeyDown="PaletteHotkeyCaptureBox_PreviewKeyDown"/>
+                            <Button x:Name="ResetPaletteHotkeyButton" Content="Reset Default" Margin="8,0,0,0" Padding="8,2"
+                                    Click="ResetPaletteHotkeyButton_Click"/>
+                        </StackPanel>
+
+                        <TextBlock Text="System Shortcuts" Style="{StaticResource Head}" Margin="0,4,0,2"/>
                         <Grid Margin="0,2,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -272,66 +353,6 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ─────────────── AI Companion ─────────────── -->
-            <TabItem Header="AI">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="12">
-                        <CheckBox x:Name="AiEnableBox" Content="Let me chat with Neku"/>
-                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
-                                   Text="Optional. When disabled, zero network requests and zero AI code runs."/>
-
-                        <TextBlock Text="Brain" Margin="0,4,0,2"/>
-                        <ComboBox x:Name="AiProviderBox" Width="220" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Google Gemini (cloud, free tier)" Tag="gemini"/>
-                            <ComboBoxItem Content="Ollama (local, private, offline)" Tag="ollama"/>
-                        </ComboBox>
-
-                        <!-- Gemini -->
-                        <StackPanel x:Name="GeminiPanel">
-                            <TextBlock Text="Gemini API key" Margin="0,8,0,2"/>
-                            <PasswordBox x:Name="AiKeyBox" Margin="0,0,0,2"/>
-                            <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
-                                       Text="Stored only locally on this machine in settings.json. Never uploaded or tracked."/>
-                            <TextBlock Text="Model" Margin="0,0,0,2"/>
-                            <TextBox x:Name="AiModelBox" Margin="0,0,0,2"/>
-                        </StackPanel>
-
-                        <!-- Ollama -->
-                        <StackPanel x:Name="OllamaPanel" Visibility="Collapsed">
-                            <TextBlock Text="Server URL" Margin="0,8,0,2"/>
-                            <TextBox x:Name="OllamaUrlBox" Margin="0,0,0,6"/>
-                            <TextBlock Text="Model" Margin="0,0,0,2"/>
-                            <TextBox x:Name="OllamaModelBox" Margin="0,0,0,2"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <Button x:Name="TestButton" Content="Test connection" Width="130" Click="TestButton_Click"/>
-                            <TextBlock x:Name="TestResult" VerticalAlignment="Center" Margin="10,0,0,0"
-                                       Style="{StaticResource Hint}" MaxWidth="200"/>
-                        </StackPanel>
-
-                        <Separator Margin="0,12"/>
-
-                        <CheckBox x:Name="AiToolsBox"     Content="Allow cute tools (time, weather, stats)"/>
-                        <CheckBox x:Name="AiChatterBox"   Content="Let Neku speak up on its own 💬"/>
-                        <CheckBox x:Name="AiStreamingBox" Content="Type replies out progressively ⌨️"/>
-                        <CheckBox x:Name="AiHotkeyBox"    Content="Open chat with keyboard shortcut"/>
-                        <StackPanel Orientation="Horizontal" Margin="22,0,0,4">
-                            <TextBlock Text="Shortcut:" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="HotkeyCaptureBox" Width="150" IsReadOnly="True"
-                                     PreviewKeyDown="HotkeyCaptureBox_PreviewKeyDown"/>
-                        </StackPanel>
-
-                        <TextBlock Text="Companion personality prompt" Margin="0,8,0,2"/>
-                        <TextBox x:Name="AiPersonaBox" TextWrapping="Wrap" AcceptsReturn="True" Height="50"
-                                 VerticalScrollBarVisibility="Auto" Margin="0,0,0,8"/>
-
-                        <CheckBox x:Name="AiMemoryBox" Content="Remember chats between sessions 🧠"/>
-                        <Button x:Name="ForgetButton" Content="Forget memory 🧹" Width="140"
-                                HorizontalAlignment="Left" Margin="22,4,0,4" Click="ForgetButton_Click"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

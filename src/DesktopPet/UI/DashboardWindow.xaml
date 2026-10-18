@@ -59,6 +59,8 @@
                     <Button x:Name="NavHistoryBtn" Content="📜  Focus History" Style="{StaticResource NavRailButton}" Tag="History" Click="NavBtn_Click"/>
                     <Button x:Name="NavInsightsBtn" Content="📈  Insights" Style="{StaticResource NavRailButton}" Tag="Insights" Click="NavBtn_Click"/>
                     <Button x:Name="NavGoalsBtn" Content="🎯  Goals" Style="{StaticResource NavRailButton}" Tag="Goals" Click="NavBtn_Click"/>
+                    <Button x:Name="NavAgentBtn" Content="🤖  Agent Activity" Style="{StaticResource NavRailButton}" Tag="Agent" Click="NavBtn_Click"/>
+                    <Button x:Name="NavRadarBtn" Content="📡  Developer Radar" Style="{StaticResource NavRailButton}" Tag="Radar" Click="NavBtn_Click"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -903,6 +905,462 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+            </Grid>
+
+            <!-- 7. AGENT ACTIVITY VIEW -->
+            <Grid x:Name="AgentView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <StackPanel DockPanel.Dock="Left">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🤖 Coding Agent Activity" FontSize="20" FontWeight="Bold" Foreground="White"/>
+                            <Border x:Name="AgentStatusBadge" Background="#FF2D253F" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="AgentStatusBadgeText" Text="● Listening (48123)" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentGreenBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Real-time monitoring and companion reactions for Claude Code and local coding agents."
+                                   FontSize="11" Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button x:Name="AgentConfigureClaudeBtn" Content="⚙️ Claude Hooks" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="AgentConfigureClaudeBtn_Click"/>
+                        <Button x:Name="AgentClearHistoryBtn" Content="🧹 Clear Completed" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="AgentClearHistoryBtn_Click"/>
+                        <Button x:Name="AgentRefreshBtn" Content="🔄 Refresh" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Click="AgentRefreshBtn_Click"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Filter Bar -->
+                <Border Grid.Row="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,10">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <Button x:Name="AgentFilterAllBtn" Content="All (0)" Style="{StaticResource PrimaryButton}" Padding="10,4" FontSize="11" Margin="0,0,6,0" Tag="all" Click="AgentFilterBtn_Click"/>
+                            <Button x:Name="AgentFilterActiveBtn" Content="Active (0)" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Margin="0,0,6,0" Tag="active" Click="AgentFilterBtn_Click"/>
+                            <Button x:Name="AgentFilterWaitingBtn" Content="Waiting (0)" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Margin="0,0,6,0" Tag="waiting" Click="AgentFilterBtn_Click"/>
+                            <Button x:Name="AgentFilterCompletedBtn" Content="Completed (0)" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Margin="0,0,6,0" Tag="completed" Click="AgentFilterBtn_Click"/>
+                            <Button x:Name="AgentFilterFailedBtn" Content="Failed (0)" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Tag="failed" Click="AgentFilterBtn_Click"/>
+                        </StackPanel>
+                        <TextBlock x:Name="AgentFilterSummaryText" Text="0 sessions tracked" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Main Content Area: Split List & Details -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="330"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: Sessions List -->
+                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="4" Margin="0,0,8,0">
+                        <Grid>
+                            <ListBox x:Name="AgentSessionListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="White"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     SelectionChanged="AgentSessionListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- Provider & Status -->
+                                                <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                                                    <Border DockPanel.Dock="Left" Background="#FF2D253F" CornerRadius="4" Padding="5,1" Margin="0,0,6,0">
+                                                        <TextBlock Text="{Binding ProviderName}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentPurpleBrush}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding ProjectName}" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    <Border DockPanel.Dock="Right" Background="#FF161320" CornerRadius="4" Padding="6,1" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding StatusDisplayText}" FontSize="10" FontWeight="Bold" Foreground="{Binding StatusBadgeColor}"/>
+                                                    </Border>
+                                                </DockPanel>
+
+                                                <!-- Last Summary -->
+                                                <TextBlock Grid.Row="1" Text="{Binding LastSummary}" FontSize="11" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+
+                                                <!-- Meta / Timing -->
+                                                <DockPanel Grid.Row="2" LastChildFill="False">
+                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding RelativeLastActivity}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding CurrentTool}" FontSize="10" Foreground="{StaticResource AccentOrangeBrush}" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding Events.Count, StringFormat='{}{0} events'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Empty list placeholder -->
+                            <StackPanel x:Name="AgentNoSessionsPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16" Visibility="Collapsed">
+                                <TextBlock Text="🤖" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="No active agent sessions" FontSize="13" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Run Claude Code with hooks enabled to observe live activity." FontSize="10" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,4,0,10"/>
+                                <Button Content="Configure Hooks" Style="{StaticResource PrimaryButton}" Padding="8,4" FontSize="11" HorizontalAlignment="Center" Click="AgentConfigureClaudeBtn_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right: Selected Session Details & Timeline -->
+                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                        <Grid>
+                            <!-- Session Detail Content -->
+                            <Grid x:Name="AgentSessionDetailPanel" Visibility="Visible">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Session Header Card -->
+                                <Border Grid.Row="0" Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                <TextBlock x:Name="AgentDetailProjectText" Text="Workspace" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,8,0"/>
+                                                <Border Background="#FF2D253F" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock x:Name="AgentDetailProviderText" Text="Claude Code" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentPurpleBrush}"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock x:Name="AgentDetailPathText" Text="~/workspace" FontSize="11" Foreground="{StaticResource TextDimBrush}" FontFamily="Consolas" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="AgentDetailIdText" Text="Session ID: -" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontFamily="Consolas" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <Button x:Name="AgentOpenFolderBtn" Content="📁 Open Folder" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,0,4" Click="AgentOpenFolderBtn_Click"/>
+                                            <TextBlock x:Name="AgentDetailDurationText" Text="Duration: 0s" FontSize="10" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Safe Approval Boundary Alert (Shown when waiting for input) -->
+                                <Border x:Name="AgentWaitingBanner" Grid.Row="1" Background="#FF3D2615" BorderBrush="#FFD97706" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10" Visibility="Collapsed">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="⚠️" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <Button DockPanel.Dock="Right" Content="Go to Folder" Style="{StaticResource SecondaryButton}" Padding="8,3" FontSize="10" VerticalAlignment="Center" Click="AgentOpenFolderBtn_Click"/>
+                                        <StackPanel>
+                                            <TextBlock Text="Waiting for Confirmation in Terminal" FontSize="12" FontWeight="Bold" Foreground="#FFFBBF24"/>
+                                            <TextBlock Text="Safe Approval Boundary: Approvals and inputs are processed directly in your Claude Code terminal. Neku observes events safely."
+                                                       FontSize="10" Foreground="#FFFDE68A" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Timeline Header -->
+                                <DockPanel Grid.Row="2" Margin="0,0,0,6">
+                                    <TextBlock Text="Session Event Timeline" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBlock x:Name="AgentTimelineCountText" Text="0 events" FontSize="11" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Right"/>
+                                </DockPanel>
+
+                                <!-- Chronological Event Timeline -->
+                                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl x:Name="AgentEventTimelineItemsControl">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="28"/>
+                                                            <ColumnDefinition Width="65"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Event Icon -->
+                                                        <TextBlock Grid.Column="0" Text="{Binding DisplayIcon}" FontSize="13" VerticalAlignment="Center"/>
+
+                                                        <!-- Timestamp -->
+                                                        <TextBlock Grid.Column="1" Text="{Binding DisplayTime}" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+
+                                                        <!-- Summary & Path -->
+                                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="6,0,6,0">
+                                                            <TextBlock Text="{Binding Summary}" FontSize="11" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding RedactedFilePath}" FontSize="10" Foreground="{StaticResource TextDimBrush}" FontFamily="Consolas" TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+
+                                                        <!-- Tool or Type Pill -->
+                                                        <Border Grid.Column="3" Background="#FF2D253F" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding ToolName, FallbackValue='Event'}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentOrangeBrush}"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+
+                            <!-- No session selected placeholder -->
+                            <StackPanel x:Name="AgentNoSessionSelectedPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock Text="👈 Select a session from the list to view its activity timeline" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Modal Dialog: Claude Code Hook Setup & Diff Viewer -->
+                <Grid x:Name="AgentSetupModal" Grid.Row="0" Grid.RowSpan="3" Background="#AA000000" Visibility="Collapsed">
+                    <Border Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Width="640" Height="500" Padding="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Modal Header -->
+                            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                                <TextBlock Text="⚙️ Claude Code Integration Setup" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                <Button Content="✕" Style="{StaticResource SecondaryButton}" Padding="8,2" HorizontalAlignment="Right" Click="AgentCloseSetupModal_Click"/>
+                            </DockPanel>
+
+                            <!-- Detection Info -->
+                            <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                                <TextBlock x:Name="AgentClaudeDetectedText" Text="Status: Checking..." FontSize="11" Foreground="{StaticResource AccentGreenBrush}" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="AgentClaudeSettingsPathText" Text="Path: ~/.claude/settings.json" FontSize="10" Foreground="{StaticResource TextDimBrush}" FontFamily="Consolas" Margin="0,2,0,4"/>
+                                <TextBlock Text="Proposed configuration diff to ~/.claude/settings.json (Neku creates an automatic backup before modifying and only touches its own hooks):"
+                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <!-- Diff Viewer -->
+                            <Border Grid.Row="2" Background="#FF161320" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,10">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                                    <TextBox x:Name="AgentDiffTextBox"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Foreground="#FF93C5FD"
+                                             FontFamily="Consolas"
+                                             FontSize="11"
+                                             IsReadOnly="True"
+                                             TextWrapping="NoWrap"/>
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Action Buttons -->
+                            <DockPanel Grid.Row="3">
+                                <Button x:Name="AgentUninstallHooksBtn" Content="Uninstall Neku Hooks" Style="{StaticResource DangerButton}" Padding="10,5" FontSize="11" Click="AgentUninstallHooksBtn_Click"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="Close" Style="{StaticResource SecondaryButton}" Padding="12,5" FontSize="11" Margin="0,0,6,0" Click="AgentCloseSetupModal_Click"/>
+                                    <Button x:Name="AgentApplyHooksBtn" Content="✓ Apply &amp; Install Hooks" Style="{StaticResource PrimaryButton}" Padding="12,5" FontSize="11" Click="AgentApplyHooksBtn_Click"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- 8. DEVELOPER RADAR VIEW -->
+            <Grid x:Name="RadarView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <StackPanel DockPanel.Dock="Left">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📡 Developer Radar" FontSize="20" FontWeight="Bold" Foreground="White"/>
+                            <Border x:Name="RadarContextBadge" Background="#FF2D253F" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="RadarContextText" Text="💻 Coding: VS Code" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentPurpleBrush}"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Local workspace signals, repository status, and build telemetry."
+                                   FontSize="11" Foreground="{StaticResource TextDimBrush}" Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button x:Name="RadarHudToggleBtn" Content="🪟 Floating HUD" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="RadarHudToggleBtn_Click"/>
+                        <Button x:Name="RadarPauseBtn" Content="⏸ Pause" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="RadarPauseBtn_Click"/>
+                        <Button x:Name="RadarRefreshBtn" Content="🔄 Refresh All" Style="{StaticResource PrimaryButton}" Padding="10,5" FontSize="11" Click="RadarRefreshBtn_Click"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Top Metric / Signal Cards -->
+                <Grid Grid.Row="1" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Active App Card -->
+                    <Border Grid.Column="0" Style="{StaticResource MetricCardBorder}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="🖥️ Active Environment" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="RadarActiveAppText" Text="Desktop" FontSize="15" FontWeight="Bold" Foreground="White" Margin="0,4,0,2" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="RadarActiveAppSubtext" Text="Category: Other" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Git Radar Card -->
+                    <Border Grid.Column="1" Style="{StaticResource MetricCardBorder}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="🌿 Active Branch" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="RadarBranchText" Text="main (Clean)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource AccentGreenBrush}" Margin="0,4,0,2" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="RadarRepoSubtext" Text="No repo monitored" FontSize="10" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Build & Test Card -->
+                    <Border Grid.Column="2" Style="{StaticResource MetricCardBorder}">
+                        <StackPanel>
+                            <TextBlock Text="⚡ Latest Build / Test" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock x:Name="RadarBuildStatusText" Text="— No events" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextDimBrush}" Margin="0,4,0,2" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="RadarBuildSubtext" Text="Awaiting build/test webhook" FontSize="10" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Main Radar Content: Monitored Repos & Build Log -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Monitored Repositories Panel -->
+                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,8,0">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                                <TextBlock Text="📁 Monitored Git Repositories" FontSize="14" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button x:Name="RadarAddRepoBtn" Content="+ Add Repo" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="RadarAddRepoBtn_Click"/>
+                                    <Button x:Name="RadarRemoveRepoBtn" Content="Remove" Style="{StaticResource DangerButton}" Padding="8,4" FontSize="11" Click="RadarRemoveRepoBtn_Click"/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <!-- Git Warning Banner (Visible if git not found) -->
+                            <Border x:Name="RadarGitWarningBanner" DockPanel.Dock="Top" Background="#33FFB020" BorderBrush="#88FFB020" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,8" Visibility="Collapsed">
+                                <TextBlock Text="⚠️ Git CLI is not found in PATH. Repository branch and uncommitted detection are disabled, but other Neku features continue normally." FontSize="10" Foreground="#FFFFD166" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Repositories ListBox -->
+                            <ListBox x:Name="RadarRepoListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     SelectionChanged="RadarRepoListBox_SelectionChanged">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Margin" Value="0,0,0,6"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="ItemBorder" Background="#FF221B30" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource AccentPurpleBrush}"/>
+                                                            <Setter TargetName="ItemBorder" Property="Background" Value="#FF2D253F"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="ItemBorder" Property="Background" Value="#FF29213A"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
+                                                <TextBlock Text="{Binding Path}" FontSize="10" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="1" Background="#FF161320" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3" VerticalAlignment="Center" Margin="6,0,0,0">
+                                                <TextBlock Text="{Binding DisplayStatus}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding StatusBrush}"/>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Build & Agent Activity Signals Panel -->
+                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="⚡ Build &amp; Event Radar" FontSize="14" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+
+                            <!-- Quick actions for selected repo -->
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button x:Name="RadarOpenExplorerBtn" Content="📂 Explorer" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="RadarOpenExplorerBtn_Click"/>
+                                    <Button x:Name="RadarCopyPathBtn" Content="📋 Copy Path" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Click="RadarCopyPathBtn_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Build Events List -->
+                            <ListBox x:Name="RadarBuildListBox"
+                                     Background="Transparent"
+                                     BorderThickness="0">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Margin" Value="0,0,0,4"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border Background="#FF1E1A29" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" Background="#FF161320" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,2" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding StatusBadgeText}" FontSize="10" FontWeight="Bold" Foreground="{Binding StatusBrush}"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ProjectName}" FontSize="12" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Message}" FontSize="10" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding FormattedTime}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+                </Grid>
             </Grid>
 
         </Grid>

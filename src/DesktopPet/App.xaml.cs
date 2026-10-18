@@ -8,7 +8,9 @@ using System.Windows.Threading;
 using DesktopPet.Engine;
 using DesktopPet.Native;
 using DesktopPet.Services;
-using DesktopPet.Services.Ai;
+using DesktopPet.Services.Agent;
+using DesktopPet.Services.DeskSense;
+using DesktopPet.Services.Radar;
 using DesktopPet.UI;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
@@ -47,14 +49,16 @@ public partial class App : Application
     private DashboardWindow? _dashboardWindow;
     private ProductivityReminderService? _reminderService;
     private DeveloperEventsWindow? _devEventsWindow;
-
-    // ── AI companion (built lazily, only when enabled) ──
+    private CommandPaletteService _paletteService = new();
+    private CommandPaletteWindow? _paletteWindow;
+    private AgentActivityService _agentActivityService = new();
+    private ClaudeCodeIntegrationService _claudeCodeService = new();
+    private DeskSenseService? _deskSense;
+    private RepositoryMonitorService? _repoMonitor;
+    private DeveloperRadarService? _radarService;
+    private DeveloperHudWindow? _developerHudWindow;
 
     private HttpClient?      _http;
-    private AiChatService?   _ai;
-    private AiMemory?        _aiMemory;
-    private ChatInputWindow? _chatWindow;
-    private DispatcherTimer? _chatterTimer;
     private HotkeyService?   _hotkey;
     private LauncherIpcService? _ipcServer;
     private readonly Random  _rng = new();
@@ -266,6 +270,7 @@ public partial class App : Application
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
             onToggleFocusHud: ToggleFocusHud,
+            onCommandPalette: ToggleCommandPalette,
             onProductivityHub: () => OpenProductivityHub(),
             onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
@@ -282,13 +287,16 @@ public partial class App : Application
             onToggleQuietMode: () => OnQuietModeToggled(!_settings.EnableQuietMode),
             isQuietMode: () => _settings.EnableQuietMode,
             onResetPosition: OnResetPosition,
-            onExit: QuitApp);
+            onExit: QuitApp,
+            onDeveloperRadar: () => OpenProductivityHub("Radar"),
+            onToggleDeveloperHud: ToggleDeveloperHud);
 
         _tray = new TrayService(
             onFocusToggle: OnFocusToggle,
             getFocusLabel: GetFocusLabel,
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
+            onCommandPalette: ToggleCommandPalette,
             onProductivityHub: () => OpenProductivityHub(),
             onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
@@ -303,9 +311,9 @@ public partial class App : Application
             onResetPosition: OnResetPosition,
             onQuit: QuitApp,
             onUpdate: RunUpdate,
-            onAiToggled: OnAiToggled,
-            onTalk: OpenChat,
-            settings: _settings);
+            settings: _settings,
+            onDeveloperRadar: () => OpenProductivityHub("Radar"),
+            onToggleDeveloperHud: ToggleDeveloperHud);
 
         _petWindow.PetInteracted += DismissOnboarding;
 
@@ -325,20 +333,39 @@ public partial class App : Application
             onboardingTimer.Start();
         }
 
-        _developerEvents = new DeveloperEventService(_engine, _settings, Dispatcher);
-        if (_settings.EnableDeveloperEvents)
+        _developerEvents = new DeveloperEventService(_engine, _settings, Dispatcher, _agentActivityService);
+        if (_settings.EnableDeveloperEvents || _settings.EnableAgentCompanion)
             _developerEvents.Start();
 
+        _agentActivityService.EventReceived += OnAgentEventReceived;
+        _agentActivityService.AllSessionsIdle += OnAgentAllSessionsIdle;
+
+        _deskSense = new DeskSenseService(_settings, dispatcher: Dispatcher);
+        _deskSense.TransitionOccurred += OnDeskSenseTransition;
+
+        _repoMonitor = new RepositoryMonitorService(_settings);
+        _radarService = new DeveloperRadarService(_settings, _deskSense, _repoMonitor, _developerEvents, _agentActivityService, _focusTimer);
+
+        if (_settings.EnableDeskSense)
+        {
+            _deskSense.Start();
+        }
+
+        if (_settings.EnableDeveloperRadar)
+        {
+            _ = _repoMonitor.RefreshAllAsync();
+        }
+
+        if (_settings.EnableDeveloperHud)
+        {
+            ShowDeveloperHud();
+        }
 
         Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
-
-        // AI companion: tapping the cat opens the chat box when it's enabled.
-        _petWindow.ChatRequested += OpenChat;
 
         // Global hotkey (registered on the pet window's HWND, which now exists).
         _hotkey = new HotkeyService();
         _hotkey.Attach(_petWindow.Handle);
-        _hotkey.Pressed += OpenChat;
 
         // Global exit hotkey (Ctrl + Alt + Q)
         bool exitRegistered = _hotkey.RegisterExit(() =>
@@ -356,7 +383,8 @@ public partial class App : Application
             DebugLog.Write("[Hotkey] Global exit shortcut Ctrl+Alt+Q could not be registered (combo in use). Context menu/tray exit remains available.");
         }
 
-        ApplyAiState();
+        InitializePaletteCommands();
+        ApplyPaletteHotkey();
 
         // Stretch timer — starts immediately if enabled.
         ResetStretchTimer();
@@ -658,6 +686,96 @@ public partial class App : Application
         }
     }
 
+    public void ToggleDeveloperHud()
+    {
+        DismissOnboarding();
+        if (_developerHudWindow != null && _developerHudWindow.IsVisible)
+        {
+            HideDeveloperHud();
+        }
+        else
+        {
+            ShowDeveloperHud();
+        }
+    }
+
+    public void ShowDeveloperHud()
+    {
+        if (_radarService == null) return;
+
+        if (_developerHudWindow == null)
+        {
+            _developerHudWindow = new DeveloperHudWindow(
+                _settings,
+                _radarService,
+                onOpenRadar: () => OpenProductivityHub("Radar"));
+            _developerHudWindow.Closed += (_, _) => _developerHudWindow = null;
+        }
+
+        _developerHudWindow.Show();
+        _settings.EnableDeveloperHud = true;
+    }
+
+    public void HideDeveloperHud()
+    {
+        if (_developerHudWindow != null)
+        {
+            _developerHudWindow.Hide();
+        }
+        _settings.EnableDeveloperHud = false;
+    }
+
+    private void OnDeskSenseTransition(DeskSenseTransition transition, DeskSenseContext context)
+    {
+        if (_engine == null) return;
+        if (!_settings.EnableDeskSenseReactions) return;
+        if (_settings.EnableQuietMode && (_hiddenForQuiet || _engine.IsQuiet)) return;
+
+        string? speech = null;
+        PetState state = PetState.LookAround;
+
+        switch (transition)
+        {
+            case DeskSenseTransition.CodingStarted:
+                if (!_settings.EnableCodingStartedReaction) return;
+                state = PetState.Typing;
+                speech = _engine.Personality.GetCodingStartedLine();
+                break;
+
+            case DeskSenseTransition.TerminalActive:
+                if (!_settings.EnableTerminalActiveReaction) return;
+                state = PetState.TypingFast;
+                speech = _engine.Personality.GetTerminalActiveLine();
+                break;
+
+            case DeskSenseTransition.UserIdle:
+                if (!_settings.EnableUserIdleReaction) return;
+                state = PetState.Sleep;
+                speech = _engine.Personality.GetUserIdleLine();
+                break;
+
+            case DeskSenseTransition.UserReturned:
+                if (!_settings.EnableUserReturnedReaction) return;
+                state = PetState.Wave;
+                speech = _engine.Personality.GetUserReturnedLine();
+                break;
+
+            case DeskSenseTransition.PresentationStarted:
+                if (!_settings.EnablePresentationStartedReaction) return;
+                state = PetState.Sit;
+                speech = _engine.Personality.GetPresentationStartedLine();
+                break;
+
+            default:
+                return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(speech))
+        {
+            _engine.TriggerDeskSenseReaction(state, speech);
+        }
+    }
+
     private void OnFocusCompleted()
     {
         if (!string.IsNullOrEmpty(_focusTimer.ActiveTaskId))
@@ -773,7 +891,9 @@ public partial class App : Application
         DismissOnboarding();
         if (_dashboardWindow == null || !_dashboardWindow.IsLoaded)
         {
-            _dashboardWindow = new DashboardWindow(_taskService, _focusTimer, _focusHistoryService, _settings, initialTab);
+            _dashboardWindow = new DashboardWindow(
+                _taskService, _focusTimer, _focusHistoryService, _settings, initialTab,
+                _agentActivityService, _claudeCodeService, _radarService, ToggleDeveloperHud);
             _dashboardWindow.TaskFocusRequested += task =>
             {
                 StartFocusForTask(task);
@@ -878,8 +998,6 @@ public partial class App : Application
         _settingsWindow = new SettingsWindow(
             _settings, _settingsService,
             onChanged: OnSettingsChanged,
-            onForgetMemory: ForgetAiMemory,
-            onTestAi: TestAiAsync,
             onCheckUpdate: () => Updater().DescribeCheckAsync(),
             onResetPosition: OnResetPosition,
             onTriggerDevEvent: (type, msg) => _developerEvents?.HandleEvent(type, msg));
@@ -904,6 +1022,525 @@ public partial class App : Application
         _studioWindow = new CompanionStudioWindow(_settings, _settingsService, OnSettingsChanged);
         _studioWindow.Closed += (_, _) => _studioWindow = null;
         _studioWindow.Show();
+    }
+
+    /// <summary>Access to the central CommandPaletteService instance for testing and dynamic commands.</summary>
+    public CommandPaletteService PaletteService => _paletteService;
+
+    /// <summary>Toggles the Command Palette overlay open or closed.</summary>
+    public void ToggleCommandPalette()
+    {
+        if (_paletteWindow is { IsLoaded: true })
+        {
+            _paletteWindow.Close();
+            return;
+        }
+
+        OpenCommandPalette();
+    }
+
+    /// <summary>Opens and activates the Command Palette overlay window.</summary>
+    public void OpenCommandPalette()
+    {
+        DismissOnboarding();
+        if (_paletteWindow is { IsLoaded: true })
+        {
+            _paletteWindow.Activate();
+            return;
+        }
+
+        _paletteWindow = new CommandPaletteWindow(_paletteService);
+        _paletteWindow.Closed += (_, _) => _paletteWindow = null;
+        _paletteWindow.Show();
+        _paletteWindow.Activate();
+    }
+
+    /// <summary>
+    /// Brings the desktop companion to the visible work area, unhides it if user-hidden,
+    /// or triggers a gentle acknowledgement reaction if already visible.
+    /// </summary>
+    public void SummonNeku()
+    {
+        if (_userHidden)
+        {
+            DebugLog.Write("[Summon] Unhiding user-hidden companion.");
+            OnHideToggled(false);
+            return;
+        }
+
+        if (_engine != null && _engine.IsOffScreen())
+        {
+            DebugLog.Write("[Summon] Resetting pet position from off-screen.");
+            _engine.ResetPosition();
+            return;
+        }
+
+        if (_engine != null)
+        {
+            DebugLog.Write("[Summon] Companion visible; triggering acknowledgement wave.");
+            _engine.TriggerReaction(PetState.Wave, "👋 Here I am!", cooldownSeconds: 1.0);
+        }
+    }
+
+    private void ApplyPaletteHotkey()
+    {
+        if (_hotkey == null) return;
+        if (_settings.EnableCommandPaletteHotkey)
+        {
+            var mods = (ModifierKeys)_settings.CommandPaletteHotkeyModifiers;
+            var key = (Key)_settings.CommandPaletteHotkeyKey;
+            bool registered = _hotkey.RegisterPalette(mods, key, () =>
+            {
+                Dispatcher.Invoke(ToggleCommandPalette);
+            });
+
+            if (registered)
+            {
+                DebugLog.Write($"[Hotkey] Command Palette hotkey ({mods}+{key}) registered successfully.");
+            }
+            else
+            {
+                DebugLog.Write($"[Hotkey] Command Palette hotkey ({mods}+{key}) could not be registered (combo in use). Context menu/tray entry points remain available.");
+            }
+        }
+        else
+        {
+            _hotkey.UnregisterPalette();
+        }
+    }
+
+    private void InitializePaletteCommands()
+    {
+        _paletteService.Clear();
+
+        // 1. Productivity Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "hub.open",
+            title: "Open Productivity Hub",
+            description: "View productivity dashboard, tasks, focus sessions, and analytics",
+            category: "Productivity",
+            action: () => OpenProductivityHub(),
+            icon: "🐾",
+            keywords: new[] { "hub", "productivity", "dashboard", "overview", "stats" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "tasks.open",
+            title: "Open Tasks",
+            description: "Manage to-do list, due dates, priorities, and subtasks",
+            category: "Productivity",
+            action: () => OpenTasksWindow(),
+            icon: "📋",
+            keywords: new[] { "tasks", "todo", "list", "manage", "checklist" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "tasks.create",
+            title: "Create Task",
+            description: "Quickly create a new task in your task list",
+            category: "Productivity",
+            action: () =>
+            {
+                OpenTasksWindow();
+                _tasksWindow?.CreateNewTask();
+            },
+            icon: "➕",
+            shortcutHint: "Ctrl+N",
+            keywords: new[] { "new task", "add task", "create task", "todo" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "focus.start",
+            title: "Start Focus Session",
+            description: $"Begin a {_settings.FocusDurationMinutes}-minute Pomodoro focus block",
+            category: "Productivity",
+            action: () =>
+            {
+                if (!_focusTimer.IsActive)
+                {
+                    OnFocusToggle();
+                }
+                else if (_focusTimer.IsPaused)
+                {
+                    _focusTimer.Resume();
+                }
+            },
+            icon: "🎯",
+            keywords: new[] { "focus", "pomodoro", "timer", "work", "start" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "focus.pause_resume",
+            title: "Pause or Resume Focus",
+            description: "Pause an active focus timer or resume a paused session",
+            category: "Productivity",
+            action: () => OnFocusToggle(),
+            icon: "⏯️",
+            keywords: new[] { "pause", "resume", "hold", "continue", "focus" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "focus.cancel",
+            title: "Cancel Focus Session",
+            description: "Cancel the currently running focus or break session",
+            category: "Productivity",
+            action: () => OnFocusCancel(),
+            icon: "⏹️",
+            keywords: new[] { "cancel", "stop", "abort", "focus", "end" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "focus.short_break",
+            title: "Start Short Break",
+            description: $"Take a {_settings.BreakDurationMinutes}-minute quick rest",
+            category: "Productivity",
+            action: () => _focusTimer.StartBreak(false, _settings.BreakDurationMinutes),
+            icon: "☕",
+            keywords: new[] { "short break", "break", "rest", "coffee", "pause" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "focus.long_break",
+            title: "Start Long Break",
+            description: $"Take a {_settings.LongBreakDurationMinutes}-minute extended rest",
+            category: "Productivity",
+            action: () => _focusTimer.StartBreak(true, _settings.LongBreakDurationMinutes),
+            icon: "🌴",
+            keywords: new[] { "long break", "break", "rest", "relax", "extended" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "hub.history",
+            title: "Open Focus History",
+            description: "Review past focus sessions, notes, and completion records",
+            category: "Productivity",
+            action: () => OpenProductivityHub("History"),
+            icon: "📜",
+            keywords: new[] { "history", "sessions", "past", "log", "records" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "hub.insights",
+            title: "Open Insights & Analytics",
+            description: "View daily and weekly trends, heatmap, and planned vs actual time",
+            category: "Productivity",
+            action: () => OpenProductivityHub("Insights"),
+            icon: "📊",
+            keywords: new[] { "insights", "analytics", "charts", "trends", "heatmap", "metrics" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "hub.goals",
+            title: "Open Productivity Goals",
+            description: "Check daily/weekly focus and task targets, streaks, and achievements",
+            category: "Productivity",
+            action: () => OpenProductivityHub("Goals"),
+            icon: "🏆",
+            keywords: new[] { "goals", "targets", "streaks", "daily goal", "weekly goal" }));
+
+        // 2. Notes Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "notes.open",
+            title: "Open Quick Notes",
+            description: "Open your scratchpad for thoughts, snippets, and ideas",
+            category: "Notes",
+            action: () => OpenQuickNotes(),
+            icon: "📝",
+            keywords: new[] { "notes", "scratchpad", "quick notes", "memo" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "notes.create",
+            title: "Create New Note",
+            description: "Create a fresh note in Quick Notes and start writing immediately",
+            category: "Notes",
+            action: () =>
+            {
+                OpenQuickNotes();
+                _notesWindow?.CreateNewNote();
+            },
+            icon: "✏️",
+            keywords: new[] { "new note", "add note", "create note", "write" }));
+
+        // 3. Companions Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "companions.studio",
+            title: "Open Companion Studio",
+            description: "Preview companions, test animations, and configure personality",
+            category: "Companions",
+            action: () => OpenCompanionStudio(),
+            icon: "🎨",
+            keywords: new[] { "studio", "companion studio", "skins", "characters", "preview" }));
+
+        // Dynamic registration for all installed public companions
+        var packs = AssetSource.DiscoverPacks();
+        foreach (var pack in packs)
+        {
+            if (!pack.IsValid) continue;
+            if (pack.Id.Equals("neku-personal-local", StringComparison.OrdinalIgnoreCase)) continue;
+
+            string packId = pack.Id;
+            string packName = pack.DisplayName;
+            _paletteService.Register(new PaletteCommand(
+                id: $"companion.switch.{packId}",
+                title: $"Switch Companion: {packName}",
+                description: string.IsNullOrWhiteSpace(pack.Description)
+                    ? $"Switch active desktop companion to {packName}"
+                    : pack.Description,
+                category: "Companions",
+                action: () =>
+                {
+                    if (TrySwitchPet(packId))
+                    {
+                        _engine?.ShowSpeech($"Switched to {packName}! ✨", 2.0);
+                    }
+                },
+                icon: "🐱",
+                keywords: new[] { "switch", "companion", "pet", packId, packName, "character" }));
+        }
+
+        // 4. Application Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "app.summon",
+            title: "Show or Summon Neku",
+            description: "Unhide Neku or bring the companion into the visible work area",
+            category: "Application",
+            action: () => SummonNeku(),
+            icon: "👋",
+            keywords: new[] { "summon", "show", "unhide", "find", "bring back", "neku" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "app.hide",
+            title: "Hide Neku",
+            description: "Temporarily hide the desktop companion without exiting the app",
+            category: "Application",
+            action: () => OnHideToggled(true),
+            icon: "👁️",
+            keywords: new[] { "hide", "conceal", "vanish", "invisible" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "app.settings",
+            title: "Open Settings",
+            description: "Configure pet scale, speed, companions, reminders, and behavior",
+            category: "Application",
+            action: () => ShowSettings(),
+            icon: "⚙️",
+            keywords: new[] { "settings", "preferences", "config", "options" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "app.quiet_mode",
+            title: "Toggle Quiet Mode",
+            description: "Toggle quiet mode for presentations, screen sharing, and focused work",
+            category: "Application",
+            action: () => OnQuietModeToggled(!_settings.EnableQuietMode),
+            icon: "🤫",
+            keywords: new[] { "quiet mode", "do not disturb", "silence", "dnd", "presentation" }));
+
+        // 5. Coding Agent Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "agent.open_activity",
+            title: "Open Agent Activity",
+            description: "View active AI coding agent sessions, events, and status",
+            category: "Agent",
+            action: () => OpenProductivityHub("Agent"),
+            icon: "🤖",
+            keywords: new[] { "agent", "coding agent", "claude", "activity", "sessions", "hooks" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "agent.show_active",
+            title: "Show Active Agent Sessions",
+            description: "Filter and view currently working coding agents",
+            category: "Agent",
+            action: () =>
+            {
+                OpenProductivityHub("Agent");
+                _dashboardWindow?.SelectTab("Agent");
+            },
+            icon: "⚡",
+            keywords: new[] { "active agent", "running agent", "working", "claude active" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "agent.clear_history",
+            title: "Clear Completed Agent History",
+            description: "Remove completed, failed, and idle agent session logs",
+            category: "Agent",
+            action: () =>
+            {
+                int count = _agentActivityService.ClearCompletedHistory();
+                _engine?.ShowSpeech($"Cleared {count} completed agent sessions! 🧹", 2.5);
+            },
+            icon: "🧹",
+            keywords: new[] { "clear agent", "clean agent history", "purge sessions" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "agent.configure_provider",
+            title: "Configure Claude Code Integration",
+            description: "Inspect setup, diff, and toggle hooks for Claude Code",
+            category: "Agent",
+            action: () => OpenProductivityHub("Agent"),
+            icon: "⚙️",
+            keywords: new[] { "claude hooks", "configure agent", "hook setup", "diff" }));
+
+        // 6. DeskSense & Developer Radar Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "desksense.toggle",
+            title: "Toggle DeskSense",
+            description: "Enable or disable DeskSense context awareness and companion reactions",
+            category: "Radar",
+            action: () =>
+            {
+                _settings.EnableDeskSense = !_settings.EnableDeskSense;
+                if (_settings.EnableDeskSense) _deskSense?.Start();
+                else _deskSense?.Stop();
+                _settingsService.Save();
+                _engine?.ShowSpeech(_settings.EnableDeskSense ? "DeskSense active! 🧠" : "DeskSense paused 💤", 2.0);
+            },
+            icon: "🧠",
+            keywords: new[] { "desksense", "context", "detection", "coding awareness" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.open",
+            title: "Open Developer Radar",
+            description: "View workspace status, monitored repositories, build outcomes, and agent count",
+            category: "Radar",
+            action: () => OpenProductivityHub("Radar"),
+            icon: "📡",
+            keywords: new[] { "radar", "developer radar", "git", "builds", "workspace" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.hud.toggle",
+            title: "Toggle Developer HUD",
+            description: "Show or hide the compact floating Developer HUD pill",
+            category: "Radar",
+            action: ToggleDeveloperHud,
+            icon: "🪟",
+            keywords: new[] { "hud", "developer hud", "floating hud", "pill", "status overlay" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.add",
+            title: "Add Repository to Developer Radar",
+            description: "Pick a local Git repository folder to monitor",
+            category: "Radar",
+            action: () =>
+            {
+                var dialog = new Microsoft.Win32.OpenFolderDialog
+                {
+                    Title = "Select Git Repository Folder",
+                    Multiselect = false
+                };
+                if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
+                {
+                    _repoMonitor?.AddRepository(dialog.FolderName);
+                    _engine?.ShowSpeech($"Added repo: {Path.GetFileName(dialog.FolderName)} 📁", 2.5);
+                }
+            },
+            icon: "➕",
+            keywords: new[] { "add repo", "track git", "monitor repository" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.refresh",
+            title: "Refresh Developer Radar Repositories",
+            description: "Force immediate status recheck on all monitored Git repositories",
+            category: "Radar",
+            action: () =>
+            {
+                _ = _repoMonitor?.RefreshAllAsync();
+                _engine?.ShowSpeech("Repositories refreshed! 🔄", 2.0);
+            },
+            icon: "🔄",
+            keywords: new[] { "refresh repos", "check git", "recheck branch" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.pause",
+            title: "Pause Repository Monitoring",
+            description: "Temporarily pause filesystem watching and periodic git checks",
+            category: "Radar",
+            action: () =>
+            {
+                if (_repoMonitor != null)
+                {
+                    _repoMonitor.IsPaused = true;
+                    _settings.PauseRepositoryMonitoring = true;
+                    _settingsService.Save();
+                    _engine?.ShowSpeech("Repo monitoring paused ⏸️", 2.0);
+                }
+            },
+            icon: "⏸️",
+            keywords: new[] { "pause radar", "pause git polling" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.resume",
+            title: "Resume Repository Monitoring",
+            description: "Resume filesystem watching and periodic git checks",
+            category: "Radar",
+            action: () =>
+            {
+                if (_repoMonitor != null)
+                {
+                    _repoMonitor.IsPaused = false;
+                    _settings.PauseRepositoryMonitoring = false;
+                    _settingsService.Save();
+                    _engine?.ShowSpeech("Repo monitoring resumed ▶️", 2.0);
+                }
+            },
+            icon: "▶️",
+            keywords: new[] { "resume radar", "resume git polling" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.open",
+            title: "Open Selected Repository in Explorer",
+            description: "Reveal the currently monitored repository folder in Windows Explorer",
+            category: "Radar",
+            action: () =>
+            {
+                if (_radarService?.OpenInExplorer() != true)
+                {
+                    _engine?.ShowSpeech("No repository selected or path missing 📁", 2.0);
+                }
+            },
+            icon: "📂",
+            keywords: new[] { "open repo", "explore repository", "reveal folder" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "radar.repo.copy",
+            title: "Copy Selected Repository Path",
+            description: "Copy monitored repository path to Windows Clipboard",
+            category: "Radar",
+            action: () =>
+            {
+                if (_radarService?.CopyPathToClipboard() == true)
+                {
+                    _engine?.ShowSpeech("Repository path copied! 📋", 2.0);
+                }
+                else
+                {
+                    _engine?.ShowSpeech("No repository selected to copy 📋", 2.0);
+                }
+            },
+            icon: "📋",
+            keywords: new[] { "copy repo path", "copy folder path" }));
+    }
+
+    private void OnAgentEventReceived(AgentEvent evt)
+    {
+        if (!_settings.EnableAgentCompanion || !_settings.EnableAgentReactions || _engine == null || _engine.IsQuiet)
+            return;
+
+        switch (evt.EventType)
+        {
+            case AgentEventType.SessionStarted when _settings.EnableAgentStartedReaction:
+                _engine.TriggerAgentReaction(PetState.Wave, _engine.Personality.GetAgentStartedLine());
+                break;
+
+            case AgentEventType.WaitingForInput when _settings.EnableAgentWaitingReaction:
+                _engine.TriggerAgentReaction(PetState.Surprised, _engine.Personality.GetAgentWaitingLine());
+                break;
+
+            case AgentEventType.TaskCompleted when _settings.EnableAgentCompletedReaction:
+                _engine.TriggerAgentReaction(PetState.Celebrate, _engine.Personality.GetAgentCompletedLine());
+                break;
+
+            case AgentEventType.TaskFailed when _settings.EnableAgentFailedReaction:
+                _engine.TriggerAgentReaction(PetState.Annoyed, _engine.Personality.GetAgentFailedLine());
+                break;
+        }
+    }
+
+    private void OnAgentAllSessionsIdle()
+    {
+        if (!_settings.EnableAgentCompanion || !_settings.EnableAgentReactions || !_settings.EnableAgentIdleReaction || _engine == null || _engine.IsQuiet)
+            return;
+
+        _engine.TriggerAgentReaction(PetState.Loaf, _engine.Personality.GetAgentIdleLine());
     }
 
     private void OnPauseToggled(bool paused)
@@ -993,7 +1630,7 @@ public partial class App : Application
             {
                 _petWindow?.SetRenderLoopEnabled(true);
             }
-            if (_settings.EnableDeveloperEvents)
+            if (_settings.EnableDeveloperEvents || _settings.EnableAgentCompanion)
             {
                 _developerEvents?.Start();
             }
@@ -1017,13 +1654,24 @@ public partial class App : Application
         _tray?.SetReducedMotion(_settings.ReducedMotion);
         _tray?.SetQuietMode(_settings.EnableQuietMode);
 
-        if (_settings.EnableDeveloperEvents)
+        if (_settings.EnableDeveloperEvents || _settings.EnableAgentCompanion)
             _developerEvents?.Start();
         else
             _developerEvents?.Stop();
 
+        if (_settings.EnableDeskSense)
+            _deskSense?.Start();
+        else
+            _deskSense?.Stop();
+
+        if (_settings.EnableDeveloperHud)
+            ShowDeveloperHud();
+        else
+            HideDeveloperHud();
+
         UpdateQuietHiding();
-        ApplyAiState();   // key/persona/enabled may have changed in the Settings window
+        ApplyPaletteHotkey();
+        InitializePaletteCommands();
     }
 
     /// <summary>
@@ -1078,106 +1726,8 @@ public partial class App : Application
     }
 
 
-    /// <summary>Re-sync everything to the current AI on/off state. Rebuilds the service so a
-    /// new key/model/persona takes effect, and tears the chat UI down when disabled.</summary>
-    private void ApplyAiState()
-    {
-        bool on = _settings.EnableAiCompanion;
-        if (_petWindow != null) _petWindow.AiTapOpensChat = on;
-        _tray?.SetAiEnabled(on);
-        _ai = null;   // force a fresh provider (picks up any new key/model) on next use
-        if (on)
-        {
-            StartChatterTimer();
-        }
-        else
-        {
-            StopChatterTimer();
-            _chatWindow?.Close();
-            _chatWindow = null;
-            _engine?.ClearSpeech();
-        }
-        ApplyHotkey();
-    }
-
-    /// <summary>Register or clear the global chat hotkey to match the current settings.</summary>
-    private void ApplyHotkey()
-    {
-        if (_hotkey == null) return;
-        if (_settings.EnableAiCompanion && _settings.AiHotkeyEnabled)
-            _hotkey.Register((ModifierKeys)_settings.AiHotkeyModifiers, (Key)_settings.AiHotkeyKey);
-        else
-            _hotkey.Unregister();
-    }
-
-    private void StartChatterTimer()
-    {
-        if (_chatterTimer != null) return;
-        _chatterTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(6) };
-        _chatterTimer.Tick += OnChatterTick;
-        _chatterTimer.Start();
-    }
-
-    private void StopChatterTimer()
-    {
-        _chatterTimer?.Stop();
-        _chatterTimer = null;
-    }
-
-    /// <summary>Every so often, maybe let the cat say something unprompted — but only when the
-    /// user is present, the cat is calm and quiet, and AI + chatter are both enabled.</summary>
-    private async void OnChatterTick(object? sender, EventArgs e)
-    {
-        if (!_settings.EnableAiCompanion || !_settings.AiProactiveChatter) return;
-        if (_engine == null || _engine.Paused || _engine.IsSpeaking) return;
-        if (_engine.IsQuiet) return;   // presenting / gaming / DND — don't pipe up
-        if (_chatWindow is { IsLoaded: true }) return;
-        if (_system != null && _system.IdleSeconds > 60) return;  // don't talk to an empty chair
-        if (_rng.NextDouble() > 0.30) return;                     // ~once every ~20 min on average
-
-        EnsureAiBuilt();
-        if (_ai == null) return;
-        try
-        {
-            var reply = await _ai.ChatterAsync(BuildChatterContext(), CancellationToken.None);
-            if (_engine == null || _engine.IsSpeaking) return;    // state may have changed mid-await
-            double secs = Math.Clamp(3 + reply.Text.Length * 0.06, 3, 10);
-            _engine.ShowSpeech(reply.Text, secs);
-            _engine.RequestEmotion(reply.Emotion);
-        }
-        catch { /* stay quiet on failure */ }
-    }
-
-    private string BuildChatterContext()
-    {
-        _system?.Poll();
-        int hour = DateTime.Now.Hour;
-        string tod = hour < 6 ? "it's late at night" : hour < 12 ? "it's morning"
-                   : hour < 17 ? "it's afternoon" : hour < 21 ? "it's evening" : "it's night";
-        string app = _system?.Foreground switch
-        {
-            AppContextKind.Focus  => ", the user is working in a focus app",
-            AppContextKind.Browse => ", the user is browsing the web",
-            AppContextKind.Play   => ", the user is in something fun",
-            _ => ""
-        };
-        string load = _system != null && _system.CpuLoad > 0.75 ? ", the computer is working hard" : "";
-        string batt = _system != null && _system.OnBattery && _system.BatteryPercent is >= 0 and <= 20
-                    ? ", the laptop battery is low" : "";
-        return $"{tod}{app}{load}{batt}";
-    }
-
-    private void OnAiToggled(bool enabled)
-    {
-        _settings.EnableAiCompanion = enabled;
-        _settingsService.Save();
-        ApplyAiState();
-    }
-
     /// <summary>
-    /// The one HttpClient in the app, shared by the AI providers, the cute tools and the
-    /// updater. GitHub's API rejects requests without a User-Agent outright, and several
-    /// keyless public APIs throttle them.
+    /// The one HttpClient in the app, used exclusively for GitHub release updates.
     /// </summary>
     private HttpClient Http() => _http ??= CreateHttp();
 
@@ -1189,111 +1739,6 @@ public partial class App : Application
         return http;
     }
 
-    /// <summary>Build the chat service on first use. Only ever called when AI is enabled.</summary>
-    private void EnsureAiBuilt()
-    {
-        if (_ai != null) return;
-        _http ??= CreateHttp();
-        _aiMemory ??= AiMemory.Load();
-        IAiProvider provider = _settings.AiProvider.Equals("ollama", StringComparison.OrdinalIgnoreCase)
-            ? new OllamaProvider(_http, _settings.OllamaUrl, _settings.OllamaModel)
-            : new GeminiProvider(_http, _settings.AiApiKey, _settings.AiModel);
-
-        var tools = new CuteTools(_system, _http);
-        _ai = new AiChatService(_settings, provider, tools, _aiMemory);
-    }
-
-    /// <summary>Round-trip the configured brain so Settings can prove a key or a local server
-    /// works, and say precisely what is wrong when it doesn't.</summary>
-    private async Task<string> TestAiAsync(CancellationToken ct)
-    {
-        EnsureAiBuilt();
-        if (_ai == null) return "Turn the AI companion on first.";
-
-        var reply = await _ai.TestAsync(ct);
-        return reply.Ok
-            ? $"Works — the cat says: \u201c{reply.Text}\u201d"
-            : reply.Failure switch
-            {
-                AiFailure.MissingKey    => "No API key set yet.",
-                AiFailure.BadKey        => "That key was rejected. Double-check it.",
-                AiFailure.QuotaExceeded => "Key works, but you're out of free quota right now.",
-                AiFailure.UnknownModel  => $"Model not found. {reply.Detail}",
-                AiFailure.Network       => $"Couldn't connect. {reply.Detail}",
-                _                       => reply.Detail ?? "Something went wrong.",
-            };
-    }
-
-    /// <summary>Wipe everything the cat remembers (notes + chat history), on disk and in memory.</summary>
-    private void ForgetAiMemory()
-    {
-        (_aiMemory ??= AiMemory.Load()).Clear();
-        _ai = null;   // rebuild fresh with no seeded history next time
-    }
-
-    private void OpenChat()
-    {
-        if (!_settings.EnableAiCompanion || _petWindow == null || _engine == null) return;
-        if (_chatWindow is { IsLoaded: true }) { _chatWindow.Activate(); return; }
-
-        EnsureAiBuilt();
-        _chatWindow = new ChatInputWindow();
-        _chatWindow.Submitted += OnChatSubmitted;
-        _chatWindow.Closed    += (_, _) => _chatWindow = null;
-        _chatWindow.PlaceNear(_petWindow.PetLeft, _petWindow.PetTop, _engine.Width, _engine.Height);
-        _chatWindow.Show();
-    }
-
-    private async void OnChatSubmitted(string text)
-    {
-        if (_ai == null || _engine == null) return;
-
-        // Thinking state while we wait — gentle chat bob + an ellipsis bubble.
-        _engine.ShowSpeech("\u2026", 60);
-        _engine.RequestEmotion(PetState.Talk);
-
-        // Type the reply out as it streams in. The emotion tag arrives at the very end, so
-        // strip any partial "[" tail while typing rather than flashing it at the user.
-        var typed = new System.Text.StringBuilder();
-        void OnDelta(string chunk)
-        {
-            if (_engine == null) return;
-            typed.Append(chunk);
-            string shown = StripTrailingTag(typed.ToString());
-            if (shown.Length > 0) _engine.ShowSpeech(shown, 60);
-        }
-
-        try
-        {
-            var reply = await _ai.SendAsync(text, CancellationToken.None, OnDelta);
-            double secs = Math.Clamp(3 + reply.Text.Length * 0.06, 3, 12);
-            _engine.ShowSpeech(reply.Text, secs);
-            _engine.RequestEmotion(reply.Emotion);
-
-            if (!reply.Ok)
-                DebugLog.Write($"AI call failed: {reply.Failure} - {reply.Detail}");
-        }
-        catch (Exception ex)
-        {
-            DebugLog.Write($"AI call threw: {ex}");
-            _engine.ShowSpeech("*mew?*", 3);
-        }
-    }
-
-    /// <summary>
-    /// Hide a trailing emotion tag (complete or half-streamed) while text is still arriving,
-    /// so the user never watches "[jo" appear and vanish.
-    /// </summary>
-    private static string StripTrailingTag(string s)
-    {
-        int open = s.LastIndexOf('[');
-        if (open < 0) return s.TrimEnd();
-        // Only treat it as a tag if nothing but letters/] follow it.
-        for (int i = open + 1; i < s.Length; i++)
-            if (!char.IsLetter(s[i]) && s[i] != ']') return s.TrimEnd();
-        return s[..open].TrimEnd();
-    }
-
     private void QuitApp()
     {
         DebugLog.Write($"[Lifecycle] QuitApp called. Stack: {Environment.StackTrace}");
@@ -1302,11 +1747,9 @@ public partial class App : Application
         try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();
         _quietWatchTimer?.Stop();
-        _chatterTimer?.Stop();
         _developerEvents?.Dispose();
         _ipcServer?.Dispose();
         _hotkey?.Dispose();
-        _chatWindow?.Close();
         _http?.Dispose();
         _hookWatchdog?.Dispose();
         _keyboard?.Dispose();
@@ -1314,10 +1757,15 @@ public partial class App : Application
         _stretchTimer?.Stop();
         _focusTimer?.Dispose();
         _focusHudWindow?.Close();
+        _developerHudWindow?.Close();
+        _developerHudWindow = null;
         _notesWindow?.Close();
         _tasksWindow?.Close();
         _dashboardWindow?.Close();
         _devEventsWindow?.Close();
+        _deskSense?.Dispose();
+        _repoMonitor?.Dispose();
+        _radarService?.Dispose();
         _reminderService?.Dispose();
         _tray?.Dispose();
         Shutdown();
@@ -1331,17 +1779,20 @@ public partial class App : Application
         try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();
         _quietWatchTimer?.Stop();
-        _chatterTimer?.Stop();
         _developerEvents?.Dispose();
         _ipcServer?.Dispose();
         _hotkey?.Dispose();
-        _chatWindow?.Close();
         _focusTimer?.Dispose();
         _focusHudWindow?.Close();
+        _developerHudWindow?.Close();
+        _developerHudWindow = null;
         _notesWindow?.Close();
         _tasksWindow?.Close();
         _dashboardWindow?.Close();
         _devEventsWindow?.Close();
+        _deskSense?.Dispose();
+        _repoMonitor?.Dispose();
+        _radarService?.Dispose();
         _reminderService?.Dispose();
         _http?.Dispose();
         _hookWatchdog?.Dispose();

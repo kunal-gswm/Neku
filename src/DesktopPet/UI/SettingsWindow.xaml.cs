@@ -17,8 +17,6 @@ public partial class SettingsWindow : Window
     private readonly AppSettings     _settings;
     private readonly SettingsService _service;
     private readonly Action?         _onChanged;
-    private readonly Action?         _onForgetMemory;
-    private readonly Func<CancellationToken, Task<string>>? _onTestAi;
     private readonly Func<Task<string>>? _onCheckUpdate;
     private readonly Action?         _onResetPosition;
     private readonly Action<string, string>? _onTriggerDevEvent;
@@ -26,8 +24,7 @@ public partial class SettingsWindow : Window
     private bool _loaded;
 
     public SettingsWindow(AppSettings settings, SettingsService service,
-                          Action? onChanged = null, Action? onForgetMemory = null,
-                          Func<CancellationToken, Task<string>>? onTestAi = null,
+                          Action? onChanged = null,
                           Func<Task<string>>? onCheckUpdate = null,
                           Action? onResetPosition = null,
                           Action<string, string>? onTriggerDevEvent = null)
@@ -36,8 +33,6 @@ public partial class SettingsWindow : Window
         _settings          = settings;
         _service           = service;
         _onChanged         = onChanged;
-        _onForgetMemory    = onForgetMemory;
-        _onTestAi          = onTestAi;
         _onCheckUpdate     = onCheckUpdate;
         _onResetPosition   = onResetPosition;
         _onTriggerDevEvent = onTriggerDevEvent;
@@ -77,30 +72,48 @@ public partial class SettingsWindow : Window
         DevPortBox.Text        = settings.DeveloperPort.ToString();
         DevPanel.Visibility    = settings.EnableDeveloperEvents ? Visibility.Visible : Visibility.Collapsed;
 
+        // Agent Companion
+        AgentCompanionBox.IsChecked = settings.EnableAgentCompanion;
+        AgentReactionsBox.IsChecked = settings.EnableAgentReactions;
+        AgentStartedBox.IsChecked   = settings.EnableAgentStartedReaction;
+        AgentWaitingBox.IsChecked   = settings.EnableAgentWaitingReaction;
+        AgentCompletedBox.IsChecked = settings.EnableAgentCompletedReaction;
+        AgentFailedBox.IsChecked    = settings.EnableAgentFailedReaction;
+        AgentIdleBox.IsChecked      = settings.EnableAgentIdleReaction;
+        AgentPanel.Visibility       = settings.EnableAgentCompanion ? Visibility.Visible : Visibility.Collapsed;
+
+        // DeskSense
+        DeskSenseBox.IsChecked = settings.EnableDeskSense;
+        DeskSenseForegroundBox.IsChecked = settings.EnableForegroundAppDetection;
+        DeskSenseIdleBox.IsChecked = settings.EnableIdleDetection;
+        DeskSenseIdleSlider.Value = settings.IdleThresholdSeconds;
+        DeskSenseIdleValText.Text = $"{settings.IdleThresholdSeconds}s";
+        DeskSenseReactionsBox.IsChecked = settings.EnableDeskSenseReactions;
+        DeskSenseCodingBox.IsChecked = settings.EnableCodingStartedReaction;
+        DeskSenseTerminalBox.IsChecked = settings.EnableTerminalActiveReaction;
+        DeskSenseIdleReactionBox.IsChecked = settings.EnableUserIdleReaction;
+        DeskSenseReturnedBox.IsChecked = settings.EnableUserReturnedReaction;
+        DeskSensePresentationBox.IsChecked = settings.EnablePresentationStartedReaction;
+        DeskSensePanel.Visibility = settings.EnableDeskSense ? Visibility.Visible : Visibility.Collapsed;
+
+        // Radar
+        RadarEnabledBox.IsChecked = settings.EnableDeveloperRadar;
+        RadarHudBox.IsChecked = settings.EnableDeveloperHud;
+        RadarPauseBox.IsChecked = settings.PauseRepositoryMonitoring;
+        RadarPanel.Visibility = settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
+        PopulateRadarSettingsRepos();
+
         // System
         AutostartBox.IsChecked     = AutostartService.IsEnabled();
         ClickThroughBox.IsChecked  = settings.ClickThrough;
         AutoUpdateBox.IsChecked    = settings.EnableAutoUpdate;
         RememberStateBox.IsChecked = settings.RememberPetState;
-
-        // AI
-        AiEnableBox.IsChecked    = settings.EnableAiCompanion;
-        AiToolsBox.IsChecked     = settings.AiEnableTools;
-        AiChatterBox.IsChecked   = settings.AiProactiveChatter;
-        AiStreamingBox.IsChecked = settings.AiStreaming;
-        AiHotkeyBox.IsChecked    = settings.AiHotkeyEnabled;
-        HotkeyCaptureBox.Text    = FormatHotkey((ModifierKeys)settings.AiHotkeyModifiers, (Key)settings.AiHotkeyKey);
-        AiMemoryBox.IsChecked    = settings.AiEnableMemory;
-        AiKeyBox.Password        = settings.AiApiKey;
-        AiModelBox.Text          = settings.AiModel;
-        OllamaUrlBox.Text        = settings.OllamaUrl;
-        OllamaModelBox.Text      = settings.OllamaModel;
-        AiPersonaBox.Text        = settings.AiPersona;
+        CommandPaletteHotkeyBox.IsChecked = settings.EnableCommandPaletteHotkey;
+        PaletteHotkeyCaptureBox.Text = FormatHotkey((ModifierKeys)settings.CommandPaletteHotkeyModifiers, (Key)settings.CommandPaletteHotkeyKey);
 
         VersionText.Text = $"Neku {AppVersion.Display}  •  settings in %AppData%\\Neku";
 
         SelectByTag(StretchIntervalBox, settings.StretchIntervalMinutes.ToString(), fallbackIndex: 0);
-        SelectByTag(AiProviderBox, settings.AiProvider, fallbackIndex: 0);
         SelectByTag(FocusDurationBox, settings.FocusDurationMinutes.ToString(), fallbackIndex: 2);
         SelectByTag(BreakDurationBox, settings.BreakDurationMinutes.ToString(), fallbackIndex: 1);
 
@@ -128,8 +141,6 @@ public partial class SettingsWindow : Window
             SizeBox.SelectedItem = customItem;
         }
 
-        UpdateProviderPanels();
-
         _loaded = true;
         WireUp();
     }
@@ -154,24 +165,37 @@ public partial class SettingsWindow : Window
                      SleepBox, ScrollPlayBox, MoodsBox, SystemReactionsBox, TaskReactionsBox,
                      ReducedMotionBox, BatteryConsciousBox, DisableMonitoringBox,
                      QuietModeBox, HidePresentBox, DevEventsBox,
-                     AutoUpdateBox, RememberStateBox, AutostartBox, ClickThroughBox,
-                     AiEnableBox, AiToolsBox, AiChatterBox, AiStreamingBox, AiHotkeyBox, AiMemoryBox,
+                     AutoUpdateBox, RememberStateBox, AutostartBox, ClickThroughBox, CommandPaletteHotkeyBox,
+                     AgentCompanionBox, AgentReactionsBox, AgentStartedBox, AgentWaitingBox,
+                     AgentCompletedBox, AgentFailedBox, AgentIdleBox,
+                     DeskSenseBox, DeskSenseForegroundBox, DeskSenseIdleBox,
+                     DeskSenseReactionsBox, DeskSenseCodingBox, DeskSenseTerminalBox,
+                     DeskSenseIdleReactionBox, DeskSenseReturnedBox, DeskSensePresentationBox,
+                     RadarEnabledBox, RadarHudBox, RadarPauseBox,
                  })
         {
             box.Checked   += (_, _) => Apply();
             box.Unchecked += (_, _) => Apply();
         }
 
-        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, AiProviderBox, FocusDurationBox, BreakDurationBox })
+        AgentCompanionBox.Checked += (_, _) => { AgentPanel.Visibility = Visibility.Visible; Apply(); };
+        AgentCompanionBox.Unchecked += (_, _) => { AgentPanel.Visibility = Visibility.Collapsed; Apply(); };
+
+        DeskSenseBox.Checked += (_, _) => { DeskSensePanel.Visibility = Visibility.Visible; Apply(); };
+        DeskSenseBox.Unchecked += (_, _) => { DeskSensePanel.Visibility = Visibility.Collapsed; Apply(); };
+        DeskSenseIdleSlider.ValueChanged += (_, _) =>
+        {
+            DeskSenseIdleValText.Text = $"{(int)DeskSenseIdleSlider.Value}s";
+            Apply();
+        };
+
+        RadarEnabledBox.Checked += (_, _) => { RadarPanel.Visibility = Visibility.Visible; Apply(); };
+        RadarEnabledBox.Unchecked += (_, _) => { RadarPanel.Visibility = Visibility.Collapsed; Apply(); };
+
+        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, FocusDurationBox, BreakDurationBox })
             combo.SelectionChanged += (_, _) => Apply();
 
-
         DevPortBox.TextChanged    += (_, _) => Apply();
-        AiKeyBox.PasswordChanged  += (_, _) => Apply();
-        AiPersonaBox.TextChanged  += (_, _) => Apply();
-        AiModelBox.TextChanged    += (_, _) => Apply();
-        OllamaUrlBox.TextChanged  += (_, _) => Apply();
-        OllamaModelBox.TextChanged+= (_, _) => Apply();
     }
 
     private static void SelectByTag(ComboBox box, string tag, int fallbackIndex)
@@ -251,13 +275,6 @@ public partial class SettingsWindow : Window
     private static string TagOf(ComboBox box) =>
         box.SelectedItem is ComboBoxItem ci ? ci.Tag?.ToString() ?? "" : "";
 
-    private void UpdateProviderPanels()
-    {
-        bool ollama = TagOf(AiProviderBox).Equals("ollama", StringComparison.OrdinalIgnoreCase);
-        GeminiPanel.Visibility = ollama ? Visibility.Collapsed : Visibility.Visible;
-        OllamaPanel.Visibility = ollama ? Visibility.Visible   : Visibility.Collapsed;
-    }
-
     private void Apply()
     {
         if (!_loaded) return;
@@ -289,25 +306,38 @@ public partial class SettingsWindow : Window
 
         DevPanel.Visibility = _settings.EnableDeveloperEvents ? Visibility.Visible : Visibility.Collapsed;
 
+        // Agent Companion
+        _settings.EnableAgentCompanion       = AgentCompanionBox.IsChecked == true;
+        _settings.EnableAgentReactions       = AgentReactionsBox.IsChecked == true;
+        _settings.EnableAgentStartedReaction = AgentStartedBox.IsChecked == true;
+        _settings.EnableAgentWaitingReaction = AgentWaitingBox.IsChecked == true;
+        _settings.EnableAgentCompletedReaction = AgentCompletedBox.IsChecked == true;
+        _settings.EnableAgentFailedReaction  = AgentFailedBox.IsChecked == true;
+        _settings.EnableAgentIdleReaction    = AgentIdleBox.IsChecked == true;
+
+        // DeskSense
+        _settings.EnableDeskSense                   = DeskSenseBox.IsChecked == true;
+        _settings.EnableForegroundAppDetection      = DeskSenseForegroundBox.IsChecked == true;
+        _settings.EnableIdleDetection               = DeskSenseIdleBox.IsChecked == true;
+        _settings.IdleThresholdSeconds              = (int)DeskSenseIdleSlider.Value;
+        _settings.EnableDeskSenseReactions          = DeskSenseReactionsBox.IsChecked == true;
+        _settings.EnableCodingStartedReaction       = DeskSenseCodingBox.IsChecked == true;
+        _settings.EnableTerminalActiveReaction      = DeskSenseTerminalBox.IsChecked == true;
+        _settings.EnableUserIdleReaction            = DeskSenseIdleReactionBox.IsChecked == true;
+        _settings.EnableUserReturnedReaction        = DeskSenseReturnedBox.IsChecked == true;
+        _settings.EnablePresentationStartedReaction = DeskSensePresentationBox.IsChecked == true;
+        DeskSensePanel.Visibility = _settings.EnableDeskSense ? Visibility.Visible : Visibility.Collapsed;
+
+        // Radar
+        _settings.EnableDeveloperRadar        = RadarEnabledBox.IsChecked == true;
+        _settings.EnableDeveloperHud          = RadarHudBox.IsChecked == true;
+        _settings.PauseRepositoryMonitoring   = RadarPauseBox.IsChecked == true;
+        RadarPanel.Visibility = _settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
+
         _settings.ClickThrough               = ClickThroughBox.IsChecked     == true;
         _settings.EnableAutoUpdate           = AutoUpdateBox.IsChecked       == true;
         _settings.RememberPetState           = RememberStateBox.IsChecked    == true;
-
-        _settings.EnableAiCompanion  = AiEnableBox.IsChecked    == true;
-        _settings.AiEnableTools      = AiToolsBox.IsChecked     == true;
-        _settings.AiProactiveChatter = AiChatterBox.IsChecked   == true;
-        _settings.AiStreaming        = AiStreamingBox.IsChecked == true;
-        _settings.AiHotkeyEnabled    = AiHotkeyBox.IsChecked    == true;
-        _settings.AiEnableMemory     = AiMemoryBox.IsChecked    == true;
-        _settings.AiApiKey           = AiKeyBox.Password;
-
-        if (!string.IsNullOrWhiteSpace(AiPersonaBox.Text))   _settings.AiPersona   = AiPersonaBox.Text.Trim();
-        if (!string.IsNullOrWhiteSpace(AiModelBox.Text))     _settings.AiModel     = AiModelBox.Text.Trim();
-        if (!string.IsNullOrWhiteSpace(OllamaUrlBox.Text))   _settings.OllamaUrl   = OllamaUrlBox.Text.Trim();
-        if (!string.IsNullOrWhiteSpace(OllamaModelBox.Text)) _settings.OllamaModel = OllamaModelBox.Text.Trim();
-
-        _settings.AiProvider = TagOf(AiProviderBox) is { Length: > 0 } p ? p : "gemini";
-        UpdateProviderPanels();
+        _settings.EnableCommandPaletteHotkey = CommandPaletteHotkeyBox.IsChecked == true;
 
         bool autostart = AutostartBox.IsChecked == true;
         _settings.Autostart = autostart;
@@ -318,7 +348,6 @@ public partial class SettingsWindow : Window
         if (int.TryParse(TagOf(BreakDurationBox), out int breakMins) && breakMins > 0) _settings.BreakDurationMinutes = breakMins;
 
         if (double.TryParse(TagOf(SizeBox), System.Globalization.CultureInfo.InvariantCulture, out double size))
-
             _settings.SizeScale = size;
 
         string pet = TagOf(CatColorBox);
@@ -340,13 +369,12 @@ public partial class SettingsWindow : Window
         _onChanged?.Invoke();   // apply live (e.g. resize or change opacity)
     }
 
-    /// <summary>Capture a new shortcut: record the first non-modifier key pressed with a modifier held.</summary>
-    private void HotkeyCaptureBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    /// <summary>Capture a new Command Palette shortcut: record first non-modifier key with modifier held.</summary>
+    private void PaletteHotkeyCaptureBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         e.Handled = true;
         Key k = e.Key == Key.System ? e.SystemKey : e.Key;
 
-        // Ignore bare modifier presses — wait for an actual key.
         if (k is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
               or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System or Key.None)
             return;
@@ -354,9 +382,17 @@ public partial class SettingsWindow : Window
         var mods = Keyboard.Modifiers;
         if (mods == ModifierKeys.None) return;
 
-        _settings.AiHotkeyModifiers = (int)mods;
-        _settings.AiHotkeyKey       = (int)k;
-        HotkeyCaptureBox.Text       = FormatHotkey(mods, k);
+        _settings.CommandPaletteHotkeyModifiers = (int)mods;
+        _settings.CommandPaletteHotkeyKey       = (int)k;
+        PaletteHotkeyCaptureBox.Text            = FormatHotkey(mods, k);
+        Apply();
+    }
+
+    private void ResetPaletteHotkeyButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.CommandPaletteHotkeyModifiers = (int)(ModifierKeys.Control | ModifierKeys.Alt);
+        _settings.CommandPaletteHotkeyKey       = (int)Key.P;
+        PaletteHotkeyCaptureBox.Text            = FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
         Apply();
     }
 
@@ -412,6 +448,9 @@ public partial class SettingsWindow : Window
             _settings.EnableDeveloperEvents     = def.EnableDeveloperEvents;
             _settings.ClickThrough              = def.ClickThrough;
             _settings.StretchIntervalMinutes    = def.StretchIntervalMinutes;
+            _settings.EnableCommandPaletteHotkey    = def.EnableCommandPaletteHotkey;
+            _settings.CommandPaletteHotkeyModifiers = def.CommandPaletteHotkeyModifiers;
+            _settings.CommandPaletteHotkeyKey       = def.CommandPaletteHotkeyKey;
 
             SpeedSlider.Value            = _settings.Speed;
             OpacitySlider.Value          = _settings.Opacity;
@@ -428,31 +467,13 @@ public partial class SettingsWindow : Window
             HidePresentBox.IsChecked     = _settings.HideWhenPresenting;
             DevEventsBox.IsChecked       = _settings.EnableDeveloperEvents;
             ClickThroughBox.IsChecked    = _settings.ClickThrough;
+            CommandPaletteHotkeyBox.IsChecked = _settings.EnableCommandPaletteHotkey;
+            PaletteHotkeyCaptureBox.Text = FormatHotkey((ModifierKeys)_settings.CommandPaletteHotkeyModifiers, (Key)_settings.CommandPaletteHotkeyKey);
 
             SelectByTag(SizeBox, "1.0", 1);
             SelectByTag(StretchIntervalBox, "30", 2);
 
             Apply();
-        }
-    }
-
-    private async void TestButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_onTestAi == null) return;
-        TestButton.IsEnabled = false;
-        TestResult.Text = "Asking Neku…";
-        try
-        {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-            TestResult.Text = await _onTestAi(cts.Token);
-        }
-        catch (Exception ex)
-        {
-            TestResult.Text = ex.Message;
-        }
-        finally
-        {
-            TestButton.IsEnabled = true;
         }
     }
 
@@ -472,18 +493,48 @@ public partial class SettingsWindow : Window
         catch { /* best-effort */ }
     }
 
-    private void ForgetButton_Click(object sender, RoutedEventArgs e)
-    {
-        var answer = MessageBox.Show(
-            "Make Neku forget everything it remembers about you and your past chats?",
-            "Forget memory", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (answer == MessageBoxResult.Yes)
-            _onForgetMemory?.Invoke();
-    }
-
     private void OpenStudioButton_Click(object sender, RoutedEventArgs e)
     {
         App.CurrentApp?.OpenCompanionStudio();
+    }
+
+    private void PopulateRadarSettingsRepos()
+    {
+        RadarSettingsRepoListBox.Items.Clear();
+        foreach (var path in _settings.MonitoredRepositoryPaths)
+        {
+            RadarSettingsRepoListBox.Items.Add(path);
+        }
+    }
+
+    private void RadarSettingsAddRepoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Select Git Repository Folder",
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
+        {
+            string path = dialog.FolderName;
+            if (!_settings.MonitoredRepositoryPaths.Contains(path, StringComparer.OrdinalIgnoreCase))
+            {
+                _settings.MonitoredRepositoryPaths.Add(path);
+                PopulateRadarSettingsRepos();
+                Apply();
+            }
+        }
+    }
+
+    private void RadarSettingsRemoveRepoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (RadarSettingsRepoListBox.SelectedItem is string selectedPath)
+        {
+            _settings.MonitoredRepositoryPaths.RemoveAll(p => string.Equals(p, selectedPath, StringComparison.OrdinalIgnoreCase));
+            PopulateRadarSettingsRepos();
+            Apply();
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

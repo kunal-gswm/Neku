@@ -13,8 +13,8 @@ public sealed class HotkeyService : IDisposable
 {
     private const int WM_HOTKEY = 0x0312;
 
-    public const int ChatHotkeyId = 0xB001;
     public const int ExitHotkeyId = 0xB002;
+    public const int PaletteHotkeyId = 0xB003;
 
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
@@ -27,24 +27,12 @@ public sealed class HotkeyService : IDisposable
     private IntPtr _hwnd;
     private bool _disposed;
 
-    /// <summary>Event raised when the default Chat hotkey is pressed.</summary>
-    public event Action? Pressed;
-
     /// <summary>Hook the host window so WM_HOTKEY messages reach us.</summary>
     public void Attach(IntPtr hwnd)
     {
         _hwnd   = hwnd;
         _source = HwndSource.FromHwnd(hwnd);
         _source?.AddHook(WndProc);
-    }
-
-    /// <summary>
-    /// Register the default Chat hotkey (replacing prior binding).
-    /// Returns false if the combo is taken or invalid.
-    /// </summary>
-    public bool Register(ModifierKeys mods, Key key)
-    {
-        return Register(ChatHotkeyId, mods, key, () => Pressed?.Invoke());
     }
 
     /// <summary>
@@ -71,12 +59,6 @@ public sealed class HotkeyService : IDisposable
         return ok;
     }
 
-    /// <summary>Unregister the default Chat hotkey.</summary>
-    public void Unregister()
-    {
-        Unregister(ChatHotkeyId);
-    }
-
     /// <summary>
     /// Register the global graceful exit hotkey (Ctrl + Alt + Q).
     /// Returns false if the combination is taken, invalid, or window is unattached.
@@ -90,6 +72,21 @@ public sealed class HotkeyService : IDisposable
     public void UnregisterExit()
     {
         Unregister(ExitHotkeyId);
+    }
+
+    /// <summary>
+    /// Register the global Command Palette hotkey (default Ctrl + Alt + P).
+    /// Returns false if the combination is taken, invalid, or window is unattached.
+    /// </summary>
+    public bool RegisterPalette(ModifierKeys mods, Key key, Action action)
+    {
+        return Register(PaletteHotkeyId, mods, key, action);
+    }
+
+    /// <summary>Unregister the global Command Palette hotkey.</summary>
+    public void UnregisterPalette()
+    {
+        Unregister(PaletteHotkeyId);
     }
 
     /// <summary>Unregister a specific hotkey ID.</summary>

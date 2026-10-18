@@ -12,16 +12,15 @@
   "_comment_continuity": "Wake up where the cat was, in the mood it was in. The last* values are written by the app; you don't need to set them.",
   "rememberPetState": true,
 
-  "_comment_ai": "All AI settings are off by default. aiProvider is 'gemini' (free cloud, needs a key) or 'ollama' (local, private, no key).",
-  "enableAiCompanion": false,
-  "aiProvider": "gemini",
-  "aiApiKey": "",
-  "aiModel": "gemini-2.5-flash-lite",
-  "ollamaUrl": "http://localhost:11434",
-  "ollamaModel": "llama3.2",
-  "aiPersona": "You are Pixel, a small, affectionate pixel-art desktop cat. Reply in 1-2 short, playful sentences.",
-  "aiEnableTools": true,
-  "aiStreaming": true,
+  "_comment_productivity": "Productivity Hub and Pomodoro focus timer configuration.",
+  "focusDurationMinutes": 25,
+  "breakDurationMinutes": 5,
+  "dailyFocusGoalMinutes": 100,
+
+  "_comment_agent": "Coding Agent Companion (passive local observer on 127.0.0.1, zero AI models or keys).",
+  "enableAgentCompanion": false,
+  "enableDeveloperEvents": false,
+  "developerPort": 48123,
 
   "_comment_targetFps": "Simulation ticks per second; 0 follows the display. Not in the Settings UI because it saves nothing — the cost is being subscribed to WPF's render loop at all, not the work per tick. Only useful to cap a very high refresh-rate display.",
   "targetFps": 60

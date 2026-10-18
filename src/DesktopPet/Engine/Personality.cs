@@ -165,6 +165,83 @@ public sealed class Personality
         "Time to debug! I'll provide moral support 🐱",
     ];
 
+    private static readonly string[] AgentStartedLines =
+    [
+        "Agent online! Time to build something cool! 🤖",
+        "New coding session started! I'll keep watch! 👀",
+        "Agent's on the case! Let's ship some features! 🚀",
+        "Coding session active! Shh, magic in progress ✨",
+    ];
+
+    private static readonly string[] AgentWaitingLines =
+    [
+        "Psst! The agent has a question for you! 💡",
+        "Agent is waiting for your input! Don't leave it hanging! 🐾",
+        "Input needed! What should the agent do next? 🤔",
+        "The agent paused for confirmation! Check your terminal 🖥️",
+    ];
+
+    private static readonly string[] AgentCompletedLines =
+    [
+        "Agent finished the task! High five! 🎉",
+        "All done! Look at those clean diffs! ✨",
+        "Task complete! That agent was fast! ⚡",
+        "Code generated and verified! Ship it! 🚢",
+    ];
+
+    private static readonly string[] AgentFailedLines =
+    [
+        "Uh oh, agent hit an error! Don't worry, we'll fix it! 🔧",
+        "Task failed... check the logs! 🐛",
+        "Agent ran into a snag! You got this! 💪",
+        "Something broke! Time for human intuition 🐱",
+    ];
+
+    private static readonly string[] AgentIdleLines =
+    [
+        "All coding agents are idle. Time for a tea break! ☕",
+        "Everything is quiet on the terminal front 🌸",
+        "Agent tasks wrapped up! Great teamwork! 🐾",
+    ];
+
+    private static readonly string[] CodingStartedLines =
+    [
+        "Time to build! Let's write some clean code ✨",
+        "IDE open! Let's lock in! 💻",
+        "In the zone! Time to hack! 🚀",
+        "Coffee poured, editor focused ☕",
+    ];
+
+    private static readonly string[] TerminalActiveLines =
+    [
+        "Terminal time! CLI wizardry activated ⌨️",
+        "Running commands like a pro! ⚡",
+        "Shell mode engaged! 🐚",
+    ];
+
+    private static readonly string[] UserIdleLines =
+    [
+        "*loafs quietly*",
+        "Resting while you're away... 💤",
+        "*naps gently*",
+        "Take your time, human.",
+    ];
+
+    private static readonly string[] UserReturnedLines =
+    [
+        "Welcome back! Ready when you are! ✨",
+        "*perks up happily*",
+        "Back at the desk! Let's go! 🐾",
+        "*stretches and smiles*",
+    ];
+
+    private static readonly string[] PresentationStartedLines =
+    [
+        "Ssshh... presentation time! 🤫",
+        "*settles down quietly*",
+        "Keeping it low key for the meeting!",
+    ];
+
     private static readonly string[] BoopLines =
     [
         "*chirps happily*",
@@ -300,6 +377,82 @@ public sealed class Personality
         "Bro... what did that assert ever do to you?",
         "Emotional damage in line 42 🙀",
         "Tests failed. Have you tried taking a nap and seeing if it fixes itself?",
+    ];
+
+    private static readonly string[] BilluAgentStartedLines =
+    [
+        "Claude's cooking. Let's see if the code compiles.",
+        "Another agent session? Bro really outsourced the thinking.",
+        "Agent spinning up. I will supervise from this loaf position.",
+        "AI agent writing code while I loaf here looking pretty. Flawless division of labor.",
+    ];
+
+    private static readonly string[] BilluAgentWaitingLines =
+    [
+        "Bro, Claude's waiting on you. Don't leave it on read.",
+        "The AI needs your permission. The illusion of control ✨",
+        "Input required. Time to pretend we know what we're doing.",
+        "Terminal is blinking. Go press the button, chief.",
+    ];
+
+    private static readonly string[] BilluAgentCompletedLines =
+    [
+        "Task complete. Dopamine hit secured ✨",
+        "Look at Claude cooking. You can take all the credit.",
+        "Green checkmark! Unbelievable, it actually worked.",
+        "Agent cooked, you approved. Certified teamwork.",
+    ];
+
+    private static readonly string[] BilluAgentFailedLines =
+    [
+        "Task failed. Massive skill issue detected 🙀",
+        "The AI threw an error. Have you tried asking it nicely?",
+        "Emotional damage in the terminal. Rollback time.",
+        "Error occurred. I blame the prompt.",
+    ];
+
+    private static readonly string[] BilluAgentIdleLines =
+    [
+        "All agents idle. Perfect time for an 8-hour nap.",
+        "Terminals quiet. The machines have rested.",
+        "No active agents. We are officially unemployed.",
+    ];
+
+    private static readonly string[] BilluCodingStartedLines =
+    [
+        "Oh look, the keyboard clacker is awake. Time to write bugs.",
+        "Fine, I will supervise your coding from a position of moral superiority.",
+        "Let me stare aggressively at your syntax errors.",
+        "Another session of staring at squiggly red lines?",
+    ];
+
+    private static readonly string[] BilluTerminalActiveLines =
+    [
+        "Typing fast in a black box doesn't make you a hacker, bro.",
+        "curl this, git that... feed cat when?",
+        "Terminal open. Don't rm -rf your dinner.",
+    ];
+
+    private static readonly string[] BilluUserIdleLines =
+    [
+        "Finally, peace and quiet. *loafs*",
+        "Human went missing. Desk belongs to me now.",
+        "*curls up on warm keyboard* Prime real estate.",
+        "Zzz... wake me for treats.",
+    ];
+
+    private static readonly string[] BilluUserReturnedLines =
+    [
+        "*blinks slowly* Oh, you're back.",
+        "Did you bring tuna? No? Then why wake me?",
+        "*startled blink* I was definitely not asleep on your trackpad.",
+    ];
+
+    private static readonly string[] BilluPresentationStartedLines =
+    [
+        "Time to pretend I'm an executive desk ornament.",
+        "*stops chaos for the meeting*",
+        "Muted. Even me. For now.",
     ];
 
     private static readonly string[] BilluBoopLines =
@@ -655,6 +808,36 @@ public sealed class Personality
 
     /// <summary>Reaction line when a developer test fails.</summary>
     public string GetTestFailureLine() => PickNonRepeating(IsBillu ? BilluTestFailureLines : TestFailureLines);
+
+    /// <summary>Reaction line when an AI coding agent session begins.</summary>
+    public string GetAgentStartedLine() => PickNonRepeating(IsBillu ? BilluAgentStartedLines : AgentStartedLines);
+
+    /// <summary>Reaction line when an AI coding agent is waiting for user confirmation or input.</summary>
+    public string GetAgentWaitingLine() => PickNonRepeating(IsBillu ? BilluAgentWaitingLines : AgentWaitingLines);
+
+    /// <summary>Reaction line when an AI coding agent completes its turn or task.</summary>
+    public string GetAgentCompletedLine() => PickNonRepeating(IsBillu ? BilluAgentCompletedLines : AgentCompletedLines);
+
+    /// <summary>Reaction line when an AI coding agent task fails or errors.</summary>
+    public string GetAgentFailedLine() => PickNonRepeating(IsBillu ? BilluAgentFailedLines : AgentFailedLines);
+
+    /// <summary>Reaction line when all tracked coding agent sessions are idle.</summary>
+    public string GetAgentIdleLine() => PickNonRepeating(IsBillu ? BilluAgentIdleLines : AgentIdleLines);
+
+    /// <summary>Reaction line when coding activity begins in an IDE or editor.</summary>
+    public string GetCodingStartedLine() => PickNonRepeating(IsBillu ? BilluCodingStartedLines : CodingStartedLines);
+
+    /// <summary>Reaction line when a terminal or command prompt becomes active.</summary>
+    public string GetTerminalActiveLine() => PickNonRepeating(IsBillu ? BilluTerminalActiveLines : TerminalActiveLines);
+
+    /// <summary>Reaction line when the user becomes idle.</summary>
+    public string GetUserIdleLine() => PickNonRepeating(IsBillu ? BilluUserIdleLines : UserIdleLines);
+
+    /// <summary>Reaction line when the user returns after being idle.</summary>
+    public string GetUserReturnedLine() => PickNonRepeating(IsBillu ? BilluUserReturnedLines : UserReturnedLines);
+
+    /// <summary>Reaction line when full-screen presentation or meeting mode begins.</summary>
+    public string GetPresentationStartedLine() => PickNonRepeating(IsBillu ? BilluPresentationStartedLines : PresentationStartedLines);
 
     /// <summary>Reaction line when the pet is booped (tapped).</summary>
     public string GetBoopLine() => PickNonRepeating(IsBillu ? BilluBoopLines : BoopLines);

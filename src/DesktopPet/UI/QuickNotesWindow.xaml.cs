@@ -105,7 +105,8 @@ public partial class QuickNotesWindow : Window
         RefreshNotesList(filter);
     }
 
-    private void CreateNewNote()
+    /// <summary>Creates a new note and focuses the title field for immediate editing.</summary>
+    public void CreateNewNote()
     {
         if (_isDirty)
         {

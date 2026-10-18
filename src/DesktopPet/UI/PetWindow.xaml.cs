@@ -255,14 +255,8 @@ public partial class PetWindow : Window, IPetView
     public void ClearSpeechBubble()
         => Effects?.ClearSpeechBubble();
 
-    /// <summary>Raised when the user taps the cat and the AI companion is enabled — App opens the chat box.</summary>
-    public event Action? ChatRequested;
-
     /// <summary>Raised whenever user clicks or interacts with the pet (used to dismiss onboarding).</summary>
     public event Action? PetInteracted;
-
-    /// <summary>When true, a tap on the cat opens the AI chat box (in addition to the happy boop).</summary>
-    public bool AiTapOpensChat { get; set; }
 
 
     // ── Mouse events ──────────────────────────────────────────────────────────
@@ -326,7 +320,6 @@ public partial class PetWindow : Window, IPetView
         else
         {
             _engine?.Boop();            // tap with no movement => boop
-            if (AiTapOpensChat) ChatRequested?.Invoke();
         }
         _pressing = false;
         _dragging = false;
@@ -351,6 +344,7 @@ public partial class PetWindow : Window, IPetView
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
         Action onToggleFocusHud,
+        Action onCommandPalette,
         Action onProductivityHub,
         Action onTasks,
         Action onQuickNote,
@@ -363,9 +357,14 @@ public partial class PetWindow : Window, IPetView
         Action onToggleReducedMotion, Func<bool> isReducedMotion,
         Action onToggleQuietMode, Func<bool> isQuietMode,
         Action onResetPosition,
-        Action onExit)
+        Action onExit,
+        Action? onDeveloperRadar = null,
+        Action? onToggleDeveloperHud = null)
     {
         var menu = new ContextMenu();
+
+        var paletteItem = new MenuItem { Header = "⚡ Command Palette… (Ctrl+Alt+P)" };
+        paletteItem.Click += (_, _) => onCommandPalette();
 
         var hubItem = new MenuItem { Header = "🐾 Productivity Hub…", FontWeight = FontWeights.Bold };
         hubItem.Click += (_, _) => onProductivityHub();
@@ -387,9 +386,23 @@ public partial class PetWindow : Window, IPetView
         var quickNoteItem = new MenuItem { Header = "Quick Note…" };
         quickNoteItem.Click += (_, _) => onQuickNote();
 
-        // 3. Developer Events
+        // 3. Developer Events & Radar
         var devEventsItem = new MenuItem { Header = "Developer Events…" };
         devEventsItem.Click += (_, _) => onDeveloperEvents();
+
+        MenuItem? radarItem = null;
+        if (onDeveloperRadar != null)
+        {
+            radarItem = new MenuItem { Header = "📡 Developer Radar…" };
+            radarItem.Click += (_, _) => onDeveloperRadar();
+        }
+
+        MenuItem? hudItem = null;
+        if (onToggleDeveloperHud != null)
+        {
+            hudItem = new MenuItem { Header = "🪟 Toggle Developer HUD" };
+            hudItem.Click += (_, _) => onToggleDeveloperHud();
+        }
 
         // 4. Companion Studio & Settings
         var studioItem = new MenuItem { Header = "🎨 Companion Studio…" };
@@ -439,10 +452,13 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(focusCancelItem);
         menu.Items.Add(focusHudItem);
         menu.Items.Add(new Separator());
+        menu.Items.Add(paletteItem);
         menu.Items.Add(hubItem);
         menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
         menu.Items.Add(devEventsItem);
+        if (radarItem != null) menu.Items.Add(radarItem);
+        if (hudItem != null) menu.Items.Add(hudItem);
         menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new Separator());

@@ -23,7 +23,7 @@ public interface IPetView
     void ClearToiletPaper();
     /// <summary>A small pebble tumbles down from (screenX, screenY) and fades — cat knocking things off a ledge.</summary>
     void DropPebble(double screenX, double screenY);
-    /// <summary>Draw/refresh a speech bubble above the cat with the given text (AI companion).</summary>
+    /// <summary>Draw/refresh a speech bubble above the cat with the given text.</summary>
     void DrawSpeechBubble(double catLeft, double catTop, double catW, double catH, string text);
     /// <summary>Remove the speech bubble.</summary>
     void ClearSpeechBubble();
@@ -95,7 +95,7 @@ public sealed class PetEngine
     private double _calledToX;          // "come here" target in DIP; NaN = not called
     private double _calledTimeout;      // seconds before giving up on the walk over
 
-    // ── AI companion ──────────────────────────────────────────────────────────
+    // ── Speech & Reactions ──────────────────────────────────────────────────
     private PetState? _pendingEmotion;     // emotion queued while the cat is mid-action
     private double    _pendingEmotionTtl;  // seconds before a queued emotion is given up on
     private string    _bubbleText = "";    // current speech-bubble text ("" = none)
@@ -127,7 +127,7 @@ public sealed class PetEngine
     public PetState? PendingEmotion => _pendingEmotion;
     public string SpeechText     => _bubbleText;
     public void   SetQuiet(bool quiet) => _quiet = quiet;
-    /// <summary>True while a speech bubble is currently showing (AI companion).</summary>
+    /// <summary>True while a speech bubble is currently showing.</summary>
     public bool   IsSpeaking     => _bubbleTimeLeft > 0;
 
     // Let the App/scheduler set this to trigger a stretch at the next opportunity.
@@ -146,7 +146,7 @@ public sealed class PetEngine
         if (_state != PetState.Walk) EnterState(PetState.Walk);
     }
 
-    /// <summary>AI companion: play an emotion animation. Applied at once unless the cat is
+    /// <summary>Play an emotion animation. Applied at once unless the cat is
     /// mid-action (drag/fall/pounce/hunt/jump), in which case it's queued for the next settle.</summary>
     public void RequestEmotion(PetState state)
     {
@@ -160,7 +160,7 @@ public sealed class PetEngine
         EnterState(state);
     }
 
-    /// <summary>AI companion: show a speech bubble above the cat for `seconds`. It tracks the cat each frame.</summary>
+    /// <summary>Show a speech bubble above the cat for `seconds`. It tracks the cat each frame.</summary>
     public void ShowSpeech(string text, double seconds)
     {
         _bubbleText     = text ?? "";
@@ -293,6 +293,16 @@ public sealed class PetEngine
     public void TriggerDeveloperReaction(PetState state, string message)
     {
         TriggerReaction(state, message, cooldownSeconds: 2.0);
+    }
+
+    public void TriggerAgentReaction(PetState state, string message)
+    {
+        TriggerReaction(state, message, cooldownSeconds: 4.0);
+    }
+
+    public void TriggerDeskSenseReaction(PetState state, string message)
+    {
+        TriggerReaction(state, message, cooldownSeconds: 5.0);
     }
 
     public void TriggerGreeting()
@@ -604,7 +614,7 @@ public sealed class PetEngine
             case PetState.Drag:       UpdateDrag(dt);       break;
         }
 
-        // ── speech bubble (AI companion) — redraw each frame so it follows the cat ──
+        // ── speech bubble — redraw each frame so it follows the cat ──
         if (_bubbleTimeLeft > 0)
         {
             _bubbleTimeLeft -= dt;
@@ -621,7 +631,7 @@ public sealed class PetEngine
     {
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
 
-        // AI companion: a queued emotion takes priority the moment the cat is idle again.
+        // A queued emotion takes priority the moment the cat is idle again.
         if (TryApplyPendingEmotion()) return;
 
         if (TryStartHunt()) return;

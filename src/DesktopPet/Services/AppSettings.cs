@@ -71,52 +71,6 @@ public sealed class AppSettings
     [JsonPropertyName("lastEnergy")] public double LastEnergy { get; set; } = -1;
     [JsonPropertyName("lastHunger")] public double LastHunger { get; set; } = -1;
 
-    // ── AI companion (all default OFF — nothing runs and no network call is made unless enabled) ──
-
-    /// <summary>Master switch for the AI companion. When false, zero AI code runs.</summary>
-    [JsonPropertyName("enableAiCompanion")] public bool EnableAiCompanion { get; set; } = false;
-
-    /// <summary>LLM provider id: "gemini" (Google's free tier) or "ollama" (local, private, free).</summary>
-    [JsonPropertyName("aiProvider")] public string AiProvider { get; set; } = "gemini";
-
-    /// <summary>Base URL of a local Ollama server, used when <see cref="AiProvider"/> is "ollama".</summary>
-    [JsonPropertyName("ollamaUrl")] public string OllamaUrl { get; set; } = "http://localhost:11434";
-
-    /// <summary>Model name to ask Ollama for, e.g. "llama3.2" or "qwen2.5:3b".</summary>
-    [JsonPropertyName("ollamaModel")] public string OllamaModel { get; set; } = "llama3.2";
-
-    /// <summary>Type the cat's reply out a piece at a time instead of popping it in whole.</summary>
-    [JsonPropertyName("aiStreaming")] public bool AiStreaming { get; set; } = true;
-
-    /// <summary>Provider API key. Stored only in %AppData%\Neku\settings.json — NEVER committed.</summary>
-    [JsonPropertyName("aiApiKey")] public string AiApiKey { get; set; } = "";
-
-    /// <summary>Model id. gemini-2.5-flash-lite is free, fast, and good for short replies.</summary>
-    [JsonPropertyName("aiModel")] public string AiModel { get; set; } = "gemini-2.5-flash-lite";
-
-    /// <summary>Persona/system prompt describing the cat's character.</summary>
-    [JsonPropertyName("aiPersona")] public string AiPersona { get; set; } =
-        "You are Neku, a small, affectionate pixel-art desktop cat who lives on the user's screen. " +
-        "You are playful, warm, and a little cheeky. Reply in 1-2 short sentences.";
-
-    /// <summary>Let the cat call cute tools (time, weather, system stats).</summary>
-    [JsonPropertyName("aiEnableTools")] public bool AiEnableTools { get; set; } = true;
-
-    /// <summary>Let the cat occasionally say something on its own (mood/time/app aware). AI must be on.</summary>
-    [JsonPropertyName("aiProactiveChatter")] public bool AiProactiveChatter { get; set; } = true;
-
-    /// <summary>Open the chat box with a global keyboard shortcut.</summary>
-    [JsonPropertyName("aiHotkeyEnabled")] public bool AiHotkeyEnabled { get; set; } = true;
-
-    /// <summary>Hotkey modifiers as WPF ModifierKeys flags (Alt=1, Control=2, Shift=4, Windows=8). Default Ctrl+Alt.</summary>
-    [JsonPropertyName("aiHotkeyModifiers")] public int AiHotkeyModifiers { get; set; } = 2 | 1;
-
-    /// <summary>Hotkey key as a WPF Key enum value. Default Key.C (46).</summary>
-    [JsonPropertyName("aiHotkeyKey")] public int AiHotkeyKey { get; set; } = 46;
-
-    /// <summary>Let the cat remember a few facts and your recent chats between sessions.</summary>
-    [JsonPropertyName("aiEnableMemory")] public bool AiEnableMemory { get; set; } = true;
-
     // ── Neku Personality & Interactions ───────────────────────────────────────
     [JsonPropertyName("personalityMood")] public double PersonalityMood { get; set; } = 0.6;
     [JsonPropertyName("personalityEnergy")] public double PersonalityEnergy { get; set; } = 0.7;
@@ -199,6 +153,97 @@ public sealed class AppSettings
     /// <summary>Whether task completions trigger companion reactions.</summary>
     [JsonPropertyName("enableTaskReactions")] public bool EnableTaskReactions { get; set; } = true;
 
+    // ── Command Palette ───────────────────────────────────────────────────────
+    /// <summary>Enable the global keyboard shortcut to toggle the Command Palette.</summary>
+    [JsonPropertyName("enableCommandPaletteHotkey")] public bool EnableCommandPaletteHotkey { get; set; } = true;
+
+    /// <summary>Hotkey modifiers as WPF ModifierKeys flags (Alt=1, Control=2, Shift=4, Windows=8). Default Ctrl+Alt (3).</summary>
+    [JsonPropertyName("commandPaletteHotkeyModifiers")] public int CommandPaletteHotkeyModifiers { get; set; } = 2 | 1;
+
+    /// <summary>Hotkey key as a WPF Key enum value. Default Key.P (59).</summary>
+    [JsonPropertyName("commandPaletteHotkeyKey")] public int CommandPaletteHotkeyKey { get; set; } = 59;
+
+    // ── AI Coding Agent Companion (Disabled by default) ───────────────────────
+    /// <summary>Master toggle to enable AI coding agent monitoring and companion features.</summary>
+    [JsonPropertyName("enableAgentCompanion")] public bool EnableAgentCompanion { get; set; } = false;
+
+    /// <summary>Whether agent events trigger companion speech and animations.</summary>
+    [JsonPropertyName("enableAgentReactions")] public bool EnableAgentReactions { get; set; } = true;
+
+    /// <summary>Reaction when an agent session begins.</summary>
+    [JsonPropertyName("enableAgentStartedReaction")] public bool EnableAgentStartedReaction { get; set; } = true;
+
+    /// <summary>Reaction when an agent is waiting for input or terminal confirmation.</summary>
+    [JsonPropertyName("enableAgentWaitingReaction")] public bool EnableAgentWaitingReaction { get; set; } = true;
+
+    /// <summary>Reaction when an agent completes its turn or task.</summary>
+    [JsonPropertyName("enableAgentCompletedReaction")] public bool EnableAgentCompletedReaction { get; set; } = true;
+
+    /// <summary>Reaction when an agent turn or task fails.</summary>
+    [JsonPropertyName("enableAgentFailedReaction")] public bool EnableAgentFailedReaction { get; set; } = true;
+
+    /// <summary>Reaction when all tracked agent sessions become idle.</summary>
+    [JsonPropertyName("enableAgentIdleReaction")] public bool EnableAgentIdleReaction { get; set; } = true;
+
+    /// <summary>Max agent sessions retained in local history.</summary>
+    [JsonPropertyName("agentMaxSessionsRetained")] public int AgentMaxSessionsRetained { get; set; } = 50;
+
+    /// <summary>Max events per agent session retained in local history.</summary>
+    [JsonPropertyName("agentMaxEventsPerSession")] public int AgentMaxEventsPerSession { get; set; } = 100;
+
+    // ── DeskSense: Desktop Context Engine ─────────────────────────────────────
+    /// <summary>Master toggle to enable DeskSense context engine.</summary>
+    [JsonPropertyName("enableDeskSense")] public bool EnableDeskSense { get; set; } = true;
+
+    /// <summary>Detect foreground application process and window identity.</summary>
+    [JsonPropertyName("enableForegroundAppDetection")] public bool EnableForegroundAppDetection { get; set; } = true;
+
+    /// <summary>Detect user idle state based on last input timestamp.</summary>
+    [JsonPropertyName("enableIdleDetection")] public bool EnableIdleDetection { get; set; } = true;
+
+    /// <summary>Inactivity threshold in seconds before declaring the user idle. Default 120s.</summary>
+    [JsonPropertyName("idleThresholdSeconds")] public int IdleThresholdSeconds { get; set; } = 120;
+
+    /// <summary>Master toggle for pet reactions to DeskSense context changes.</summary>
+    [JsonPropertyName("enableDeskSenseReactions")] public bool EnableDeskSenseReactions { get; set; } = true;
+
+    /// <summary>Reaction when coding begins in an IDE or editor.</summary>
+    [JsonPropertyName("enableCodingStartedReaction")] public bool EnableCodingStartedReaction { get; set; } = true;
+
+    /// <summary>Reaction when a terminal becomes active.</summary>
+    [JsonPropertyName("enableTerminalActiveReaction")] public bool EnableTerminalActiveReaction { get; set; } = true;
+
+    /// <summary>Reaction when user becomes idle.</summary>
+    [JsonPropertyName("enableUserIdleReaction")] public bool EnableUserIdleReaction { get; set; } = true;
+
+    /// <summary>Reaction when user returns from idle.</summary>
+    [JsonPropertyName("enableUserReturnedReaction")] public bool EnableUserReturnedReaction { get; set; } = true;
+
+    /// <summary>Reaction when presentation or screen sharing begins.</summary>
+    [JsonPropertyName("enablePresentationStartedReaction")] public bool EnablePresentationStartedReaction { get; set; } = true;
+
+    // ── Developer Radar & Floating HUD ────────────────────────────────────────
+    /// <summary>Master toggle for Developer Radar tab in Productivity Hub.</summary>
+    [JsonPropertyName("enableDeveloperRadar")] public bool EnableDeveloperRadar { get; set; } = true;
+
+    /// <summary>Show compact floating Developer HUD overlay on desktop.</summary>
+    [JsonPropertyName("enableDeveloperHud")] public bool EnableDeveloperHud { get; set; } = false;
+
+    /// <summary>Last saved X coordinate of the floating Developer HUD.</summary>
+    [JsonPropertyName("developerHudX")] public double DeveloperHudX { get; set; } = double.NaN;
+
+    /// <summary>Last saved Y coordinate of the floating Developer HUD.</summary>
+    [JsonPropertyName("developerHudY")] public double DeveloperHudY { get; set; } = double.NaN;
+
+    /// <summary>List of explicitly monitored local Git repository paths.</summary>
+    [JsonPropertyName("monitoredRepositoryPaths")] public List<string> MonitoredRepositoryPaths { get; set; } = new();
+
+    /// <summary>Path of currently active/selected repository in Developer Radar.</summary>
+    [JsonPropertyName("selectedRepositoryPath")] public string? SelectedRepositoryPath { get; set; }
+
+    /// <summary>Whether background repository polling/watching is paused.</summary>
+    [JsonPropertyName("pauseRepositoryMonitoring")] public bool PauseRepositoryMonitoring { get; set; } = false;
+
     /// <summary>
     /// Validates all configuration values, clamping numbers within safe limits and falling back
     /// to sensible defaults for corrupt or missing values.
@@ -225,5 +270,11 @@ public sealed class AppSettings
         if (WeeklyTaskGoal <= 0) WeeklyTaskGoal = 15;
         if (ReminderIntervalMinutes <= 0) ReminderIntervalMinutes = 30;
         if (FocusCycleCompletedSessions < 0) FocusCycleCompletedSessions = 0;
+        if (CommandPaletteHotkeyModifiers <= 0) CommandPaletteHotkeyModifiers = 2 | 1;
+        if (CommandPaletteHotkeyKey <= 0) CommandPaletteHotkeyKey = 59;
+        if (AgentMaxSessionsRetained < 5 || AgentMaxSessionsRetained > 500) AgentMaxSessionsRetained = 50;
+        if (AgentMaxEventsPerSession < 10 || AgentMaxEventsPerSession > 1000) AgentMaxEventsPerSession = 100;
+        IdleThresholdSeconds = Math.Clamp(IdleThresholdSeconds, 30, 3600);
+        MonitoredRepositoryPaths ??= new();
     }
 }

@@ -371,6 +371,9 @@
         </Setter>
     </Style>
 
+    <!-- Primary Accent Button -->
+    <Style x:Key="PrimaryButton" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}"/>
+
     <!-- Secondary Outline Button -->
     <Style x:Key="SecondaryButton" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{StaticResource ThemeInputBgBrush}"/>

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -5,6 +7,9 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using DesktopPet.Services;
+using DesktopPet.Services.Agent;
+using DesktopPet.Services.DeskSense;
+using DesktopPet.Services.Radar;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using Color = System.Windows.Media.Color;
@@ -28,9 +33,15 @@ public partial class DashboardWindow : Window
     private readonly FocusHistoryService _historyService;
     private readonly AppSettings _settings;
     private readonly AnalyticsService _analytics = new();
+    private readonly AgentActivityService? _agentActivityService;
+    private readonly ClaudeCodeIntegrationService _claudeCodeService;
+    private readonly DeveloperRadarService? _radarService;
+    private readonly Action? _onToggleHud;
 
     private string _currentTab = "Overview";
     private string _currentTaskFilterTab = "All";
+    private string _currentAgentFilter = "all";
+    private AgentSession? _selectedAgentSession;
     private TaskItem? _selectedTask;
     private bool _suppressTaskEvents = false;
     private bool _isInitialized = false;
@@ -43,12 +54,20 @@ public partial class DashboardWindow : Window
         FocusTimerService focusTimer,
         FocusHistoryService historyService,
         AppSettings settings,
-        string? initialTab = null)
+        string? initialTab = null,
+        AgentActivityService? agentActivityService = null,
+        ClaudeCodeIntegrationService? claudeCodeService = null,
+        DeveloperRadarService? radarService = null,
+        Action? onToggleHud = null)
     {
         _taskService = taskService;
         _focusTimer = focusTimer;
         _historyService = historyService;
         _settings = settings;
+        _agentActivityService = agentActivityService;
+        _claudeCodeService = claudeCodeService ?? new ClaudeCodeIntegrationService();
+        _radarService = radarService;
+        _onToggleHud = onToggleHud;
 
         InitializeComponent();
         _isInitialized = true;
@@ -57,6 +76,17 @@ public partial class DashboardWindow : Window
         _taskService.TasksChanged += OnTasksChanged;
         _focusTimer.StateChanged += OnTimerStateChanged;
         _historyService.HistoryChanged += OnHistoryChanged;
+
+        if (_agentActivityService != null)
+        {
+            _agentActivityService.HistoryChanged += OnAgentHistoryChanged;
+            _agentActivityService.SessionUpdated += OnAgentSessionUpdated;
+        }
+
+        if (_radarService != null)
+        {
+            _radarService.RadarStateChanged += OnRadarStateChanged;
+        }
 
         // Ticking timer for smooth clock countdowns
         _uiRefreshTimer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher)
@@ -83,6 +113,18 @@ public partial class DashboardWindow : Window
         _taskService.TasksChanged -= OnTasksChanged;
         _focusTimer.StateChanged -= OnTimerStateChanged;
         _historyService.HistoryChanged -= OnHistoryChanged;
+
+        if (_agentActivityService != null)
+        {
+            _agentActivityService.HistoryChanged -= OnAgentHistoryChanged;
+            _agentActivityService.SessionUpdated -= OnAgentSessionUpdated;
+        }
+
+        if (_radarService != null)
+        {
+            _radarService.RadarStateChanged -= OnRadarStateChanged;
+        }
+
         _uiRefreshTimer?.Stop();
         _uiRefreshTimer = null;
     }
@@ -135,6 +177,8 @@ public partial class DashboardWindow : Window
         HistoryView.Visibility = tabName == "History" ? Visibility.Visible : Visibility.Collapsed;
         InsightsView.Visibility = tabName == "Insights" ? Visibility.Visible : Visibility.Collapsed;
         GoalsView.Visibility = tabName == "Goals" ? Visibility.Visible : Visibility.Collapsed;
+        AgentView.Visibility = (tabName is "Agent" or "AgentActivity") ? Visibility.Visible : Visibility.Collapsed;
+        RadarView.Visibility = tabName == "Radar" ? Visibility.Visible : Visibility.Collapsed;
 
         // Update nav button styles
         UpdateNavButton(NavOverviewBtn, tabName == "Overview");
@@ -143,6 +187,8 @@ public partial class DashboardWindow : Window
         UpdateNavButton(NavHistoryBtn, tabName == "History");
         UpdateNavButton(NavInsightsBtn, tabName == "Insights");
         UpdateNavButton(NavGoalsBtn, tabName == "Goals");
+        UpdateNavButton(NavAgentBtn, tabName is "Agent" or "AgentActivity");
+        UpdateNavButton(NavRadarBtn, tabName == "Radar");
 
         // Refresh selected tab contents
         switch (tabName)
@@ -164,6 +210,13 @@ public partial class DashboardWindow : Window
                 break;
             case "Goals":
                 RefreshGoals();
+                break;
+            case "Agent":
+            case "AgentActivity":
+                RefreshAgentActivity();
+                break;
+            case "Radar":
+                RefreshRadar();
                 break;
         }
     }
@@ -1671,8 +1724,424 @@ public partial class DashboardWindow : Window
         }
         else if (e.Key == Key.Escape)
         {
+            if (AgentSetupModal.Visibility == Visibility.Visible)
+            {
+                AgentSetupModal.Visibility = Visibility.Collapsed;
+                e.Handled = true;
+                return;
+            }
+
             Close();
             e.Handled = true;
+        }
+    }
+
+    // =========================================================================
+    // 7. AGENT ACTIVITY VIEW
+    // =========================================================================
+
+    private void OnAgentHistoryChanged()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab is "Agent" or "AgentActivity")
+                RefreshAgentActivity();
+        });
+    }
+
+    private void OnAgentSessionUpdated(AgentSession session)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab is "Agent" or "AgentActivity")
+            {
+                RefreshAgentActivity();
+                if (_selectedAgentSession?.SessionId == session.SessionId)
+                {
+                    DisplayAgentSessionDetails(session);
+                }
+            }
+        });
+    }
+
+    public void RefreshAgentActivity()
+    {
+        if (_agentActivityService == null) return;
+
+        // Status badge
+        bool isListening = _settings.EnableAgentCompanion || _settings.EnableDeveloperEvents;
+        AgentStatusBadgeText.Text = isListening ? $"● Listening ({_settings.DeveloperPort})" : "○ Disabled";
+        AgentStatusBadgeText.Foreground = isListening
+            ? (Brush)FindResource("AccentGreenBrush")
+            : (Brush)FindResource("TextDimBrush");
+
+        // Filter counts
+        var allSessions = _agentActivityService.GetSessions("all");
+        int activeCount = allSessions.Count(s => s.Status == AgentSessionStatus.Active);
+        int waitingCount = allSessions.Count(s => s.Status == AgentSessionStatus.WaitingForInput);
+        int completedCount = allSessions.Count(s => s.Status == AgentSessionStatus.Completed);
+        int failedCount = allSessions.Count(s => s.Status == AgentSessionStatus.Failed);
+
+        AgentFilterAllBtn.Content = $"All ({allSessions.Count})";
+        AgentFilterActiveBtn.Content = $"Active ({activeCount})";
+        AgentFilterWaitingBtn.Content = $"Waiting ({waitingCount})";
+        AgentFilterCompletedBtn.Content = $"Completed ({completedCount})";
+        AgentFilterFailedBtn.Content = $"Failed ({failedCount})";
+        AgentFilterSummaryText.Text = $"{activeCount} active, {waitingCount} waiting, {allSessions.Count} total";
+
+        var filtered = _agentActivityService.GetSessions(_currentAgentFilter);
+        AgentSessionListBox.ItemsSource = filtered;
+
+        if (filtered.Count == 0)
+        {
+            AgentNoSessionsPanel.Visibility = Visibility.Visible;
+            AgentSessionDetailPanel.Visibility = Visibility.Collapsed;
+            AgentNoSessionSelectedPanel.Visibility = Visibility.Collapsed;
+            _selectedAgentSession = null;
+        }
+        else
+        {
+            AgentNoSessionsPanel.Visibility = Visibility.Collapsed;
+
+            // Retain selection or select first
+            if (_selectedAgentSession == null || !filtered.Any(s => s.SessionId == _selectedAgentSession.SessionId))
+            {
+                _selectedAgentSession = filtered.FirstOrDefault();
+            }
+            else
+            {
+                _selectedAgentSession = filtered.FirstOrDefault(s => s.SessionId == _selectedAgentSession.SessionId) ?? filtered.FirstOrDefault();
+            }
+
+            AgentSessionListBox.SelectedItem = _selectedAgentSession;
+            DisplayAgentSessionDetails(_selectedAgentSession);
+        }
+    }
+
+    private void DisplayAgentSessionDetails(AgentSession? session)
+    {
+        if (session == null)
+        {
+            AgentSessionDetailPanel.Visibility = Visibility.Collapsed;
+            AgentNoSessionSelectedPanel.Visibility = Visibility.Visible;
+            return;
+        }
+
+        AgentSessionDetailPanel.Visibility = Visibility.Visible;
+        AgentNoSessionSelectedPanel.Visibility = Visibility.Collapsed;
+
+        AgentDetailProjectText.Text = session.ProjectName;
+        AgentDetailProviderText.Text = session.ProviderName;
+        AgentDetailPathText.Text = session.RedactedWorkingDirectory;
+        AgentDetailIdText.Text = $"Session ID: {session.SessionId}";
+        AgentDetailDurationText.Text = $"Duration: {session.DurationText}";
+
+        // Safe approval boundary banner
+        AgentWaitingBanner.Visibility = session.Status == AgentSessionStatus.WaitingForInput
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        // Events list in chronological (most recent first) order
+        var eventsList = session.Events.OrderByDescending(e => e.Timestamp).ToList();
+        AgentEventTimelineItemsControl.ItemsSource = eventsList;
+        AgentTimelineCountText.Text = $"{eventsList.Count} events";
+    }
+
+    private void AgentSessionListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (AgentSessionListBox.SelectedItem is AgentSession session)
+        {
+            _selectedAgentSession = session;
+            DisplayAgentSessionDetails(session);
+        }
+    }
+
+    private void AgentFilterBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            _currentAgentFilter = tag;
+
+            // Update filter button styles
+            AgentFilterAllBtn.Style = (Style)FindResource(tag == "all" ? "PrimaryButton" : "SecondaryButton");
+            AgentFilterActiveBtn.Style = (Style)FindResource(tag == "active" ? "PrimaryButton" : "SecondaryButton");
+            AgentFilterWaitingBtn.Style = (Style)FindResource(tag == "waiting" ? "PrimaryButton" : "SecondaryButton");
+            AgentFilterCompletedBtn.Style = (Style)FindResource(tag == "completed" ? "PrimaryButton" : "SecondaryButton");
+            AgentFilterFailedBtn.Style = (Style)FindResource(tag == "failed" ? "PrimaryButton" : "SecondaryButton");
+
+            RefreshAgentActivity();
+        }
+    }
+
+    private void AgentClearHistoryBtn_Click(object sender, RoutedEventArgs e)
+    {
+        int cleared = _agentActivityService?.ClearCompletedHistory() ?? 0;
+        RefreshAgentActivity();
+    }
+
+    private void AgentRefreshBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _agentActivityService?.CheckIdleSessions();
+        RefreshAgentActivity();
+    }
+
+    private void AgentOpenFolderBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedAgentSession != null && !string.IsNullOrWhiteSpace(_selectedAgentSession.WorkingDirectory))
+        {
+            string resolved = AgentSession.ResolvePath(_selectedAgentSession.WorkingDirectory);
+            if (Directory.Exists(resolved))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = resolved,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not open directory: {ex.Message}", "Open Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
+    }
+
+    private void AgentConfigureClaudeBtn_Click(object sender, RoutedEventArgs e)
+    {
+        OpenClaudeCodeSetupModal();
+    }
+
+    private void OpenClaudeCodeSetupModal()
+    {
+        bool detected = _claudeCodeService.IsClaudeDetected(out string detectedPath);
+        string settingsPath = _claudeCodeService.GetSettingsPath();
+
+        AgentClaudeDetectedText.Text = detected
+            ? $"✓ Detected: {detectedPath}"
+            : "⚠️ Claude Code not found in standard paths (hooks can still be configured)";
+        AgentClaudeDetectedText.Foreground = detected
+            ? (Brush)FindResource("AccentGreenBrush")
+            : (Brush)FindResource("AccentOrangeBrush");
+
+        AgentClaudeSettingsPathText.Text = $"Path: {settingsPath}";
+
+        bool isInstalled = _claudeCodeService.IsHookInstalled();
+        string currentContent = File.Exists(settingsPath) ? File.ReadAllText(settingsPath) : "{}";
+        string proposedContent = _claudeCodeService.GenerateProposedJson(currentContent, !isInstalled, _settings.DeveloperPort);
+        string diff = _claudeCodeService.GenerateDiff(currentContent, proposedContent);
+
+        AgentDiffTextBox.Text = diff;
+        AgentApplyHooksBtn.Content = isInstalled ? "Update Hooks" : "✓ Apply & Install Hooks";
+        AgentUninstallHooksBtn.Visibility = isInstalled ? Visibility.Visible : Visibility.Collapsed;
+
+        AgentSetupModal.Visibility = Visibility.Visible;
+    }
+
+    private void AgentCloseSetupModal_Click(object sender, RoutedEventArgs e)
+    {
+        AgentSetupModal.Visibility = Visibility.Collapsed;
+    }
+
+    private void AgentApplyHooksBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var result = _claudeCodeService.Apply(enable: true, port: _settings.DeveloperPort);
+        if (result.Success)
+        {
+            MessageBox.Show(result.Message, "Claude Code Hooks", MessageBoxButton.OK, MessageBoxImage.Information);
+            AgentSetupModal.Visibility = Visibility.Collapsed;
+            RefreshAgentActivity();
+        }
+        else
+        {
+            MessageBox.Show(result.Message, "Error Applying Hooks", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void AgentUninstallHooksBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var result = _claudeCodeService.Apply(enable: false, port: _settings.DeveloperPort);
+        if (result.Success)
+        {
+            MessageBox.Show(result.Message, "Claude Code Hooks", MessageBoxButton.OK, MessageBoxImage.Information);
+            AgentSetupModal.Visibility = Visibility.Collapsed;
+            RefreshAgentActivity();
+        }
+        else
+        {
+            MessageBox.Show(result.Message, "Error Uninstalling Hooks", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // =========================================================================
+    // DEVELOPER RADAR
+    // =========================================================================
+
+    private void OnRadarStateChanged()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab == "Radar")
+            {
+                RefreshRadar();
+            }
+        });
+    }
+
+    private void RefreshRadar()
+    {
+        if (_radarService == null) return;
+
+        // Context Badge
+        var ctx = _radarService.CurrentContext;
+        string ctxLabel = ctx.IsPresentationOrMeeting ? "🎥 Meeting / Presenting" :
+                          ctx.IsIdle ? "💤 Idle" :
+                          ctx.Category switch
+                          {
+                              DeskSenseAppCategory.Coding => $"💻 Coding: {ctx.ProcessName}",
+                              DeskSenseAppCategory.Terminal => $"⚡ Terminal: {ctx.ProcessName}",
+                              DeskSenseAppCategory.Browser => $"🌐 Browser: {ctx.ProcessName}",
+                              DeskSenseAppCategory.Meeting => $"💬 Meeting: {ctx.ProcessName}",
+                              _ => $"🖥️ {ctx.ProcessName}"
+                          };
+
+        RadarContextText.Text = ctxLabel;
+
+        // Active App Card
+        RadarActiveAppText.Text = string.IsNullOrWhiteSpace(ctx.ProcessName) ? "Desktop" : ctx.ProcessName;
+        RadarActiveAppSubtext.Text = $"Category: {ctx.Category} • {ctx.DurationDescription}";
+
+        // Selected Repository & Active Branch Card
+        var selectedRepo = _radarService.GetSelectedRepository();
+        if (selectedRepo != null)
+        {
+            RadarBranchText.Text = selectedRepo.DisplayStatus;
+            RadarBranchText.Foreground = selectedRepo.StatusBrush;
+            RadarRepoSubtext.Text = selectedRepo.Path;
+        }
+        else
+        {
+            RadarBranchText.Text = "No repository monitored";
+            RadarBranchText.Foreground = (Brush)FindResource("TextDimBrush");
+            RadarRepoSubtext.Text = "Click + Add Repo to track git status";
+        }
+
+        // Latest Build / Test Card
+        var latestBuild = _radarService.GetLatestBuildRecord();
+        if (latestBuild != null)
+        {
+            RadarBuildStatusText.Text = $"{latestBuild.StatusBadgeText} - {latestBuild.ProjectName}";
+            RadarBuildStatusText.Foreground = latestBuild.StatusBrush;
+            RadarBuildSubtext.Text = $"{latestBuild.Message} ({latestBuild.FormattedTime})";
+        }
+        else
+        {
+            RadarBuildStatusText.Text = "— No build events";
+            RadarBuildStatusText.Foreground = (Brush)FindResource("TextDimBrush");
+            RadarBuildSubtext.Text = "Awaiting build/test webhook";
+        }
+
+        // Monitoring State & Warning Banner
+        RadarPauseBtn.Content = _radarService.RepoMonitor.IsPaused ? "▶ Resume" : "⏸ Pause";
+        RadarGitWarningBanner.Visibility = _radarService.RepoMonitor.IsGitAvailable ? Visibility.Collapsed : Visibility.Visible;
+
+        // Repositories List
+        var repos = _radarService.RepoMonitor.GetRepositories();
+        RadarRepoListBox.ItemsSource = null;
+        RadarRepoListBox.ItemsSource = repos;
+        if (selectedRepo != null)
+        {
+            RadarRepoListBox.SelectedItem = repos.FirstOrDefault(r => string.Equals(r.Path, selectedRepo.Path, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Build Events List
+        var builds = _radarService.GetBuildRecords();
+        RadarBuildListBox.ItemsSource = null;
+        RadarBuildListBox.ItemsSource = builds;
+    }
+
+    private void RadarRefreshBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_radarService != null)
+        {
+            _ = _radarService.RepoMonitor.RefreshAllAsync();
+            RefreshRadar();
+        }
+    }
+
+    private void RadarPauseBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_radarService != null)
+        {
+            _radarService.RepoMonitor.IsPaused = !_radarService.RepoMonitor.IsPaused;
+            RefreshRadar();
+        }
+    }
+
+    private void RadarHudToggleBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _onToggleHud?.Invoke();
+    }
+
+    private void RadarAddRepoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_radarService == null) return;
+
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Select Git Repository Folder",
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
+        {
+            _radarService.RepoMonitor.AddRepository(dialog.FolderName);
+            _radarService.SelectedRepositoryPath = dialog.FolderName;
+            RefreshRadar();
+        }
+    }
+
+    private void RadarRemoveRepoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_radarService == null) return;
+
+        var selected = RadarRepoListBox.SelectedItem as MonitoredRepository ?? _radarService.GetSelectedRepository();
+        if (selected != null)
+        {
+            _radarService.RepoMonitor.RemoveRepository(selected.Path);
+            RefreshRadar();
+        }
+    }
+
+    private void RadarOpenExplorerBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _radarService?.OpenInExplorer();
+    }
+
+    private void RadarCopyPathBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_radarService != null && _radarService.CopyPathToClipboard())
+        {
+            RadarCopyPathBtn.Content = "✓ Copied";
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            timer.Tick += (_, _) =>
+            {
+                RadarCopyPathBtn.Content = "📋 Copy Path";
+                timer.Stop();
+            };
+            timer.Start();
+        }
+    }
+
+    private void RadarRepoListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (RadarRepoListBox.SelectedItem is MonitoredRepository repo && _radarService != null)
+        {
+            _radarService.SelectedRepositoryPath = repo.Path;
+            RadarBranchText.Text = repo.DisplayStatus;
+            RadarBranchText.Foreground = repo.StatusBrush;
+            RadarRepoSubtext.Text = repo.Path;
         }
     }
 }

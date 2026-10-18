@@ -13,7 +13,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="#download-installation"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20x64-0078D4?logo=windows&logoColor=white" alt="Platform" /></a>
   <a href="#technology-architecture"><img src="https://img.shields.io/badge/.NET-10.0%20WPF-512BD4?logo=dotnet&logoColor=white" alt=".NET 10" /></a>
-  <a href="#privacy-security-offline-first"><img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20%26%20Zero%20Telemetry-10B981" alt="Offline" /></a>
+  <a href="#privacy-security-local-first"><img src="https://img.shields.io/badge/Privacy-Local--First%20%26%20Zero%20Telemetry-10B981" alt="Local-First" /></a>
 </p>
 
 <p align="center">
@@ -54,7 +54,7 @@ Modern developer and desktop environments are filled with resource-heavy web wra
 - **Native & Power-Efficient:** Built natively with .NET 10 and WPF. Neku completely detaches its render loop from `CompositionTarget.Rendering` when idle or asleep, guaranteeing **0.0% CPU** consumption and low memory usage (~30–45 MB).
 - **Expressive Companion Roster:** Choose from distinct companions in Companion Studio—including Neku (the spirited generic mascot), Billu (the sarcastic Reel Goblin orange tabby), and classic cats—each with customizable scale, sound effects, and personality presets.
 - **Integrated Productivity Suite:** Stay in the zone with a built-in Pomodoro focus timer that coordinates pet reactions, accompanied by a quick-search scratchpad notes tool accessible via hotkey.
-- **Privacy-First & Offline:** 100% offline with zero telemetry, zero analytics, and zero external network calls. All notes, preferences, and custom companion assets stay strictly on your local machine.
+- **Privacy-First & Local-First:** Local-first architecture with zero telemetry, zero analytics, and zero AI models. All notes, tasks, preferences, and custom companion assets stay strictly on your local machine.
 
 ---
 
@@ -67,13 +67,18 @@ Modern developer and desktop environments are filled with resource-heavy web wra
 - **Multi-Monitor Awareness:** Fully compatible with multi-display setups, respecting Per-Monitor V2 DPI scaling and screen bounds.
 
 ### Productivity & Workflow
+- **Global Command Palette (`Ctrl + Alt + P`):** Fast keyboard-driven launcher for opening views, starting focus sprints, creating tasks, switching companions, and controlling monitored repositories.
 - **Pomodoro Focus Timer:** Configurable sprint and break intervals with audio cues and companion synchronizations (attentive typing during work, relaxing during breaks).
 - **Quick Notes Scratchpad:** Lightweight local scratchpad with instant substring filtering, keyboard shortcuts, and automatic saving.
 - **Global Keyboard Controls:**
+  - `Ctrl + Alt + P` — Open Global Command Palette.
   - `Ctrl + Alt + N` — Summon / Launch Neku without stealing focus or creating duplicate instances.
   - `Ctrl + Alt + Q` — Gracefully exit Neku, flushing all settings to disk and releasing mutexes.
 
-### Developer Event Integration
+### Developer Radar & DeskSense
+- **DeskSense Desktop Awareness:** Detects active IDEs (VS Code, Visual Studio, IntelliJ, Rider), terminals (PowerShell, Windows Terminal), idle/away states, and presentation or screen-sharing modes with contextual pet reactions.
+- **Developer Radar Dashboard:** Unified cockpit in Productivity Hub displaying monitored Git repositories with real-time branch and uncommitted dirty indicators, build/test outcome history, and active coding agent count.
+- **Floating Developer HUD:** Optional lightweight, draggable, topmost status pill providing at-a-glance visibility into current app context, active Git branch, build state, and Pomodoro timer.
 - **Local Event Listener:** Loopback HTTP endpoint (`http://localhost:48123/event`) disabled by default for zero overhead.
 - **Build & Test Notifications:** Trigger instant pet celebrations or commiserations directly from PowerShell (`tools/neku-event.ps1`), bash, or cURL after builds, tests, or deployments.
 
@@ -347,12 +352,13 @@ For detailed test coverage and testing conventions, refer to [docs/TESTING.md](d
 
 ---
 
-## Privacy, Security & Offline First
+## Privacy, Security & Local-First Architecture
 
-- **Zero Telemetry:** Neku has zero tracking, zero analytics, and zero crash reporting beacons.
-- **100% Offline:** The application never makes outbound network connections.
-- **Loopback-Only Webhook:** The developer event listener binds strictly to local loopback (`127.0.0.1`), is disabled by default, and processes only predefined event types.
-- **Local State Storage:** All notes, preferences, and custom companion assets are stored exclusively in `%AppData%\Neku\`.
+- **Zero Telemetry & Analytics:** Neku contains zero user tracking, zero telemetry beacons, zero analytics, and zero crash reporting calls.
+- **Zero AI Models & Zero API Keys:** Neku contains no embedded AI models, requires no API keys, makes no external AI inference calls, and relies on deterministic local logic for all companion actions.
+- **Optional GitHub Update Checks:** By default, Neku checks the public, unauthenticated GitHub Releases API (`https://api.github.com/repos/kunal-gswm/Neku/releases/latest`) on startup to notify you of newer releases. This check is credential-free, sends no personal telemetry, and can be disabled at any time in **Settings > Performance** (`enableAutoUpdate: false`). When disabled, Neku makes zero external network requests.
+- **Loopback-Only Developer & Agent Integrations:** The Developer Event Listener and Coding Agent Companion bind strictly to IPv4 loopback (`127.0.0.1`), reject all non-local network traffic with `403 Forbidden`, and never transmit event logs, prompts, or code activity outside your machine.
+- **Local State Storage:** All notes, tasks, productivity history, preferences, and custom companion assets are stored exclusively in `%AppData%\Neku\`.
 - **Private Asset Isolation:** Personal local companion artwork remains strictly isolated in local AppData and is never bundled into public release distributions.
 
 ---

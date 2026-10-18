@@ -20,13 +20,12 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem _reducedMotionItem;
     private readonly ToolStripMenuItem _quietModeItem;
     private readonly ToolStripMenuItem _updateItem;
-    private readonly ToolStripMenuItem _aiItem;
-    private readonly ToolStripMenuItem _talkItem;
     private readonly Action _onUpdate;
 
     public TrayService(
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
+        Action onCommandPalette,
         Action onProductivityHub,
         Action onTasks,
         Action onQuickNote,
@@ -36,10 +35,14 @@ public sealed class TrayService : IDisposable
         Action<bool> onPauseToggled, Action<bool> onHideToggled,
         Action<bool> onClickThroughToggled, Action<bool> onReducedMotionToggled,
         Action<bool> onQuietModeToggled, Action onResetPosition, Action onQuit,
-        Action onUpdate, Action<bool> onAiToggled, Action onTalk, AppSettings settings)
+        Action onUpdate, AppSettings settings,
+        Action? onDeveloperRadar = null, Action? onToggleDeveloperHud = null)
     {
         _onUpdate = onUpdate;
         var menu = new ContextMenuStrip();
+
+        var paletteItem = new ToolStripMenuItem("⚡ Command Palette… (Ctrl+Alt+P)");
+        paletteItem.Click += (_, _) => onCommandPalette();
 
         var hubItem = new ToolStripMenuItem("🐾 Productivity Hub…") { Font = new Font(menu.Font, FontStyle.Bold) };
         hubItem.Click += (_, _) => onProductivityHub();
@@ -58,6 +61,20 @@ public sealed class TrayService : IDisposable
 
         _devEventsItem = new ToolStripMenuItem("Developer Events…");
         _devEventsItem.Click += (_, _) => onDeveloperEvents();
+
+        ToolStripMenuItem? radarItem = null;
+        if (onDeveloperRadar != null)
+        {
+            radarItem = new ToolStripMenuItem("📡 Developer Radar…");
+            radarItem.Click += (_, _) => onDeveloperRadar();
+        }
+
+        ToolStripMenuItem? hudItem = null;
+        if (onToggleDeveloperHud != null)
+        {
+            hudItem = new ToolStripMenuItem("🪟 Toggle Developer HUD");
+            hudItem.Click += (_, _) => onToggleDeveloperHud();
+        }
 
         var studioItem = new ToolStripMenuItem("🎨 Companion Studio…");
         studioItem.Click += (_, _) => onCompanionStudio();
@@ -83,11 +100,6 @@ public sealed class TrayService : IDisposable
         _reducedMotionItem = new ToolStripMenuItem("Reduced motion") { CheckOnClick = true, Checked = settings.ReducedMotion };
         _reducedMotionItem.Click += (_, _) => onReducedMotionToggled(_reducedMotionItem.Checked);
 
-        _aiItem = new ToolStripMenuItem("AI companion") { CheckOnClick = true, Checked = settings.EnableAiCompanion };
-        _talkItem = new ToolStripMenuItem("Talk to Neku…") { Enabled = settings.EnableAiCompanion };
-        _aiItem.Click += (_, _) => { onAiToggled(_aiItem.Checked); _talkItem.Enabled = _aiItem.Checked; };
-        _talkItem.Click += (_, _) => onTalk();
-
         _updateItem = new ToolStripMenuItem("Update available — install now") { Visible = false };
         _updateItem.Click += (_, _) => onUpdate();
 
@@ -102,6 +114,7 @@ public sealed class TrayService : IDisposable
         };
 
         // 1. Productivity Hub, Focus Session & Tasks
+        menu.Items.Add(paletteItem);
         menu.Items.Add(hubItem);
         menu.Items.Add(_focusItem);
         menu.Items.Add(_focusCancelItem);
@@ -111,6 +124,8 @@ public sealed class TrayService : IDisposable
         // 2. Quick Note, Developer Events & Companion Studio
         menu.Items.Add(_quickNoteItem);
         menu.Items.Add(_devEventsItem);
+        if (radarItem != null) menu.Items.Add(radarItem);
+        if (hudItem != null) menu.Items.Add(hudItem);
         menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -124,9 +139,6 @@ public sealed class TrayService : IDisposable
         menu.Items.Add(_quietModeItem);
         menu.Items.Add(_reducedMotionItem);
         menu.Items.Add(resetPosItem);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(_aiItem);
-        menu.Items.Add(_talkItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_updateItem);
         menu.Items.Add(quitItem);
@@ -173,12 +185,6 @@ public sealed class TrayService : IDisposable
         _updateItem.Text = busy ? "Downloading update…" : "Update available — install now";
     }
 
-    /// <summary>Reflect the AI-companion on/off state in the tray (kept in sync with the Settings window).</summary>
-    public void SetAiEnabled(bool enabled)
-    {
-        _aiItem.Checked   = enabled;
-        _talkItem.Enabled = enabled;
-    }
 
     /// <summary>Reveal the "Update now" menu item and pop a balloon inviting the update.</summary>
     public void ShowUpdateAvailable()

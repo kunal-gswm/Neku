@@ -310,6 +310,12 @@ public partial class TasksWindow : Window
         NoSelectionBorder.Visibility = Visibility.Collapsed;
     }
 
+    /// <summary>Creates a new task and focuses its title field for immediate editing.</summary>
+    public void CreateNewTask()
+    {
+        NewTaskBtn_Click(this, new RoutedEventArgs());
+    }
+
     private void NewTaskBtn_Click(object sender, RoutedEventArgs e)
     {
         DateTime? defaultDue = _activeTab == "Today" ? DateTime.Today : (_activeTab == "Upcoming" ? DateTime.Today.AddDays(1) : (DateTime?)null);

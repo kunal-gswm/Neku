@@ -11,26 +11,26 @@ public class HotkeyServiceTests
     [Fact]
     public void HotkeyConstants_AreDistinct()
     {
-        Assert.NotEqual(HotkeyService.ChatHotkeyId, HotkeyService.ExitHotkeyId);
-        Assert.True(HotkeyService.ChatHotkeyId > 0);
+        Assert.NotEqual(HotkeyService.ExitHotkeyId, HotkeyService.PaletteHotkeyId);
         Assert.True(HotkeyService.ExitHotkeyId > 0);
+        Assert.True(HotkeyService.PaletteHotkeyId > 0);
     }
 
     [Fact]
     public void HotkeyService_InitialState_IsNotRegistered()
     {
         using var service = new HotkeyService();
-        Assert.False(service.IsRegistered(HotkeyService.ChatHotkeyId));
         Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
     }
 
     [Fact]
     public void HotkeyService_Register_WithoutHwnd_ReturnsFalse()
     {
         using var service = new HotkeyService();
-        bool registered = service.Register(ModifierKeys.Control | ModifierKeys.Alt, Key.N);
+        bool registered = service.Register(HotkeyService.PaletteHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.P, () => { });
         Assert.False(registered);
-        Assert.False(service.IsRegistered(HotkeyService.ChatHotkeyId));
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
     }
 
     [Fact]
@@ -74,6 +74,78 @@ public class HotkeyServiceTests
     }
 
     [Fact]
+    public void HotkeyService_PaletteHotkeyCombination_IsValidModifiersAndKey()
+    {
+        // Default: Ctrl + Alt + P (avoids colliding with VS Code's Ctrl + Shift + P)
+        var mods = ModifierKeys.Control | ModifierKeys.Alt;
+        var key = Key.P;
+
+        Assert.True(mods.HasFlag(ModifierKeys.Control));
+        Assert.True(mods.HasFlag(ModifierKeys.Alt));
+        Assert.False(mods.HasFlag(ModifierKeys.Shift));
+        Assert.Equal(Key.P, key);
+
+        using var service = new HotkeyService();
+        // Without HWND, registration fails gracefully without throwing
+        bool registered = service.Register(HotkeyService.PaletteHotkeyId, mods, key, () => { });
+        Assert.False(registered);
+
+        // RegisterPalette helper also fails gracefully without HWND
+        bool helperRegistered = service.RegisterPalette(mods, key, () => { });
+        Assert.False(helperRegistered);
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
+    }
+
+    [Fact]
+    public void HotkeyService_DefaultConfiguration_LeavesCtrlShiftPFreeForOtherApps()
+    {
+        var settings = new AppSettings();
+        var defaultMods = (ModifierKeys)settings.CommandPaletteHotkeyModifiers;
+        var defaultKey = (Key)settings.CommandPaletteHotkeyKey;
+
+        // Verify default is Ctrl+Alt+P
+        Assert.Equal(ModifierKeys.Control | ModifierKeys.Alt, defaultMods);
+        Assert.Equal(Key.P, defaultKey);
+
+        // Explicitly verify Shift modifier is NOT included by default
+        Assert.False(defaultMods.HasFlag(ModifierKeys.Shift),
+            "Neku must not register Shift modifier by default so Ctrl+Shift+P remains available for VS Code.");
+    }
+
+    [Fact]
+    public void HotkeyService_PaletteRegistrationFailure_DoesNotCorruptExitState()
+    {
+        using var service = new HotkeyService();
+
+        // 1. Initial state
+        Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
+
+        // 2. Unattached registration attempts fail safely without throwing
+        bool exitReg = service.RegisterExit(() => { });
+        bool paletteReg = service.RegisterPalette(ModifierKeys.Control | ModifierKeys.Alt, Key.P, () => { });
+
+        Assert.False(exitReg);
+        Assert.False(paletteReg);
+
+        // 3. Unregistering palette does not affect exit
+        service.UnregisterPalette();
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
+
+        // 4. Repeated unregistration is completely safe
+        service.UnregisterPalette();
+        service.UnregisterExit();
+    }
+
+    [Fact]
+    public void HotkeyService_UnregisterPalette_SucceedsSafely()
+    {
+        using var service = new HotkeyService();
+        service.UnregisterPalette();
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
+    }
+
+    [Fact]
     public void HotkeyService_RegistrationConflict_DoesNotCorruptServiceState()
     {
         using var service = new HotkeyService();
@@ -96,7 +168,7 @@ public class HotkeyServiceTests
     {
         using var service = new HotkeyService();
         service.Unregister(HotkeyService.ExitHotkeyId);
-        service.Unregister();
+        service.Unregister(HotkeyService.PaletteHotkeyId);
     }
 
     [Fact]
@@ -108,7 +180,7 @@ public class HotkeyServiceTests
         service.Dispose();
 
         Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
-        Assert.False(service.IsRegistered(HotkeyService.ChatHotkeyId));
+        Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
 
         // Multiple disposals should remain completely safe
         service.Dispose();
