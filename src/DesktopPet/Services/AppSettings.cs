@@ -149,6 +149,7 @@ public sealed class AppSettings
     [JsonPropertyName("focusTimerState")] public string FocusTimerState { get; set; } = "Idle";
     [JsonPropertyName("focusTimerDeadlineUtc")] public DateTime? FocusTimerDeadlineUtc { get; set; }
     [JsonPropertyName("focusTimerRemainingSeconds")] public double FocusTimerRemainingSeconds { get; set; } = 0;
+    [JsonPropertyName("focusActiveTaskId")] public string? FocusActiveTaskId { get; set; }
 
     // ── Onboarding ────────────────────────────────────────────────────────────
     /// <summary>Whether the first-run onboarding speech bubble has been dismissed.</summary>
@@ -172,6 +173,9 @@ public sealed class AppSettings
 
     /// <summary>Whether developer test pass/fail triggers companion reactions.</summary>
     [JsonPropertyName("enableDevTestReactions")] public bool EnableDevTestReactions { get; set; } = true;
+
+    /// <summary>Whether task completions trigger companion reactions.</summary>
+    [JsonPropertyName("enableTaskReactions")] public bool EnableTaskReactions { get; set; } = true;
 
     /// <summary>
     /// Validates all configuration values, clamping numbers within safe limits and falling back

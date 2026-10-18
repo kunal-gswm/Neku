@@ -261,4 +261,14 @@ internal static class Win32
         int mouseData = Marshal.ReadInt32(lParam, 8);
         return (short)((mouseData >> 16) & 0xFFFF);
     }
+
+    // ── Desktop Attachment ──────────────────────────────────────────────────
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool SetThreadDesktop(IntPtr hDesktop);
+
+    public const uint DESKTOP_ALL_ACCESS = 0x01FF;
 }

@@ -11,6 +11,7 @@ public sealed class TrayService : IDisposable
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _focusItem;
     private readonly ToolStripMenuItem _focusCancelItem;
+    private readonly ToolStripMenuItem _tasksItem;
     private readonly ToolStripMenuItem _quickNoteItem;
     private readonly ToolStripMenuItem _devEventsItem;
     private readonly ToolStripMenuItem _pauseItem;
@@ -26,6 +27,7 @@ public sealed class TrayService : IDisposable
     public TrayService(
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
+        Action onTasks,
         Action onQuickNote,
         Action onDeveloperEvents,
         Action onCompanionStudio,
@@ -43,6 +45,9 @@ public sealed class TrayService : IDisposable
 
         _focusCancelItem = new ToolStripMenuItem("Cancel Focus Session");
         _focusCancelItem.Click += (_, _) => onFocusCancel();
+
+        _tasksItem = new ToolStripMenuItem("Tasks…");
+        _tasksItem.Click += (_, _) => onTasks();
 
         _quickNoteItem = new ToolStripMenuItem("Quick Note…");
         _quickNoteItem.Click += (_, _) => onQuickNote();
@@ -92,9 +97,10 @@ public sealed class TrayService : IDisposable
             _pauseItem.Text = _pauseItem.Checked ? "Resume" : "Pause";
         };
 
-        // 1. Focus Session
+        // 1. Focus Session & Tasks
         menu.Items.Add(_focusItem);
         menu.Items.Add(_focusCancelItem);
+        menu.Items.Add(_tasksItem);
         menu.Items.Add(new ToolStripSeparator());
 
         // 2. Quick Note, Developer Events & Companion Studio

@@ -12,7 +12,8 @@ public sealed class Personality
     // ── Active companion tracking ──────────────────────────────────────────
     private string _activePet = "neku";
     public string ActivePet => _activePet;
-    public bool IsBillu => string.Equals(_activePet, "billu", StringComparison.OrdinalIgnoreCase);
+    public bool IsBillu => string.Equals(_activePet, "billu", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(_activePet, "cat-billu", StringComparison.OrdinalIgnoreCase);
 
     public void SetActivePet(string? pet)
     {
@@ -134,6 +135,16 @@ public sealed class Personality
         "Hope you stretched! Time to get back in the zone 💪",
         "Break time finished! What's next on the list? 📝",
         "Welcome back! Let's crush this next session! 🐾",
+    ];
+
+    private static readonly string[] TaskCompletedLines =
+    [
+        "Task completed! Look at you getting things done! 🌟",
+        "One less thing on your list! Crushing it! ✅",
+        "Task complete! High paws! 🐾",
+        "Boom! Struck off the list! What's next? ✨",
+        "Productivity level: 100! Great job! 🏆",
+        "Checked that off! Proud of you! 💕",
     ];
 
     private static readonly string[] BuildSuccessLines =
@@ -263,6 +274,16 @@ public sealed class Personality
         "Back to work! That reel wasn't even that good anyway.",
         "Recharge complete. Back to the grind, chief.",
         "Time to lock back in. Don't make me side-eye you.",
+    ];
+
+    private static readonly string[] BilluTaskCompletedLines =
+    [
+        "Task done? Bro actually locked in. Respect. 🤝",
+        "Checked off! The way you're carrying this entire operation.",
+        "Look at bro being a functional adult. Unprecedented.",
+        "One task closer to an 8-hour nap. Flawless strategy.",
+        "You finished that? Dopamine hit secured ✨",
+        "Productivity peak. Don't let it go to your head.",
     ];
 
     private static readonly string[] BilluBuildSuccessLines =
@@ -625,6 +646,9 @@ public sealed class Personality
 
     /// <summary>Reaction line when a break finishes.</summary>
     public string GetBreakCompletedLine() => PickNonRepeating(IsBillu ? BilluBreakCompletedLines : BreakCompletedLines);
+
+    /// <summary>Reaction line when a task is completed.</summary>
+    public string GetTaskCompletedLine(string? taskTitle = null) => PickNonRepeating(IsBillu ? BilluTaskCompletedLines : TaskCompletedLines);
 
     /// <summary>Reaction line when a developer build passes.</summary>
     public string GetBuildSuccessLine() => PickNonRepeating(IsBillu ? BilluBuildSuccessLines : BuildSuccessLines);

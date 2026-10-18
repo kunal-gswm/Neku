@@ -91,6 +91,7 @@
                         <CheckBox x:Name="ScrollPlayBox"       Content="Unroll toilet paper when scrolling 🧻"/>
                         <CheckBox x:Name="MoodsBox"            Content="Lifelike moods (energetic / sleepy) 🌙"/>
                         <CheckBox x:Name="SystemReactionsBox"  Content="React to system load &amp; focus apps 💻"/>
+                        <CheckBox x:Name="TaskReactionsBox"    Content="Celebrate completed tasks ✅"/>
 
                         <Separator Margin="0,12"/>
 

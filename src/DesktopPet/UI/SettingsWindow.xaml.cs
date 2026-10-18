@@ -56,6 +56,7 @@ public partial class SettingsWindow : Window
         ScrollPlayBox.IsChecked      = settings.EnableScrollPlay;
         MoodsBox.IsChecked           = settings.EnableMoods;
         SystemReactionsBox.IsChecked = settings.EnableSystemReactions;
+        TaskReactionsBox.IsChecked   = settings.EnableTaskReactions;
 
         // Performance
         ReducedMotionBox.IsChecked     = settings.ReducedMotion;
@@ -137,7 +138,7 @@ public partial class SettingsWindow : Window
         foreach (var box in new[]
                  {
                      AutonomousWanderBox, WindowWalkingBox, CursorChaseBox, RandomReactionsBox,
-                     SleepBox, ScrollPlayBox, MoodsBox, SystemReactionsBox,
+                     SleepBox, ScrollPlayBox, MoodsBox, SystemReactionsBox, TaskReactionsBox,
                      ReducedMotionBox, BatteryConsciousBox, DisableMonitoringBox,
                      QuietModeBox, HidePresentBox, DevEventsBox,
                      AutoUpdateBox, RememberStateBox, AutostartBox, ClickThroughBox,
@@ -258,6 +259,7 @@ public partial class SettingsWindow : Window
         _settings.EnableScrollPlay           = ScrollPlayBox.IsChecked       == true;
         _settings.EnableMoods                = MoodsBox.IsChecked            == true;
         _settings.EnableSystemReactions      = SystemReactionsBox.IsChecked  == true;
+        _settings.EnableTaskReactions        = TaskReactionsBox.IsChecked    == true;
         _settings.ReducedMotion              = ReducedMotionBox.IsChecked    == true;
         _settings.BatteryConscious           = BatteryConsciousBox.IsChecked == true;
         _settings.DisableOptionalMonitoring  = DisableMonitoringBox.IsChecked == true;

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using DesktopPet.Engine;
+using DesktopPet.Native;
 using DesktopPet.Services;
 using DesktopPet.Services.Ai;
 using DesktopPet.UI;
@@ -40,6 +41,8 @@ public partial class App : Application
     private FocusHudWindow? _focusHudWindow;
     private NotesService _notesService = new();
     private QuickNotesWindow? _notesWindow;
+    private TaskService _taskService = new();
+    private TasksWindow? _tasksWindow;
     private DeveloperEventsWindow? _devEventsWindow;
 
     // ── AI companion (built lazily, only when enabled) ──
@@ -59,21 +62,25 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-
+        EnsureInteractiveDesktop();
+        DebugLog.Write($"[Lifecycle] OnStartup started with args: [{string.Join(", ", e.Args)}]");
 
         // Crash diagnostics — capture any unhandled exception with its stack trace.
         // Mark handled so a single stray exception can't kill the user's pet.
         DispatcherUnhandledException += (_, args) =>
         {
+            DebugLog.Write($"[Exception] DISPATCHER: {args.Exception}");
             try { File.AppendAllText(CrashLog, $"[{DateTime.Now:HH:mm:ss}] DISPATCHER\n{args.Exception}\n\n"); } catch { }
             args.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
         {
+            DebugLog.Write($"[Exception] DOMAIN: {args.ExceptionObject}");
             try { File.AppendAllText(CrashLog, $"[{DateTime.Now:HH:mm:ss}] DOMAIN\n{args.ExceptionObject}\n\n"); } catch { }
         };
 
         _singleInstance = new Mutex(initiallyOwned: true, "Neku.SingleInstance", out bool isNew);
+        DebugLog.Write($"[Startup] Mutex acquired. isNew={isNew}");
         if (!isNew)
         {
             bool isLauncherStart = e.Args.Contains("--launcher-start") ||
@@ -218,6 +225,18 @@ public partial class App : Application
         _focusTimer.FocusCompleted += OnFocusCompleted;
         _focusTimer.BreakCompleted += OnBreakCompleted;
         _notesService = new NotesService();
+        _taskService = new TaskService();
+        _taskService.TaskCompleted += OnTaskCompleted;
+        _taskService.TaskDeleted += OnTaskDeleted;
+
+        if (!string.IsNullOrEmpty(_settings.FocusActiveTaskId))
+        {
+            var activeTask = _taskService.Get(_settings.FocusActiveTaskId);
+            if (activeTask != null)
+            {
+                _focusTimer.ActiveTaskTitle = activeTask.Title;
+            }
+        }
 
         _petWindow.SetClickThrough(_settings.ClickThrough);
         _petWindow.Opacity = _settings.Opacity;
@@ -228,6 +247,7 @@ public partial class App : Application
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
             onToggleFocusHud: ToggleFocusHud,
+            onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
             onCompanionStudio: OpenCompanionStudio,
@@ -249,6 +269,7 @@ public partial class App : Application
             getFocusLabel: GetFocusLabel,
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
+            onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
             onCompanionStudio: OpenCompanionStudio,
@@ -388,6 +409,8 @@ public partial class App : Application
             };
             openTimer.Start();
         }
+
+        DebugLog.Write("[Startup] OnStartup initialization finished. Dispatcher running.");
     }
 
     private UpdateService Updater() => _updateService ??= new UpdateService(Http());
@@ -562,7 +585,13 @@ public partial class App : Application
         switch (_focusTimer.State)
         {
             case FocusTimerState.Idle:
-                _focusTimer.StartFocus(_settings.FocusDurationMinutes);
+                string? taskId = _settings.FocusActiveTaskId;
+                string? taskTitle = _focusTimer.ActiveTaskTitle;
+                if (!string.IsNullOrEmpty(taskId) && string.IsNullOrEmpty(taskTitle))
+                {
+                    taskTitle = _taskService.Get(taskId)?.Title;
+                }
+                _focusTimer.StartFocus(_settings.FocusDurationMinutes, taskId, taskTitle);
                 _engine?.Personality.OnPositiveEvent();
                 if (_settings.EnableFocusReactions)
                     _engine?.TriggerReaction(PetState.Typing, _engine.Personality.GetFocusStartedLine(), 2.0);
@@ -585,6 +614,8 @@ public partial class App : Application
     private void OnFocusCancel()
     {
         _focusTimer.Cancel();
+        _settings.FocusActiveTaskId = null;
+        _settingsService.Save();
         _engine?.ShowSpeech("Focus session canceled.", 2.5);
     }
 
@@ -592,16 +623,30 @@ public partial class App : Application
     {
         DismissOnboarding();
         if (_focusHudWindow == null)
-            _focusHudWindow = new FocusHudWindow(_focusTimer);
+        {
+            _focusHudWindow = new FocusHudWindow(_focusTimer, OnFocusToggle, OnFocusCancel);
+            _focusHudWindow.Closed += (_, _) => _focusHudWindow = null;
+        }
 
         if (_focusHudWindow.IsVisible)
             _focusHudWindow.Hide();
         else
+        {
+            _focusHudWindow.UpdateDisplay();
             _focusHudWindow.Show();
+        }
     }
 
     private void OnFocusCompleted()
     {
+        if (!string.IsNullOrEmpty(_focusTimer.ActiveTaskId))
+        {
+            _taskService.RecordFocusCompleted(_focusTimer.ActiveTaskId);
+            _focusTimer.ClearActiveTask();
+            _settings.FocusActiveTaskId = null;
+            _settingsService.Save();
+        }
+
         _engine?.Personality.OnPositiveEvent();
         if (_settings.EnableFocusReactions)
         {
@@ -650,6 +695,69 @@ public partial class App : Application
         else
         {
             _notesWindow.Activate();
+        }
+    }
+
+    private void OpenTasksWindow()
+    {
+        DismissOnboarding();
+        if (_tasksWindow == null || !_tasksWindow.IsLoaded)
+        {
+            _tasksWindow = new TasksWindow(_taskService, _focusTimer, _settings);
+            _tasksWindow.TaskFocusRequested += task =>
+            {
+                StartFocusForTask(task);
+            };
+            _tasksWindow.Closed += (_, _) => _tasksWindow = null;
+            _tasksWindow.Show();
+        }
+        else
+        {
+            _tasksWindow.Activate();
+            if (_tasksWindow.WindowState == WindowState.Minimized)
+                _tasksWindow.WindowState = WindowState.Normal;
+        }
+    }
+
+    public void StartFocusForTask(TaskItem task)
+    {
+        if (_focusTimer.IsActive)
+        {
+            _focusTimer.Cancel();
+        }
+        int minutes = _settings.FocusDurationMinutes > 0 ? _settings.FocusDurationMinutes : 25;
+        _focusTimer.StartFocus(minutes, task.Id, task.Title);
+        _settings.FocusActiveTaskId = task.Id;
+        _settingsService.Save();
+
+        if (_settings.EnableFocusReactions)
+        {
+            _engine?.Personality.OnPositiveEvent();
+            _engine?.TriggerReaction(PetState.Typing, $"🎯 Focusing on:\n\"{task.Title}\"", 2.0);
+        }
+    }
+
+    private void OnTaskCompleted(TaskItem task)
+    {
+        if (!_settings.EnableTaskReactions) return;
+        if (_settings.EnableQuietMode || _hiddenForQuiet) return;
+
+        string line = _engine?.Personality.GetTaskCompletedLine(task.Title) ?? "Task completed! Great job! ✨";
+        _engine?.Personality.OnPositiveEvent();
+        _engine?.TriggerReaction(PetState.Celebrate, line, 2.0);
+        if (!_settings.ReducedMotion)
+        {
+            _petWindow?.SpawnHearts();
+        }
+    }
+
+    private void OnTaskDeleted(TaskItem task)
+    {
+        if (string.Equals(_focusTimer.ActiveTaskId, task.Id, StringComparison.Ordinal))
+        {
+            _focusTimer.ClearActiveTask();
+            _settings.FocusActiveTaskId = null;
+            _settingsService.Save();
         }
     }
 
@@ -1104,6 +1212,7 @@ public partial class App : Application
 
     private void QuitApp()
     {
+        DebugLog.Write($"[Lifecycle] QuitApp called. Stack: {Environment.StackTrace}");
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         SavePetState();
         try { _notesService?.Save(); } catch { }
@@ -1122,6 +1231,7 @@ public partial class App : Application
         _focusTimer?.Dispose();
         _focusHudWindow?.Close();
         _notesWindow?.Close();
+        _tasksWindow?.Close();
         _devEventsWindow?.Close();
         _tray?.Dispose();
         Shutdown();
@@ -1129,6 +1239,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DebugLog.Write($"[Lifecycle] OnExit called with exitCode={e.ApplicationExitCode}. Stack: {Environment.StackTrace}");
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         SavePetState();
         try { _notesService?.Save(); } catch { }
@@ -1142,6 +1253,7 @@ public partial class App : Application
         _focusTimer?.Dispose();
         _focusHudWindow?.Close();
         _notesWindow?.Close();
+        _tasksWindow?.Close();
         _devEventsWindow?.Close();
         _http?.Dispose();
         _hookWatchdog?.Dispose();
@@ -1235,5 +1347,27 @@ public partial class App : Application
             return vi?.ProductVersion ?? vi?.FileVersion ?? "";
         }
         catch { return ""; }
+    }
+
+    /// <summary>
+    /// If launched from a background sandbox, child desktop, or non-default session desktop
+    /// (e.g. IDE terminal, service subshell), re-attach the main thread to the interactive "Default"
+    /// desktop before any windows, hooks, or tray icons are initialized.
+    /// </summary>
+    private static void EnsureInteractiveDesktop()
+    {
+        try
+        {
+            IntPtr hDesktop = Win32.OpenDesktop("Default", 0, false, Win32.DESKTOP_ALL_ACCESS);
+            if (hDesktop != IntPtr.Zero)
+            {
+                bool switched = Win32.SetThreadDesktop(hDesktop);
+                DebugLog.Write($"[Desktop] SetThreadDesktop to Default: {switched}");
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugLog.Write($"[Desktop] Failed to switch desktop: {ex.Message}");
+        }
     }
 }

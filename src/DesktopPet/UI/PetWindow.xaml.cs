@@ -351,6 +351,7 @@ public partial class PetWindow : Window, IPetView
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
         Action onToggleFocusHud,
+        Action onTasks,
         Action onQuickNote,
         Action onDeveloperEvents,
         Action onCompanionStudio,
@@ -375,7 +376,10 @@ public partial class PetWindow : Window, IPetView
         var focusHudItem = new MenuItem { Header = "Toggle Focus HUD" };
         focusHudItem.Click += (_, _) => onToggleFocusHud();
 
-        // 2. Quick Note
+        // 2. Tasks & Quick Note
+        var tasksItem = new MenuItem { Header = "Tasks…" };
+        tasksItem.Click += (_, _) => onTasks();
+
         var quickNoteItem = new MenuItem { Header = "Quick Note…" };
         quickNoteItem.Click += (_, _) => onQuickNote();
 
@@ -431,6 +435,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(focusCancelItem);
         menu.Items.Add(focusHudItem);
         menu.Items.Add(new Separator());
+        menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
         menu.Items.Add(devEventsItem);
         menu.Items.Add(studioItem);

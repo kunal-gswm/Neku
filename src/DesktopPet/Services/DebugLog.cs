@@ -9,8 +9,7 @@ public static class DebugLog
     /// Off unless NEKU_DEBUG=1 is set, so users never accumulate a log they didn't ask for
     /// — but anyone reporting a bug can turn it on without a special build.
     /// </summary>
-    public static bool Enabled =
-        Environment.GetEnvironmentVariable("NEKU_DEBUG") is "1" or "true";
+    public static bool Enabled = true;
     private static readonly string Path =
         System.IO.Path.Combine(System.IO.Path.GetTempPath(), "neku_debug.log");
     private static readonly object Gate = new();

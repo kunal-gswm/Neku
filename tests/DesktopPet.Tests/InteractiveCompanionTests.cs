@@ -1,6 +1,9 @@
 using System.IO;
+using System.Threading;
+using System.Windows;
 using DesktopPet.Engine;
 using DesktopPet.Services;
+using DesktopPet.UI;
 using Xunit;
 
 namespace DesktopPet.Tests;
@@ -114,6 +117,38 @@ public class InteractiveCompanionTests
         restored.LoadState(settings);
         Assert.Equal(FocusTimerState.Idle, restored.State);
         Assert.False(restored.IsActive);
+    }
+
+    [Fact]
+    public void FocusHudWindow_initializes_with_default_duration_and_handles_toggle()
+    {
+        var thread = new Thread(() =>
+        {
+            using var timer = new FocusTimerService();
+            timer.FocusDurationMinutes = 30;
+            bool toggled = false;
+            bool canceled = false;
+
+            var hud = new FocusHudWindow(timer, () => toggled = true, () => canceled = true);
+            Assert.Equal("30:00", hud.TimeText.Text);
+            Assert.Equal("▶", hud.PauseButton.Content);
+
+            // Test toggling when idle calls the callback
+            hud.PauseButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Assert.True(toggled);
+
+            // Test cancel callback
+            var cancelItem = hud.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>()
+                .First(i => (string)i.Header == "Cancel Focus Session");
+            cancelItem.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent));
+            Assert.True(canceled);
+
+            hud.Close();
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(5000);
+        Assert.True(finished);
     }
 
     // ── 2. Quick Notes Tests ──────────────────────────────────────────────────

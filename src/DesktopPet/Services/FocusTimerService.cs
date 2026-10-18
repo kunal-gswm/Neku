@@ -33,6 +33,12 @@ public sealed class FocusTimerService : IDisposable
 
     public DateTime? TargetDeadlineUtc => _targetDeadlineUtc;
 
+    /// <summary>Optional associated task identifier for the active focus session.</summary>
+    public string? ActiveTaskId { get; set; }
+
+    /// <summary>Optional associated task title for display.</summary>
+    public string? ActiveTaskTitle { get; set; }
+
     public event Action<FocusTimerState>? StateChanged;
     public event Action? FocusCompleted;
     public event Action? BreakCompleted;
@@ -77,8 +83,8 @@ public sealed class FocusTimerService : IDisposable
         }
     }
 
-    /// <summary>Start a new focus session.</summary>
-    public void StartFocus(int? customMinutes = null)
+    /// <summary>Start a new focus session, optionally associated with a task.</summary>
+    public void StartFocus(int? customMinutes = null, string? taskId = null, string? taskTitle = null)
     {
         StopCompletionTimer();
         int mins = Math.Max(1, customMinutes ?? FocusDurationMinutes);
@@ -87,10 +93,12 @@ public sealed class FocusTimerService : IDisposable
         _targetDeadlineUtc = DateTime.UtcNow + duration;
         _remainingOnPause = null;
         _state = FocusTimerState.Focusing;
+        ActiveTaskId = taskId;
+        ActiveTaskTitle = taskTitle;
 
         ScheduleCompletion(duration);
         StateChanged?.Invoke(_state);
-        DebugLog.Write($"[FocusTimer] Focus session started for {mins}m (deadline: {_targetDeadlineUtc:O})");
+        DebugLog.Write($"[FocusTimer] Focus session started for {mins}m (deadline: {_targetDeadlineUtc:O}, task: {taskTitle ?? "none"})");
     }
 
     /// <summary>Pause the active session.</summary>
@@ -163,8 +171,18 @@ public sealed class FocusTimerService : IDisposable
         _state = FocusTimerState.Idle;
         _targetDeadlineUtc = null;
         _remainingOnPause = null;
+        ActiveTaskId = null;
+        ActiveTaskTitle = null;
         StateChanged?.Invoke(_state);
         DebugLog.Write("[FocusTimer] Focus timer canceled.");
+    }
+
+    /// <summary>Clears the associated active task without stopping the timer.</summary>
+    public void ClearActiveTask()
+    {
+        ActiveTaskId = null;
+        ActiveTaskTitle = null;
+        StateChanged?.Invoke(_state);
     }
 
     /// <summary>Start a break session.</summary>
@@ -242,6 +260,7 @@ public sealed class FocusTimerService : IDisposable
         settings.FocusTimerState = _state.ToString();
         settings.FocusTimerDeadlineUtc = _targetDeadlineUtc;
         settings.FocusTimerRemainingSeconds = RemainingTime.TotalSeconds;
+        settings.FocusActiveTaskId = ActiveTaskId;
     }
 
     /// <summary>Restore timer state from AppSettings on startup.</summary>
@@ -249,6 +268,7 @@ public sealed class FocusTimerService : IDisposable
     {
         FocusDurationMinutes = settings.FocusDurationMinutes > 0 ? settings.FocusDurationMinutes : 25;
         BreakDurationMinutes = settings.BreakDurationMinutes > 0 ? settings.BreakDurationMinutes : 5;
+        ActiveTaskId = settings.FocusActiveTaskId;
 
         if (!settings.FocusTimerActive)
         {
