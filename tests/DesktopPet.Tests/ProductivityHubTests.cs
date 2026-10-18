@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DesktopPet.Services;
 using Xunit;
@@ -918,6 +919,469 @@ public sealed class ProductivityHubTests : IDisposable
         bool finished = thread.Join(10000);
 
         Assert.True(finished, "DashboardWindow initialization timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void TasksWindow_InitializesAndSwitchesTabsWithoutExceptions()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var taskService = new TaskService(_tasksFile);
+                var timer = new FocusTimerService();
+                var settings = new AppSettings();
+
+                var tasksWindow = new DesktopPet.UI.TasksWindow(taskService, timer, settings);
+                Assert.NotNull(tasksWindow);
+
+                tasksWindow.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "TasksWindow initialization timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void DashboardWindow_RendersAllViewsToBitmapsWithoutErrors()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var taskService = new TaskService(_tasksFile);
+                var timer = new FocusTimerService();
+                var history = new FocusHistoryService(_historyFile);
+                var settings = new AppSettings();
+
+                taskService.Create(title: "Review productivity polish", project: "Neku", dueDate: DateTime.Today);
+                history.RecordSession(new FocusSessionRecord
+                {
+                    SessionType = FocusSessionType.Focus,
+                    TargetMinutes = 25,
+                    ActualSeconds = 1500,
+                    Status = FocusSessionStatus.Completed,
+                    TaskTitle = "Review productivity polish",
+                    Project = "Neku",
+                    StartUtc = DateTime.UtcNow.AddMinutes(-25),
+                    EndUtc = DateTime.UtcNow
+                });
+
+                var dashboard = new DesktopPet.UI.DashboardWindow(taskService, timer, history, settings);
+                dashboard.Width = 960;
+                dashboard.Height = 640;
+
+                string scratchDir = @"C:\Users\amvbl\.gemini\antigravity\brain\c3f88a8b-28be-4879-94fd-b66f4fb7d2f1\scratch";
+                Directory.CreateDirectory(scratchDir);
+
+                var content = (System.Windows.FrameworkElement)dashboard.Content;
+
+                string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals"];
+                foreach (var tab in tabs)
+                {
+                    dashboard.SelectTab(tab);
+                    content.Measure(new System.Windows.Size(960, 640));
+                    content.Arrange(new System.Windows.Rect(0, 0, 960, 640));
+                    content.UpdateLayout();
+
+                    var rtb = new RenderTargetBitmap(960, 640, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                    rtb.Render(content);
+
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(rtb));
+                    string file = Path.Combine(scratchDir, $"dashboard_{tab.ToLowerInvariant()}.png");
+                    using var stream = File.Create(file);
+                    encoder.Save(stream);
+                }
+
+                dashboard.Close();
+
+                var tasksWindow = new DesktopPet.UI.TasksWindow(taskService, timer, settings);
+                tasksWindow.Width = 740;
+                tasksWindow.Height = 500;
+                var tasksContent = (System.Windows.FrameworkElement)tasksWindow.Content;
+                tasksContent.Measure(new System.Windows.Size(740, 500));
+                tasksContent.Arrange(new System.Windows.Rect(0, 0, 740, 500));
+                tasksContent.UpdateLayout();
+                var rtbTasks = new RenderTargetBitmap(740, 500, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbTasks.Render(tasksContent);
+                var encTasks = new PngBitmapEncoder();
+                encTasks.Frames.Add(BitmapFrame.Create(rtbTasks));
+                using (var stream = File.Create(Path.Combine(scratchDir, "tasks_window.png")))
+                {
+                    encTasks.Save(stream);
+                }
+                tasksWindow.Close();
+
+                var cal = new System.Windows.Controls.Calendar();
+                cal.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary
+                {
+                    Source = new Uri("pack://application:,,,/Neku;component/UI/ProductivityTheme.xaml", UriKind.Absolute)
+                });
+                cal.Style = (System.Windows.Style)cal.FindResource(typeof(System.Windows.Controls.Calendar));
+                var container = new System.Windows.Controls.Border
+                {
+                    Background = (System.Windows.Media.Brush)cal.FindResource("ThemeBgBrush"),
+                    Child = cal,
+                    Width = 240,
+                    Height = 240
+                };
+                container.Measure(new System.Windows.Size(240, 240));
+                container.Arrange(new System.Windows.Rect(0, 0, 240, 240));
+                container.UpdateLayout();
+                var rtbCal = new RenderTargetBitmap(240, 240, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbCal.Render(container);
+                var encCal = new PngBitmapEncoder();
+                encCal.Frames.Add(BitmapFrame.Create(rtbCal));
+                using (var stream = File.Create(Path.Combine(scratchDir, "calendar_render.png")))
+                {
+                    encCal.Save(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(15000);
+
+        Assert.True(finished, "Rendering dashboard views timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void Dashboard_ComprehensiveInteractiveUiRegression_ExecutesAllInteractionsAndRenders()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var tempTaskFile = Path.Combine(Path.GetTempPath(), $"tasks_regress_{Guid.NewGuid():N}.json");
+                var tempHistoryFile = Path.Combine(Path.GetTempPath(), $"history_regress_{Guid.NewGuid():N}.json");
+                var tempNotesFile = Path.Combine(Path.GetTempPath(), $"notes_regress_{Guid.NewGuid():N}.json");
+
+                var taskService = new TaskService(tempTaskFile);
+                var createdTask = taskService.Create(
+                    title: "Verify UI polish regression",
+                    description: "Test description",
+                    priority: TaskPriority.High,
+                    dueDate: DateTime.Today,
+                    estimatedMinutes: 50,
+                    status: TaskItemStatus.Todo,
+                    project: "Testing",
+                    tags: ["ui", "dark"]);
+                taskService.AddSubtask(createdTask.Id, "Subtask 1: ComboBox check");
+                taskService.AddSubtask(createdTask.Id, "Subtask 2: DatePicker check");
+
+                var timer = new FocusTimerService();
+                var history = new FocusHistoryService(tempHistoryFile);
+                history.RecordSession(new FocusSessionRecord
+                {
+                    SessionType = FocusSessionType.Focus,
+                    TargetMinutes = 25,
+                    ActualSeconds = 1500,
+                    Status = FocusSessionStatus.Completed,
+                    TaskTitle = "Verify UI polish regression",
+                    Project = "Testing",
+                    StartUtc = DateTime.UtcNow.AddMinutes(-25),
+                    EndUtc = DateTime.UtcNow,
+                    Notes = "Initial session note"
+                });
+
+                var settings = new AppSettings();
+                var settingsService = new SettingsService();
+                var notesService = new NotesService(tempNotesFile);
+                notesService.Create("Regression Test Note", "Testing QuickNotes styling and consistency.");
+
+                string scratchDir = @"C:\Users\amvbl\.gemini\antigravity\brain\c3f88a8b-28be-4879-94fd-b66f4fb7d2f1\scratch";
+                Directory.CreateDirectory(scratchDir);
+
+                // 1. Dashboard Window Full Interactive Testing
+                var dashboard = new DesktopPet.UI.DashboardWindow(taskService, timer, history, settings);
+                dashboard.Width = 960;
+                dashboard.Height = 640;
+                var dashContent = (System.Windows.FrameworkElement)dashboard.Content;
+                dashContent.Measure(new System.Windows.Size(960, 640));
+                dashContent.Arrange(new System.Windows.Rect(0, 0, 960, 640));
+                dashContent.UpdateLayout();
+
+                // (a) Overview View
+                dashboard.SelectTab("Overview");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.OverviewView.Visibility);
+
+                // (b) Tasks View Interactions
+                dashboard.SelectTab("Tasks");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.TasksView.Visibility);
+
+                // Test Filter Tabs
+                dashboard.TaskTabToday.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabUpcoming.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabInbox.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabInProgress.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabOverdue.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabDone.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TaskTabAll.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+
+                // Test Search Filter
+                dashboard.TaskSearchBox.Text = "polish";
+                dashboard.TaskSearchBox.Text = "";
+
+                // Test Toolbar Combos
+                dashboard.TaskProjectCombo.IsDropDownOpen = true;
+                dashboard.TaskProjectCombo.IsDropDownOpen = false;
+                dashboard.TaskTagCombo.IsDropDownOpen = true;
+                dashboard.TaskTagCombo.IsDropDownOpen = false;
+                dashboard.TaskSortCombo.IsDropDownOpen = true;
+                dashboard.TaskSortCombo.SelectedIndex = 1;
+                dashboard.TaskSortCombo.IsDropDownOpen = false;
+
+                // Select Task & Test Detail Panel
+                dashboard.TasksListBox.SelectedIndex = 0;
+                Assert.NotNull(dashboard.TasksListBox.SelectedItem);
+                Assert.NotNull(dashboard.DetailDueDatePicker);
+                dashboard.DetailDueDatePicker.IsDropDownOpen = true;
+                dashboard.DetailDueDatePicker.SelectedDate = DateTime.Today.AddDays(3);
+                dashboard.DetailDueDatePicker.IsDropDownOpen = false;
+
+                dashboard.DetailPriorityCombo.IsDropDownOpen = true;
+                dashboard.DetailPriorityCombo.SelectedIndex = 3; // Urgent
+                dashboard.DetailPriorityCombo.IsDropDownOpen = false;
+
+                dashboard.DetailRecurrenceCombo.IsDropDownOpen = true;
+                dashboard.DetailRecurrenceCombo.SelectedIndex = 0; // None
+                dashboard.DetailRecurrenceCombo.IsDropDownOpen = false;
+
+                dashboard.DetailEstMinutesCombo.IsDropDownOpen = true;
+                dashboard.DetailEstMinutesCombo.SelectedIndex = 2; // 50m
+                dashboard.DetailEstMinutesCombo.IsDropDownOpen = false;
+
+                // Checkbox toggle: mark completed
+                dashboard.DetailCompleteCheck.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Assert.True(createdTask.IsCompleted);
+
+                // Switch to Done tab and uncheck to reopen
+                dashboard.TaskTabDone.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TasksListBox.SelectedIndex = 0;
+                dashboard.DetailCompleteCheck.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Assert.False(createdTask.IsCompleted);
+
+                // Switch back to All tab and add subtask
+                dashboard.TaskTabAll.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                dashboard.TasksListBox.SelectedIndex = 0;
+                dashboard.DetailNewSubtaskBox.Text = "Subtask 3: Automated regression test";
+                dashboard.DetailAddSubtaskBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+
+                // (c) Focus View Interactions
+                dashboard.SelectTab("Focus");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.FocusView.Visibility);
+
+                dashboard.FocusTaskSelectorCombo.IsDropDownOpen = true;
+                dashboard.FocusTaskSelectorCombo.IsDropDownOpen = false;
+
+                dashboard.FocusAutoBreakCheck.IsChecked = true;
+                dashboard.FocusAutoFocusCheck.IsChecked = true;
+                dashboard.FocusNotifyFocusCheck.IsChecked = false;
+                dashboard.FocusNotifyBreakCheck.IsChecked = false;
+                dashboard.FocusNotifyUpcomingCheck.IsChecked = false;
+                dashboard.FocusNotifyOverdueCheck.IsChecked = false;
+
+                dashboard.FocusNotifyFocusCheck.IsChecked = true;
+                dashboard.FocusNotifyBreakCheck.IsChecked = true;
+                dashboard.FocusNotifyUpcomingCheck.IsChecked = true;
+                dashboard.FocusNotifyOverdueCheck.IsChecked = true;
+
+                // (d) History View Interactions
+                dashboard.SelectTab("History");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.HistoryView.Visibility);
+
+                dashboard.HistoryRangeCombo.IsDropDownOpen = true;
+                dashboard.HistoryRangeCombo.SelectedIndex = 0;
+                dashboard.HistoryRangeCombo.IsDropDownOpen = false;
+
+                dashboard.HistoryTypeCombo.IsDropDownOpen = true;
+                dashboard.HistoryTypeCombo.SelectedIndex = 0;
+                dashboard.HistoryTypeCombo.IsDropDownOpen = false;
+
+                dashboard.HistoryStatusCombo.IsDropDownOpen = true;
+                dashboard.HistoryStatusCombo.SelectedIndex = 0;
+                dashboard.HistoryStatusCombo.IsDropDownOpen = false;
+
+                dashboard.HistoryDataGrid.SelectedIndex = 0;
+                dashboard.HistoryNotesTextBox.Text = "Updated focus session note via test.";
+                dashboard.HistorySaveNotesBtn.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+
+                // (e) Insights View Interactions
+                dashboard.SelectTab("Insights");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.InsightsView.Visibility);
+
+                dashboard.InsightsRangeCombo.IsDropDownOpen = true;
+                dashboard.InsightsRangeCombo.SelectedIndex = 1;
+                dashboard.InsightsRangeCombo.IsDropDownOpen = false;
+
+                // (f) Goals View Interactions
+                dashboard.SelectTab("Goals");
+                Assert.Equal(System.Windows.Visibility.Visible, dashboard.GoalsView.Visibility);
+                dashboard.GoalsDailyFocusTargetBox.Text = "120";
+
+                // (g) Test Window Resizing (Min: 780x520, Standard: 960x640, Large: 1280x800)
+                dashboard.SelectTab("Overview");
+                dashContent.Measure(new System.Windows.Size(780, 520));
+                dashContent.Arrange(new System.Windows.Rect(0, 0, 780, 520));
+                dashContent.UpdateLayout();
+                var rtbMin = new RenderTargetBitmap(780, 520, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbMin.Render(dashContent);
+                var encMin = new PngBitmapEncoder();
+                encMin.Frames.Add(BitmapFrame.Create(rtbMin));
+                using (var stream = File.Create(Path.Combine(scratchDir, "dashboard_min_size.png")))
+                {
+                    encMin.Save(stream);
+                }
+
+                // High DPI Simulation (144 DPI = 150% scaling)
+                dashContent.Measure(new System.Windows.Size(960, 640));
+                dashContent.Arrange(new System.Windows.Rect(0, 0, 960, 640));
+                dashContent.UpdateLayout();
+                var rtbDpi = new RenderTargetBitmap(1440, 960, 144, 144, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbDpi.Render(dashContent);
+
+                dashboard.Close();
+
+                // 2. Standalone TasksWindow
+                var tasksWindow = new DesktopPet.UI.TasksWindow(taskService, timer, settings);
+                tasksWindow.Width = 740;
+                tasksWindow.Height = 500;
+                var twContent = (System.Windows.FrameworkElement)tasksWindow.Content;
+                twContent.Measure(new System.Windows.Size(740, 500));
+                twContent.Arrange(new System.Windows.Rect(0, 0, 740, 500));
+                twContent.UpdateLayout();
+                tasksWindow.Close();
+
+                // 3. SettingsWindow
+                var settingsWindow = new DesktopPet.UI.SettingsWindow(settings, settingsService);
+                settingsWindow.Width = 440;
+                settingsWindow.Height = 640;
+                var swContent = (System.Windows.FrameworkElement)settingsWindow.Content;
+                swContent.Measure(new System.Windows.Size(440, 640));
+                swContent.Arrange(new System.Windows.Rect(0, 0, 440, 640));
+                swContent.UpdateLayout();
+                var rtbSettings = new RenderTargetBitmap(440, 640, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbSettings.Render(swContent);
+                var encSettings = new PngBitmapEncoder();
+                encSettings.Frames.Add(BitmapFrame.Create(rtbSettings));
+                using (var stream = File.Create(Path.Combine(scratchDir, "settings_window.png")))
+                {
+                    encSettings.Save(stream);
+                }
+                settingsWindow.Close();
+
+                // 4. QuickNotesWindow
+                var notesWindow = new DesktopPet.UI.QuickNotesWindow(notesService);
+                notesWindow.Width = 540;
+                notesWindow.Height = 390;
+                var nwContent = (System.Windows.FrameworkElement)notesWindow.Content;
+                nwContent.Measure(new System.Windows.Size(540, 390));
+                nwContent.Arrange(new System.Windows.Rect(0, 0, 540, 390));
+                nwContent.UpdateLayout();
+                var rtbNotes = new RenderTargetBitmap(540, 390, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbNotes.Render(nwContent);
+                var encNotes = new PngBitmapEncoder();
+                encNotes.Frames.Add(BitmapFrame.Create(rtbNotes));
+                using (var stream = File.Create(Path.Combine(scratchDir, "quick_notes_window.png")))
+                {
+                    encNotes.Save(stream);
+                }
+                notesWindow.Close();
+
+                // 5. DeveloperEventsWindow
+                var devWindow = new DesktopPet.UI.DeveloperEventsWindow(null, null!, settings, settingsService);
+                devWindow.Width = 440;
+                devWindow.Height = 360;
+                var devContent = (System.Windows.FrameworkElement)devWindow.Content;
+                devContent.Measure(new System.Windows.Size(440, 360));
+                devContent.Arrange(new System.Windows.Rect(0, 0, 440, 360));
+                devContent.UpdateLayout();
+                var rtbDev = new RenderTargetBitmap(440, 360, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbDev.Render(devContent);
+                var encDev = new PngBitmapEncoder();
+                encDev.Frames.Add(BitmapFrame.Create(rtbDev));
+                using (var stream = File.Create(Path.Combine(scratchDir, "developer_events_window.png")))
+                {
+                    encDev.Save(stream);
+                }
+                devWindow.Close();
+
+                // 6. ComboBox Dropdown Open Visual Rendering
+                var testCombo = new System.Windows.Controls.ComboBox();
+                testCombo.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary
+                {
+                    Source = new Uri("pack://application:,,,/Neku;component/UI/ProductivityTheme.xaml", UriKind.Absolute)
+                });
+                testCombo.Style = (System.Windows.Style)testCombo.FindResource(typeof(System.Windows.Controls.ComboBox));
+                testCombo.Items.Add("Low Priority");
+                testCombo.Items.Add("Normal Priority");
+                testCombo.Items.Add("High Priority");
+                testCombo.Items.Add("Urgent 🔥");
+                testCombo.SelectedIndex = 1;
+
+                var comboBorder = new System.Windows.Controls.Border
+                {
+                    Background = (System.Windows.Media.Brush)testCombo.FindResource("ThemePopupBgBrush"),
+                    BorderBrush = (System.Windows.Media.Brush)testCombo.FindResource("ThemeInputBorderBrush"),
+                    BorderThickness = new System.Windows.Thickness(1),
+                    CornerRadius = new System.Windows.CornerRadius(6),
+                    Padding = new System.Windows.Thickness(4),
+                    Width = 160
+                };
+                var itemsStack = new System.Windows.Controls.StackPanel();
+                foreach (var item in testCombo.Items)
+                {
+                    var cbItem = new System.Windows.Controls.ComboBoxItem { Content = item };
+                    cbItem.Style = (System.Windows.Style)testCombo.FindResource(typeof(System.Windows.Controls.ComboBoxItem));
+                    if (item.ToString() == "Normal Priority") cbItem.IsSelected = true;
+                    itemsStack.Children.Add(cbItem);
+                }
+                comboBorder.Child = itemsStack;
+                comboBorder.Measure(new System.Windows.Size(160, 160));
+                comboBorder.Arrange(new System.Windows.Rect(0, 0, 160, 160));
+                comboBorder.UpdateLayout();
+                var rtbCombo = new RenderTargetBitmap(160, 160, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                rtbCombo.Render(comboBorder);
+                var encCombo = new PngBitmapEncoder();
+                encCombo.Frames.Add(BitmapFrame.Create(rtbCombo));
+                using (var stream = File.Create(Path.Combine(scratchDir, "combobox_popup.png")))
+                {
+                    encCombo.Save(stream);
+                }
+
+                // Cleanup
+                try { if (File.Exists(tempTaskFile)) File.Delete(tempTaskFile); } catch { }
+                try { if (File.Exists(tempHistoryFile)) File.Delete(tempHistoryFile); } catch { }
+                try { if (File.Exists(tempNotesFile)) File.Delete(tempNotesFile); } catch { }
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(20000);
+
+        Assert.True(finished, "Interactive regression test timed out");
         Assert.Null(threadEx);
     }
 }

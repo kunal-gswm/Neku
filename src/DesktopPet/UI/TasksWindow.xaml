@@ -9,92 +9,15 @@
         Foreground="#FFF3E8FF"
         KeyDown="Window_KeyDown">
     <Window.Resources>
-        <!-- Dark Theme Inputs -->
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#FF282337"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="#FF483C66"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="#FFA78BFA"/>
-        </Style>
-
-        <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#FF282337"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="#FF483C66"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-        </Style>
-
-        <Style TargetType="DatePicker">
-            <Setter Property="Background" Value="#FF282337"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="#FF483C66"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="#FF8B5CF6"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF9F75FF"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="TabButton" TargetType="Button">
-            <Setter Property="Background" Value="#FF282337"/>
-            <Setter Property="Foreground" Value="#FFA78BFA"/>
-            <Setter Property="BorderBrush" Value="#FF483C66"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF3B314F"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ProductivityTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="TabButton" TargetType="Button" BasedOn="{StaticResource FilterChipButton}"/>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Margin="12">
+    <Grid Margin="12" Background="{StaticResource ThemeSurfaceBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="340" MinWidth="260" MaxWidth="440"/>
             <ColumnDefinition Width="8"/>
@@ -105,7 +28,7 @@
         <DockPanel Grid.Column="0">
             <!-- Hub Quick Switch Button -->
             <Button DockPanel.Dock="Top" x:Name="OpenHubBtn" Content="🐾 Open Productivity Hub →"
-                    Style="{StaticResource TabButton}" Margin="0,0,0,8" Padding="6,4"
+                    Style="{StaticResource SecondaryButton}" Height="28" Margin="0,0,0,8" Padding="6,4"
                     Click="OpenHubBtn_Click" ToolTip="Open the full Productivity Hub with Analytics &amp; Goals"/>
 
             <!-- View Tabs -->
@@ -132,10 +55,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="SearchBox" Grid.Column="0" Margin="0,0,6,0"
+                <TextBox x:Name="SearchBox" Grid.Column="0" Height="28" Margin="0,0,6,0"
                          TextChanged="SearchBox_TextChanged"
                          ToolTip="Search tasks by title or description (Ctrl+F)"/>
-                <ComboBox x:Name="SortCombo" Grid.Column="1" SelectionChanged="SortCombo_SelectionChanged"
+                <ComboBox x:Name="SortCombo" Grid.Column="1" Height="28" SelectionChanged="SortCombo_SelectionChanged"
                           ToolTip="Sort task list">
                     <ComboBoxItem Content="Due Date" IsSelected="True"/>
                     <ComboBoxItem Content="Priority"/>

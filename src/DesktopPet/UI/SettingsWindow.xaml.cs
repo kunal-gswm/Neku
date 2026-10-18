@@ -134,6 +134,13 @@ public partial class SettingsWindow : Window
         WireUp();
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
+    }
+
     /// <summary>Hook every control to <see cref="Apply"/>. Done after load so setting the
     /// initial values doesn't trigger a save-and-reapply storm on open.</summary>
     private void WireUp()

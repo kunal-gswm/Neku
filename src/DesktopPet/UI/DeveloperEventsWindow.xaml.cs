@@ -22,6 +22,13 @@ public partial class DeveloperEventsWindow : Window
         UpdateUiState();
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
+    }
+
     private void UpdateUiState()
     {
         int port = _settings.DeveloperPort;

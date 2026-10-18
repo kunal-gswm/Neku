@@ -70,6 +70,13 @@ public partial class DashboardWindow : Window
         UpdateTimerDisplays();
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
@@ -648,11 +655,36 @@ public partial class DashboardWindow : Window
         TaskTabOverdue.Content = overdue > 0 ? $"⚠️ Overdue ({overdue})" : "⚠️ Overdue";
         TaskTabAll.Content = allCount > 0 ? $"📋 All ({allCount})" : "📋 All";
         TaskTabDone.Content = done > 0 ? $"✅ Done ({done})" : "✅ Done";
+
+        UpdateFilterChip(TaskTabToday, _currentTaskFilterTab == "Today");
+        UpdateFilterChip(TaskTabUpcoming, _currentTaskFilterTab == "Upcoming");
+        UpdateFilterChip(TaskTabInbox, _currentTaskFilterTab == "Inbox");
+        UpdateFilterChip(TaskTabInProgress, _currentTaskFilterTab == "InProgress");
+        UpdateFilterChip(TaskTabOverdue, _currentTaskFilterTab == "Overdue");
+        UpdateFilterChip(TaskTabAll, _currentTaskFilterTab == "All");
+        UpdateFilterChip(TaskTabDone, _currentTaskFilterTab == "Completed");
+    }
+
+    private static void UpdateFilterChip(Button btn, bool isActive)
+    {
+        var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF452C63"));
+        var activeBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8B5CF6"));
+        var activeFg = Brushes.White;
+
+        var inactiveBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF221B30"));
+        var inactiveBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF382F4A"));
+        var inactiveFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFA78BFA"));
+
+        btn.Background = isActive ? activeBg : inactiveBg;
+        btn.BorderBrush = isActive ? activeBorder : inactiveBorder;
+        btn.Foreground = isActive ? activeFg : inactiveFg;
+        btn.FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal;
     }
 
     private void TaskTab_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string tabTag)
+        var btn = sender as Button ?? e.Source as Button;
+        if (btn != null && btn.Tag is string tabTag)
         {
             _currentTaskFilterTab = tabTag;
             RefreshTaskList();

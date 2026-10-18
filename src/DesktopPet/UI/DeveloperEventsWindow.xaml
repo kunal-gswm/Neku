@@ -40,7 +40,7 @@
         </Style>
     </Window.Resources>
 
-    <StackPanel Margin="16">
+    <StackPanel Margin="16" Background="#FF1E1A29">
         <TextBlock Text="⚡ Developer Event Integration" FontSize="16" FontWeight="Bold"
                    Foreground="#FFF3E8FF" Margin="0,0,0,4"/>
         <TextBlock Text="Trigger real-time companion reactions from your build scripts or test runners."

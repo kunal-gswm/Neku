@@ -43,6 +43,13 @@ public partial class QuickNotesWindow : Window
         }
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
+    }
+
     private void RefreshNotesList(string? filter = null)
     {
         string term = filter?.Trim().ToLowerInvariant() ?? "";

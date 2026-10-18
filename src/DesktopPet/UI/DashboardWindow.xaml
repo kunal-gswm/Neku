@@ -9,204 +9,14 @@
         Foreground="#FFF3E8FF"
         KeyDown="Window_KeyDown">
     <Window.Resources>
-        <!-- Common Brushes -->
-        <SolidColorBrush x:Key="RailBgBrush" Color="#FF1E1A29"/>
-        <SolidColorBrush x:Key="CardBgBrush" Color="#FF262035"/>
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#FF3F3459"/>
-        <SolidColorBrush x:Key="InputBgBrush" Color="#FF2C253D"/>
-        <SolidColorBrush x:Key="AccentPurpleBrush" Color="#FF8B5CF6"/>
-        <SolidColorBrush x:Key="AccentPurpleHoverBrush" Color="#FF9F75FF"/>
-        <SolidColorBrush x:Key="AccentOrangeBrush" Color="#FFFB923C"/>
-        <SolidColorBrush x:Key="AccentGreenBrush" Color="#FF34D399"/>
-        <SolidColorBrush x:Key="TextMutedBrush" Color="#FFA78BFA"/>
-        <SolidColorBrush x:Key="TextDimBrush" Color="#FF9CA3AF"/>
-
-        <!-- Inputs Style -->
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="8,5"/>
-            <Setter Property="CaretBrush" Value="{StaticResource AccentPurpleBrush}"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-
-        <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-        </Style>
-
-        <Style TargetType="DatePicker">
-            <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-
-        <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <!-- Base Button -->
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentPurpleBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentPurpleHoverBrush}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Navigation Rail Button -->
-        <Style x:Key="NavRailButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="border"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Margin="4,2"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#FF2D263D"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Secondary Outline Button -->
-        <Style x:Key="SecondaryButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource InputBgBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF3B314F"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Danger Button -->
-        <Style x:Key="DangerButton" TargetType="Button">
-            <Setter Property="Background" Value="#FF5A2328"/>
-            <Setter Property="Foreground" Value="#FFFCA5A5"/>
-            <Setter Property="BorderBrush" Value="#FF7F1D1D"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF782A31"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Accent Orange Button -->
-        <Style x:Key="OrangeButton" TargetType="Button">
-            <Setter Property="Background" Value="#FFE06A26"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FFF97316"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- KPI Metric Card Style -->
-        <Style x:Key="MetricCardBorder" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardBgBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="14,12"/>
-            <Setter Property="Margin" Value="4"/>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ProductivityTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{StaticResource ThemeBgBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
@@ -398,14 +208,14 @@
                 <!-- Left Column: Filters & List -->
                 <DockPanel Grid.Column="0">
                     <!-- Tabs Bar -->
-                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <Button x:Name="TaskTabToday" Content="☀️ Today" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="Today" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabUpcoming" Content="📅 Upcoming" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="Upcoming" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabInbox" Content="📥 Inbox" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="Inbox" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabInProgress" Content="⚡ In Progress" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="InProgress" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabOverdue" Content="⚠️ Overdue" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="Overdue" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabAll" Content="📋 All" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="All" Click="TaskTab_Click"/>
-                        <Button x:Name="TaskTabDone" Content="✅ Done" Style="{StaticResource SecondaryButton}" Margin="0,0,4,4" Padding="6,3" FontSize="11" Tag="Completed" Click="TaskTab_Click"/>
+                    <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Button x:Name="TaskTabToday" Content="☀️ Today" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="Today" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabUpcoming" Content="📅 Upcoming" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="Upcoming" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabInbox" Content="📥 Inbox" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="Inbox" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabInProgress" Content="⚡ In Progress" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="InProgress" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabOverdue" Content="⚠️ Overdue" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="Overdue" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabAll" Content="📋 All" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="All" Click="TaskTab_Click"/>
+                        <Button x:Name="TaskTabDone" Content="✅ Done" Style="{StaticResource FilterChipButton}" Margin="0,0,4,4" Tag="Completed" Click="TaskTab_Click"/>
                     </WrapPanel>
 
                     <!-- Search & Filter Controls -->
@@ -416,10 +226,10 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="TaskSearchBox" Grid.Column="0" TextChanged="TaskSearchBox_TextChanged" Margin="0,0,4,0" ToolTip="Search tasks (Ctrl+F)"/>
-                        <ComboBox x:Name="TaskProjectCombo" Grid.Column="1" Width="85" Margin="0,0,4,0" SelectionChanged="TaskFilter_Changed"/>
-                        <ComboBox x:Name="TaskTagCombo" Grid.Column="2" Width="80" Margin="0,0,4,0" SelectionChanged="TaskFilter_Changed"/>
-                        <ComboBox x:Name="TaskSortCombo" Grid.Column="3" Width="85" SelectionChanged="TaskFilter_Changed">
+                        <TextBox x:Name="TaskSearchBox" Grid.Column="0" Height="28" TextChanged="TaskSearchBox_TextChanged" Margin="0,0,4,0" ToolTip="Search tasks (Ctrl+F)"/>
+                        <ComboBox x:Name="TaskProjectCombo" Grid.Column="1" Height="28" Width="85" Margin="0,0,4,0" SelectionChanged="TaskFilter_Changed"/>
+                        <ComboBox x:Name="TaskTagCombo" Grid.Column="2" Height="28" Width="80" Margin="0,0,4,0" SelectionChanged="TaskFilter_Changed"/>
+                        <ComboBox x:Name="TaskSortCombo" Grid.Column="3" Height="28" Width="85" SelectionChanged="TaskFilter_Changed">
                             <ComboBoxItem Content="Due Date" IsSelected="True"/>
                             <ComboBoxItem Content="Priority"/>
                             <ComboBoxItem Content="Newest"/>
@@ -434,9 +244,9 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" x:Name="TaskAddNewBtn" Content="+ New Task" Margin="0,0,4,0" Click="TaskAddNewBtn_Click"/>
-                        <Button Grid.Column="1" Content="📥 CSV" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,4,0" Click="TasksExportCsv_Click" ToolTip="Export tasks to CSV"/>
-                        <Button Grid.Column="2" Content="📥 JSON" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Click="TasksExportJson_Click" ToolTip="Export tasks to JSON"/>
+                        <Button Grid.Column="0" x:Name="TaskAddNewBtn" Height="28" Content="+ New Task" Margin="0,0,4,0" Click="TaskAddNewBtn_Click"/>
+                        <Button Grid.Column="1" Content="📥 CSV" Height="28" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,4,0" Click="TasksExportCsv_Click" ToolTip="Export tasks to CSV"/>
+                        <Button Grid.Column="2" Content="📥 JSON" Height="28" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Click="TasksExportJson_Click" ToolTip="Export tasks to JSON"/>
                     </Grid>
 
                     <!-- Empty State -->
@@ -489,122 +299,136 @@
                         <!-- Detail Form -->
                         <ScrollViewer x:Name="TaskDetailScrollViewer" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <DockPanel Margin="0,0,0,10">
-                                    <CheckBox x:Name="DetailCompleteCheck" Content="Mark Completed" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Click="DetailCompleteCheck_Click"/>
-                                    <Button x:Name="DetailStartFocusBtn" Content="🎯 Start Focus" Style="{StaticResource OrangeButton}" HorizontalAlignment="Right" Padding="12,5" Click="DetailStartFocusBtn_Click"/>
-                                </DockPanel>
+                                <!-- Action Bar Card -->
+                                <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+                                    <DockPanel LastChildFill="False">
+                                        <CheckBox DockPanel.Dock="Left" x:Name="DetailCompleteCheck" Content="Mark Completed" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Click="DetailCompleteCheck_Click"/>
+                                        <Button DockPanel.Dock="Right" x:Name="DetailStartFocusBtn" Content="🎯 Start Focus" Style="{StaticResource OrangeButton}" Padding="14,6" Click="DetailStartFocusBtn_Click"/>
+                                    </DockPanel>
+                                </Border>
 
-                                <!-- Title -->
-                                <TextBlock Text="Title" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                <TextBox x:Name="DetailTitleBox" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" TextChanged="DetailField_Changed"/>
+                                <!-- Section: General Information -->
+                                <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Title" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="DetailTitleBox" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,10" TextChanged="DetailField_Changed"/>
 
-                                <!-- Description -->
-                                <TextBlock Text="Description" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                <TextBox x:Name="DetailDescBox" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,10" TextChanged="DetailField_Changed"/>
+                                        <TextBlock Text="Description" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                        <TextBox x:Name="DetailDescBox" Height="58" TextWrapping="Wrap" AcceptsReturn="True" TextChanged="DetailField_Changed"/>
+                                    </StackPanel>
+                                </Border>
 
-                                <!-- Status & Priority -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                        <TextBlock Text="Status" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <ComboBox x:Name="DetailStatusCombo" SelectionChanged="DetailStatus_SelectionChanged">
-                                            <ComboBoxItem Content="Inbox"/>
-                                            <ComboBoxItem Content="Todo"/>
-                                            <ComboBoxItem Content="In Progress"/>
-                                            <ComboBoxItem Content="Completed"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                        <TextBlock Text="Priority" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <ComboBox x:Name="DetailPriorityCombo" SelectionChanged="DetailPriority_SelectionChanged">
-                                            <ComboBoxItem Content="Low"/>
-                                            <ComboBoxItem Content="Normal"/>
-                                            <ComboBoxItem Content="High"/>
-                                            <ComboBoxItem Content="Urgent 🔥"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                </Grid>
+                                <!-- Section: Organization & Scheduling -->
+                                <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                                <TextBlock Text="Status" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <ComboBox x:Name="DetailStatusCombo" Height="28" SelectionChanged="DetailStatus_SelectionChanged">
+                                                    <ComboBoxItem Content="Inbox"/>
+                                                    <ComboBoxItem Content="Todo"/>
+                                                    <ComboBoxItem Content="In Progress"/>
+                                                    <ComboBoxItem Content="Completed"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                                <TextBlock Text="Priority" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <ComboBox x:Name="DetailPriorityCombo" Height="28" SelectionChanged="DetailPriority_SelectionChanged">
+                                                    <ComboBoxItem Content="Low"/>
+                                                    <ComboBoxItem Content="Normal"/>
+                                                    <ComboBoxItem Content="High"/>
+                                                    <ComboBoxItem Content="Urgent 🔥"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </Grid>
 
-                                <!-- Project & Tags -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                        <TextBlock Text="Project / Category" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <TextBox x:Name="DetailProjectBox" TextChanged="DetailField_Changed"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                        <TextBlock Text="Tags (comma-separated)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <TextBox x:Name="DetailTagsBox" TextChanged="DetailField_Changed"/>
-                                    </StackPanel>
-                                </Grid>
+                                        <Grid Margin="0,0,0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                                <TextBlock Text="Project / Category" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <TextBox x:Name="DetailProjectBox" Height="28" TextChanged="DetailField_Changed"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                                                <TextBlock Text="Tags (comma-separated)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <TextBox x:Name="DetailTagsBox" Height="28" TextChanged="DetailField_Changed"/>
+                                            </StackPanel>
+                                        </Grid>
 
-                                <!-- Due Date & Recurrence -->
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,3,0">
-                                        <TextBlock Text="Due Date" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <DatePicker x:Name="DetailDueDatePicker" SelectedDateChanged="DetailDueDate_Changed"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Margin="0,0,3,0">
+                                                <TextBlock Text="Due Date" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <DatePicker x:Name="DetailDueDatePicker" Height="28" SelectedDateChanged="DetailDueDate_Changed"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Margin="3,0,3,0">
+                                                <TextBlock Text="Recurrence" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <ComboBox x:Name="DetailRecurrenceCombo" Height="28" SelectionChanged="DetailRecurrence_Changed">
+                                                    <ComboBoxItem Content="None"/>
+                                                    <ComboBoxItem Content="Daily"/>
+                                                    <ComboBoxItem Content="Weekly"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Margin="3,0,0,0">
+                                                <TextBlock Text="Est. Time" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+                                                <ComboBox x:Name="DetailEstMinutesCombo" Height="28" SelectionChanged="DetailEstMinutes_Changed">
+                                                    <ComboBoxItem Content="None"/>
+                                                    <ComboBoxItem Content="25m"/>
+                                                    <ComboBoxItem Content="50m"/>
+                                                    <ComboBoxItem Content="75m"/>
+                                                    <ComboBoxItem Content="100m"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </Grid>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="3,0,3,0">
-                                        <TextBlock Text="Recurrence" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <ComboBox x:Name="DetailRecurrenceCombo" SelectionChanged="DetailRecurrence_Changed">
-                                            <ComboBoxItem Content="None"/>
-                                            <ComboBoxItem Content="Daily"/>
-                                            <ComboBoxItem Content="Weekly"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2" Margin="3,0,0,0">
-                                        <TextBlock Text="Est. Time" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
-                                        <ComboBox x:Name="DetailEstMinutesCombo" SelectionChanged="DetailEstMinutes_Changed">
-                                            <ComboBoxItem Content="None"/>
-                                            <ComboBoxItem Content="25m"/>
-                                            <ComboBoxItem Content="50m"/>
-                                            <ComboBoxItem Content="75m"/>
-                                            <ComboBoxItem Content="100m"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                </Grid>
+                                </Border>
 
-                                <!-- Subtasks Checklist -->
-                                <TextBlock Text="Subtasks / Checklist" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,6,0,4"/>
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBox x:Name="DetailNewSubtaskBox" KeyDown="DetailNewSubtaskBox_KeyDown"/>
-                                    <Button x:Name="DetailAddSubtaskBtn" Grid.Column="1" Content="+ Add" Style="{StaticResource SecondaryButton}" Margin="4,0,0,0" Padding="8,4" Click="DetailAddSubtaskBtn_Click"/>
-                                </Grid>
-                                <ItemsControl x:Name="DetailSubtasksItemsControl" Margin="0,0,0,10">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,2">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsCompleted}" Margin="0,0,6,0" Click="SubtaskCheck_Click"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" Foreground="White" FontSize="12"/>
-                                                <Button Grid.Column="2" Content="✕" Style="{StaticResource SecondaryButton}" Padding="4,1" FontSize="10" Click="SubtaskDelete_Click"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <!-- Section: Subtasks / Checklist -->
+                                <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Subtasks / Checklist" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6"/>
+                                        <Grid Margin="0,0,0,6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox x:Name="DetailNewSubtaskBox" Height="28" KeyDown="DetailNewSubtaskBox_KeyDown"/>
+                                            <Button x:Name="DetailAddSubtaskBtn" Grid.Column="1" Content="+ Add" Style="{StaticResource SecondaryButton}" Height="28" Margin="4,0,0,0" Padding="8,4" Click="DetailAddSubtaskBtn_Click"/>
+                                        </Grid>
+                                        <ItemsControl x:Name="DetailSubtasksItemsControl">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Padding="4,4" Margin="0,2" Background="#FF221C30" CornerRadius="4">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsCompleted}" VerticalAlignment="Center" Margin="0,0,8,0" Click="SubtaskCheck_Click"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" Foreground="White" FontSize="12"/>
+                                                            <Button Grid.Column="2" Content="✕" Style="{StaticResource SecondaryButton}" Padding="5,1" FontSize="10" Click="SubtaskDelete_Click"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
 
                                 <!-- Focus Stats on Task -->
-                                <Border Background="#FF1E1A29" Padding="8" CornerRadius="6" Margin="0,4,0,12">
-                                    <TextBlock x:Name="DetailFocusStatsText" Text="🍅 0 sessions (0 mins focus)" FontSize="11" Foreground="{StaticResource AccentOrangeBrush}"/>
+                                <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" Padding="10,8" CornerRadius="6" Margin="0,0,0,12">
+                                    <TextBlock x:Name="DetailFocusStatsText" Text="🍅 0 sessions (0 mins focus)" FontSize="11" FontWeight="Medium" Foreground="{StaticResource AccentOrangeBrush}"/>
                                 </Border>
 
                                 <!-- Bottom Action Buttons -->
@@ -665,32 +489,52 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Bottom Config row -->
-                <Border Grid.Row="2" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0">
-                    <WrapPanel VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
-                            <TextBlock Text="Focus Duration: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <TextBox x:Name="FocusDurBox" Width="40" Text="25" LostFocus="FocusDurBox_LostFocus"/>
-                            <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                <!-- Bottom Config row: Dual Grouped Cards -->
+                <Grid Grid.Row="2" Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.15*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Card 1: Session Durations & Flow -->
+                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,6,0">
+                        <StackPanel>
+                            <TextBlock Text="⚙️ Session Durations &amp; Flow" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
+                            <WrapPanel VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,4" VerticalAlignment="Center">
+                                    <TextBlock Text="Focus: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="FocusDurBox" Width="38" Height="26" Text="25" LostFocus="FocusDurBox_LostFocus" HorizontalContentAlignment="Center"/>
+                                    <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,4" VerticalAlignment="Center">
+                                    <TextBlock Text="Short Break: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="FocusShortBreakBox" Width="38" Height="26" Text="5" LostFocus="FocusShortBreakBox_LostFocus" HorizontalContentAlignment="Center"/>
+                                    <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,12,4" VerticalAlignment="Center">
+                                    <TextBlock Text="Long Break: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="FocusLongBreakBox" Width="38" Height="26" Text="15" LostFocus="FocusLongBreakBox_LostFocus" HorizontalContentAlignment="Center"/>
+                                    <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                </StackPanel>
+                                <CheckBox x:Name="FocusAutoBreakCheck" Content="Auto-breaks" Margin="0,0,10,4" VerticalAlignment="Center" Click="FocusAutoBreakCheck_Click" ToolTip="Automatically transition into break when focus session ends"/>
+                                <CheckBox x:Name="FocusAutoFocusCheck" Content="Auto-focus" Margin="0,0,4,4" VerticalAlignment="Center" Click="FocusAutoFocusCheck_Click" ToolTip="Automatically start next focus session when break ends"/>
+                            </WrapPanel>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
-                            <TextBlock Text="Short Break: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <TextBox x:Name="FocusShortBreakBox" Width="40" Text="5" LostFocus="FocusShortBreakBox_LostFocus"/>
-                            <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                    </Border>
+
+                    <!-- Card 2: Productivity Alerts -->
+                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="6,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="🔔 Productivity Alerts" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"/>
+                            <WrapPanel VerticalAlignment="Center">
+                                <CheckBox x:Name="FocusNotifyFocusCheck" Content="Focus alert" Margin="0,0,12,4" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Alert when focus session completes"/>
+                                <CheckBox x:Name="FocusNotifyBreakCheck" Content="Break alert" Margin="0,0,12,4" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Alert when break session completes"/>
+                                <CheckBox x:Name="FocusNotifyUpcomingCheck" Content="Due today" Margin="0,0,12,4" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Remind for tasks due today"/>
+                                <CheckBox x:Name="FocusNotifyOverdueCheck" Content="Overdue" Margin="0,0,4,4" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Remind for overdue tasks"/>
+                            </WrapPanel>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
-                            <TextBlock Text="Long Break: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                            <TextBox x:Name="FocusLongBreakBox" Width="40" Text="15" LostFocus="FocusLongBreakBox_LostFocus"/>
-                            <TextBlock Text="m" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
-                        </StackPanel>
-                        <CheckBox x:Name="FocusAutoBreakCheck" Content="Auto-start breaks" Margin="0,0,14,0" VerticalAlignment="Center" Click="FocusAutoBreakCheck_Click"/>
-                        <CheckBox x:Name="FocusAutoFocusCheck" Content="Auto-start focus" Margin="0,0,14,0" VerticalAlignment="Center" Click="FocusAutoFocusCheck_Click"/>
-                        <CheckBox x:Name="FocusNotifyFocusCheck" Content="Focus alert" Margin="0,0,10,0" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Alert when focus session completes"/>
-                        <CheckBox x:Name="FocusNotifyBreakCheck" Content="Break alert" Margin="0,0,10,0" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Alert when break session completes"/>
-                        <CheckBox x:Name="FocusNotifyUpcomingCheck" Content="Due today alert" Margin="0,0,10,0" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Remind for tasks due today"/>
-                        <CheckBox x:Name="FocusNotifyOverdueCheck" Content="Overdue alert" VerticalAlignment="Center" Click="FocusReminderToggle_Click" ToolTip="Remind for overdue tasks"/>
-                    </WrapPanel>
-                </Border>
+                    </Border>
+                </Grid>
             </Grid>
 
             <!-- 4. HISTORY VIEW -->
@@ -706,10 +550,10 @@
                 <DockPanel Grid.Row="0" Margin="0,0,0,12">
                     <TextBlock Text="Focus Session History" FontSize="20" FontWeight="Bold" Foreground="White"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="💾 Backup All" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="ProductivityBackup_Click" ToolTip="Export complete productivity backup (JSON)"/>
-                        <Button Content="📥 Export CSV" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="HistoryExportCsv_Click"/>
-                        <Button Content="📥 Export JSON" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="HistoryExportJson_Click"/>
-                        <Button Content="🗑️ Clear All" Style="{StaticResource DangerButton}" Click="HistoryClearAll_Click"/>
+                        <Button Content="💾 Backup All" Height="28" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="ProductivityBackup_Click" ToolTip="Export complete productivity backup (JSON)"/>
+                        <Button Content="📥 Export CSV" Height="28" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="HistoryExportCsv_Click"/>
+                        <Button Content="📥 Export JSON" Height="28" Style="{StaticResource SecondaryButton}" Margin="0,0,6,0" Click="HistoryExportJson_Click"/>
+                        <Button Content="🗑️ Clear All" Height="28" Style="{StaticResource DangerButton}" Click="HistoryClearAll_Click"/>
                     </StackPanel>
                 </DockPanel>
 
@@ -718,7 +562,7 @@
                     <DockPanel>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Range: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <ComboBox x:Name="HistoryRangeCombo" Width="110" SelectionChanged="HistoryRangeCombo_SelectionChanged">
+                            <ComboBox x:Name="HistoryRangeCombo" Height="28" Width="110" SelectionChanged="HistoryRangeCombo_SelectionChanged">
                                 <ComboBoxItem Content="Today" IsSelected="True"/>
                                 <ComboBoxItem Content="Yesterday"/>
                                 <ComboBoxItem Content="Last 7 Days"/>
@@ -728,20 +572,20 @@
                             </ComboBox>
                             <StackPanel x:Name="HistoryCustomDatePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed" Margin="6,0,0,0">
                                 <TextBlock Text="From:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0"/>
-                                <DatePicker x:Name="HistoryStartDatePicker" Width="95" SelectedDateChanged="HistoryCustomDate_Changed"/>
+                                <DatePicker x:Name="HistoryStartDatePicker" Height="28" Width="95" SelectedDateChanged="HistoryCustomDate_Changed"/>
                                 <TextBlock Text="To:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="4,0,3,0"/>
-                                <DatePicker x:Name="HistoryEndDatePicker" Width="95" SelectedDateChanged="HistoryCustomDate_Changed"/>
-                                <Button x:Name="HistoryResetRangeBtn" Content="↺" Style="{StaticResource SecondaryButton}" Padding="4,1" FontSize="11" Margin="3,0,0,0" ToolTip="Reset to Today" Click="HistoryResetRangeBtn_Click"/>
+                                <DatePicker x:Name="HistoryEndDatePicker" Height="28" Width="95" SelectedDateChanged="HistoryCustomDate_Changed"/>
+                                <Button x:Name="HistoryResetRangeBtn" Content="↺" Style="{StaticResource SecondaryButton}" Height="28" Padding="6,1" FontSize="11" Margin="3,0,0,0" ToolTip="Reset to Today" Click="HistoryResetRangeBtn_Click"/>
                             </StackPanel>
                             <TextBlock Text="Type: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                            <ComboBox x:Name="HistoryTypeCombo" Width="95" SelectionChanged="HistoryTypeCombo_SelectionChanged">
+                            <ComboBox x:Name="HistoryTypeCombo" Height="28" Width="95" SelectionChanged="HistoryTypeCombo_SelectionChanged">
                                 <ComboBoxItem Content="All Types" IsSelected="True"/>
                                 <ComboBoxItem Content="Focus"/>
                                 <ComboBoxItem Content="Short Break"/>
                                 <ComboBoxItem Content="Long Break"/>
                             </ComboBox>
                             <TextBlock Text="Status: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,0,4,0"/>
-                            <ComboBox x:Name="HistoryStatusCombo" Width="95" SelectionChanged="HistoryStatusCombo_SelectionChanged">
+                            <ComboBox x:Name="HistoryStatusCombo" Height="28" Width="95" SelectionChanged="HistoryStatusCombo_SelectionChanged">
                                 <ComboBoxItem Content="All Status" IsSelected="True"/>
                                 <ComboBoxItem Content="Completed"/>
                                 <ComboBoxItem Content="Interrupted"/>
@@ -760,16 +604,6 @@
                           Foreground="White" RowBackground="#FF221C30" AlternatingRowBackground="#FF282238"
                           GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#FF3B314F" HeadersVisibility="Column"
                           SelectionChanged="HistoryDataGrid_SelectionChanged">
-                    <DataGrid.ColumnHeaderStyle>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#FF1B1627"/>
-                            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="Padding" Value="8,6"/>
-                            <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                            <Setter Property="BorderBrush" Value="#FF3B314F"/>
-                        </Style>
-                    </DataGrid.ColumnHeaderStyle>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Date" Binding="{Binding FormattedDate}" Width="100"/>
                         <DataGridTextColumn Header="Time" Binding="{Binding FormattedTime}" Width="110"/>
@@ -791,8 +625,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Session Notes: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBox x:Name="HistoryNotesTextBox" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button x:Name="HistorySaveNotesBtn" Grid.Column="2" Content="Save Note" Style="{StaticResource SecondaryButton}" Padding="8,3" FontSize="11" Click="HistorySaveNotesBtn_Click"/>
+                        <TextBox x:Name="HistoryNotesTextBox" Grid.Column="1" Height="28" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button x:Name="HistorySaveNotesBtn" Grid.Column="2" Content="Save Note" Style="{StaticResource SecondaryButton}" Height="28" Padding="10,3" FontSize="11" Click="HistorySaveNotesBtn_Click"/>
                     </Grid>
                 </Border>
             </Grid>
@@ -811,12 +645,12 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <StackPanel x:Name="InsightsCustomDatePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed" Margin="0,0,8,0">
                             <TextBlock Text="From:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,3,0"/>
-                            <DatePicker x:Name="InsightsStartDatePicker" Width="95" SelectedDateChanged="InsightsCustomDate_Changed"/>
+                            <DatePicker x:Name="InsightsStartDatePicker" Height="28" Width="95" SelectedDateChanged="InsightsCustomDate_Changed"/>
                             <TextBlock Text="To:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="4,0,3,0"/>
-                            <DatePicker x:Name="InsightsEndDatePicker" Width="95" SelectedDateChanged="InsightsCustomDate_Changed"/>
-                            <Button x:Name="InsightsResetRangeBtn" Content="↺" Style="{StaticResource SecondaryButton}" Padding="4,1" FontSize="11" Margin="3,0,0,0" ToolTip="Reset to Last 7 Days" Click="InsightsResetRangeBtn_Click"/>
+                            <DatePicker x:Name="InsightsEndDatePicker" Height="28" Width="95" SelectedDateChanged="InsightsCustomDate_Changed"/>
+                            <Button x:Name="InsightsResetRangeBtn" Content="↺" Style="{StaticResource SecondaryButton}" Height="28" Padding="6,1" FontSize="11" Margin="3,0,0,0" ToolTip="Reset to Last 7 Days" Click="InsightsResetRangeBtn_Click"/>
                         </StackPanel>
-                        <ComboBox x:Name="InsightsRangeCombo" Width="130" VerticalAlignment="Center" SelectionChanged="InsightsRangeCombo_SelectionChanged">
+                        <ComboBox x:Name="InsightsRangeCombo" Height="28" Width="130" VerticalAlignment="Center" SelectionChanged="InsightsRangeCombo_SelectionChanged">
                             <ComboBoxItem Content="Last 7 Days" IsSelected="True"/>
                             <ComboBoxItem Content="Today"/>
                             <ComboBoxItem Content="Last 30 Days"/>
@@ -962,7 +796,7 @@
                                     <ProgressBar x:Name="GoalsDailyFocusBar" Height="10" Value="0" Maximum="100" Foreground="{StaticResource AccentOrangeBrush}" Background="#FF3B314F" BorderThickness="0" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="Target: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="GoalsDailyFocusTargetBox" Width="60" Text="100" LostFocus="GoalsTarget_LostFocus"/>
+                                        <TextBox x:Name="GoalsDailyFocusTargetBox" Height="26" Width="60" Text="100" HorizontalContentAlignment="Center" LostFocus="GoalsTarget_LostFocus"/>
                                         <TextBlock Text=" mins/day" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -976,7 +810,7 @@
                                     <ProgressBar x:Name="GoalsWeeklyFocusBar" Height="10" Value="0" Maximum="100" Foreground="{StaticResource AccentPurpleBrush}" Background="#FF3B314F" BorderThickness="0" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="Target: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="GoalsWeeklyFocusTargetBox" Width="60" Text="500" LostFocus="GoalsTarget_LostFocus"/>
+                                        <TextBox x:Name="GoalsWeeklyFocusTargetBox" Height="26" Width="60" Text="500" HorizontalContentAlignment="Center" LostFocus="GoalsTarget_LostFocus"/>
                                         <TextBlock Text=" mins/week" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -998,7 +832,7 @@
                                     <ProgressBar x:Name="GoalsDailyTaskBar" Height="10" Value="0" Maximum="100" Foreground="{StaticResource AccentGreenBrush}" Background="#FF3B314F" BorderThickness="0" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="Target: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="GoalsDailyTaskTargetBox" Width="60" Text="3" LostFocus="GoalsTarget_LostFocus"/>
+                                        <TextBox x:Name="GoalsDailyTaskTargetBox" Height="26" Width="60" Text="3" HorizontalContentAlignment="Center" LostFocus="GoalsTarget_LostFocus"/>
                                         <TextBlock Text=" tasks/day" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -1012,7 +846,7 @@
                                     <ProgressBar x:Name="GoalsWeeklyTaskBar" Height="10" Value="0" Maximum="100" Foreground="#FF38BDF8" Background="#FF3B314F" BorderThickness="0" Margin="0,0,0,10"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="Target: " FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="GoalsWeeklyTaskTargetBox" Width="60" Text="15" LostFocus="GoalsTarget_LostFocus"/>
+                                        <TextBox x:Name="GoalsWeeklyTaskTargetBox" Height="26" Width="60" Text="15" HorizontalContentAlignment="Center" LostFocus="GoalsTarget_LostFocus"/>
                                         <TextBlock Text=" tasks/week" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                                     </StackPanel>
                                 </StackPanel>

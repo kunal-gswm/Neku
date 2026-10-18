@@ -21,6 +21,7 @@ public partial class TasksWindow : Window
     private TaskItem? _selectedTask;
     private string _activeTab = "All";
     private bool _suppressEditEvents;
+    private bool _isInitialized;
 
     public event Action<TaskItem>? TaskFocusRequested;
     public event Action? OpenHubRequested;
@@ -32,15 +33,24 @@ public partial class TasksWindow : Window
 
     public TasksWindow(TaskService taskService, FocusTimerService focusTimer, AppSettings settings)
     {
-        InitializeComponent();
         _taskService = taskService;
         _focusTimer = focusTimer;
         _settings = settings;
+
+        InitializeComponent();
+        _isInitialized = true;
 
         _taskService.TasksChanged += OnTasksChangedFromService;
 
         RefreshList();
         UpdateTabButtons();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
     }
 
     protected override void OnClosed(EventArgs e)
@@ -172,22 +182,26 @@ public partial class TasksWindow : Window
 
     private void UpdateTabButtons()
     {
-        var activeBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8B5CF6"));
-        var normalBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF282337"));
+        var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF452C63"));
+        var activeBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8B5CF6"));
         var activeFg = Brushes.White;
+
+        var normalBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF221B30"));
+        var normalBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF382F4A"));
         var normalFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFA78BFA"));
 
-        TodayTabBtn.Background = _activeTab == "Today" ? activeBrush : normalBrush;
-        TodayTabBtn.Foreground = _activeTab == "Today" ? activeFg : normalFg;
+        ApplyTabStyle(TodayTabBtn, _activeTab == "Today");
+        ApplyTabStyle(UpcomingTabBtn, _activeTab == "Upcoming");
+        ApplyTabStyle(AllTabBtn, _activeTab == "All");
+        ApplyTabStyle(CompletedTabBtn, _activeTab == "Completed");
 
-        UpcomingTabBtn.Background = _activeTab == "Upcoming" ? activeBrush : normalBrush;
-        UpcomingTabBtn.Foreground = _activeTab == "Upcoming" ? activeFg : normalFg;
-
-        AllTabBtn.Background = _activeTab == "All" ? activeBrush : normalBrush;
-        AllTabBtn.Foreground = _activeTab == "All" ? activeFg : normalFg;
-
-        CompletedTabBtn.Background = _activeTab == "Completed" ? activeBrush : normalBrush;
-        CompletedTabBtn.Foreground = _activeTab == "Completed" ? activeFg : normalFg;
+        void ApplyTabStyle(Button btn, bool isActive)
+        {
+            btn.Background = isActive ? activeBg : normalBg;
+            btn.BorderBrush = isActive ? activeBorder : normalBorder;
+            btn.Foreground = isActive ? activeFg : normalFg;
+            btn.FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal;
+        }
     }
 
     private void TabBtn_Click(object sender, RoutedEventArgs e)
@@ -202,16 +216,19 @@ public partial class TasksWindow : Window
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (!_isInitialized) return;
         RefreshList();
     }
 
     private void SortCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_isInitialized) return;
         RefreshList();
     }
 
     private void TasksListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_isInitialized) return;
         if (TasksListBox.SelectedItem is TaskItem item)
         {
             ShowTaskDetail(item);
