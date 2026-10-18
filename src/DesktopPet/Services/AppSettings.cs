@@ -145,11 +145,33 @@ public sealed class AppSettings
     // ── Focus Timer (Pomodoro) ────────────────────────────────────────────────
     [JsonPropertyName("focusDurationMinutes")] public int FocusDurationMinutes { get; set; } = 25;
     [JsonPropertyName("breakDurationMinutes")] public int BreakDurationMinutes { get; set; } = 5;
+    [JsonPropertyName("longBreakDurationMinutes")] public int LongBreakDurationMinutes { get; set; } = 15;
+    [JsonPropertyName("longBreakInterval")] public int LongBreakInterval { get; set; } = 4;
+    [JsonPropertyName("autoStartBreaks")] public bool AutoStartBreaks { get; set; } = false;
+    [JsonPropertyName("autoStartFocus")] public bool AutoStartFocus { get; set; } = false;
+    [JsonPropertyName("quietStart")] public bool QuietStart { get; set; } = false;
     [JsonPropertyName("focusTimerActive")] public bool FocusTimerActive { get; set; } = false;
     [JsonPropertyName("focusTimerState")] public string FocusTimerState { get; set; } = "Idle";
     [JsonPropertyName("focusTimerDeadlineUtc")] public DateTime? FocusTimerDeadlineUtc { get; set; }
     [JsonPropertyName("focusTimerRemainingSeconds")] public double FocusTimerRemainingSeconds { get; set; } = 0;
     [JsonPropertyName("focusActiveTaskId")] public string? FocusActiveTaskId { get; set; }
+    [JsonPropertyName("focusTimerSessionType")] public string FocusTimerSessionType { get; set; } = "Focus";
+    [JsonPropertyName("focusCycleCompletedSessions")] public int FocusCycleCompletedSessions { get; set; } = 0;
+
+    // ── Productivity Goals ───────────────────────────────────────────────────
+    [JsonPropertyName("dailyFocusGoalMinutes")] public int DailyFocusGoalMinutes { get; set; } = 100;
+    [JsonPropertyName("weeklyFocusGoalMinutes")] public int WeeklyFocusGoalMinutes { get; set; } = 500;
+    [JsonPropertyName("dailyTaskGoal")] public int DailyTaskGoal { get; set; } = 3;
+    [JsonPropertyName("weeklyTaskGoal")] public int WeeklyTaskGoal { get; set; } = 15;
+
+    // ── Productivity Reminders ───────────────────────────────────────────────
+    [JsonPropertyName("enableTaskReminders")] public bool EnableTaskReminders { get; set; } = true;
+    [JsonPropertyName("enableUpcomingTaskReminders")] public bool EnableUpcomingTaskReminders { get; set; } = true;
+    [JsonPropertyName("enableOverdueTaskReminders")] public bool EnableOverdueTaskReminders { get; set; } = true;
+    [JsonPropertyName("enableBreakReminders")] public bool EnableBreakReminders { get; set; } = true;
+    [JsonPropertyName("enableFocusCompletedReminders")] public bool EnableFocusCompletedReminders { get; set; } = true;
+    [JsonPropertyName("enableBreakCompletedReminders")] public bool EnableBreakCompletedReminders { get; set; } = true;
+    [JsonPropertyName("reminderIntervalMinutes")] public int ReminderIntervalMinutes { get; set; } = 30;
 
     // ── Onboarding ────────────────────────────────────────────────────────────
     /// <summary>Whether the first-run onboarding speech bubble has been dismissed.</summary>
@@ -195,5 +217,13 @@ public sealed class AppSettings
             PersonalityPreset = "Expressive";
         if (FocusDurationMinutes <= 0) FocusDurationMinutes = 25;
         if (BreakDurationMinutes <= 0) BreakDurationMinutes = 5;
+        if (LongBreakDurationMinutes <= 0) LongBreakDurationMinutes = 15;
+        if (LongBreakInterval <= 0) LongBreakInterval = 4;
+        if (DailyFocusGoalMinutes <= 0) DailyFocusGoalMinutes = 100;
+        if (WeeklyFocusGoalMinutes <= 0) WeeklyFocusGoalMinutes = 500;
+        if (DailyTaskGoal <= 0) DailyTaskGoal = 3;
+        if (WeeklyTaskGoal <= 0) WeeklyTaskGoal = 15;
+        if (ReminderIntervalMinutes <= 0) ReminderIntervalMinutes = 30;
+        if (FocusCycleCompletedSessions < 0) FocusCycleCompletedSessions = 0;
     }
 }

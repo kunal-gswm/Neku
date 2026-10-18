@@ -58,6 +58,12 @@ public partial class SettingsWindow : Window
         SystemReactionsBox.IsChecked = settings.EnableSystemReactions;
         TaskReactionsBox.IsChecked   = settings.EnableTaskReactions;
 
+        // Productivity Alerts
+        UpcomingTaskRemindersBox.IsChecked = settings.EnableUpcomingTaskReminders;
+        OverdueTaskRemindersBox.IsChecked  = settings.EnableOverdueTaskReminders;
+        FocusCompletedRemindersBox.IsChecked = settings.EnableFocusCompletedReminders;
+        BreakCompletedRemindersBox.IsChecked = settings.EnableBreakCompletedReminders;
+
         // Performance
         ReducedMotionBox.IsChecked     = settings.ReducedMotion;
         BatteryConsciousBox.IsChecked  = settings.BatteryConscious;
@@ -260,6 +266,10 @@ public partial class SettingsWindow : Window
         _settings.EnableMoods                = MoodsBox.IsChecked            == true;
         _settings.EnableSystemReactions      = SystemReactionsBox.IsChecked  == true;
         _settings.EnableTaskReactions        = TaskReactionsBox.IsChecked    == true;
+        _settings.EnableUpcomingTaskReminders   = UpcomingTaskRemindersBox.IsChecked   == true;
+        _settings.EnableOverdueTaskReminders    = OverdueTaskRemindersBox.IsChecked    == true;
+        _settings.EnableFocusCompletedReminders = FocusCompletedRemindersBox.IsChecked == true;
+        _settings.EnableBreakCompletedReminders = BreakCompletedRemindersBox.IsChecked == true;
         _settings.ReducedMotion              = ReducedMotionBox.IsChecked    == true;
         _settings.BatteryConscious           = BatteryConsciousBox.IsChecked == true;
         _settings.DisableOptionalMonitoring  = DisableMonitoringBox.IsChecked == true;

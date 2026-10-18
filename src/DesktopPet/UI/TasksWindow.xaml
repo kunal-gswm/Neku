@@ -103,6 +103,11 @@
 
         <!-- Left Pane: Navigation views, Search/Sort, Task List -->
         <DockPanel Grid.Column="0">
+            <!-- Hub Quick Switch Button -->
+            <Button DockPanel.Dock="Top" x:Name="OpenHubBtn" Content="🐾 Open Productivity Hub →"
+                    Style="{StaticResource TabButton}" Margin="0,0,0,8" Padding="6,4"
+                    Click="OpenHubBtn_Click" ToolTip="Open the full Productivity Hub with Analytics &amp; Goals"/>
+
             <!-- View Tabs -->
             <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -257,6 +262,7 @@
                             <ComboBoxItem Content="Low"/>
                             <ComboBoxItem Content="Normal" IsSelected="True"/>
                             <ComboBoxItem Content="High"/>
+                            <ComboBoxItem Content="Urgent 🔥"/>
                         </ComboBox>
                     </StackPanel>
 

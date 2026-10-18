@@ -43,6 +43,9 @@ public partial class App : Application
     private QuickNotesWindow? _notesWindow;
     private TaskService _taskService = new();
     private TasksWindow? _tasksWindow;
+    private FocusHistoryService _focusHistoryService = new();
+    private DashboardWindow? _dashboardWindow;
+    private ProductivityReminderService? _reminderService;
     private DeveloperEventsWindow? _devEventsWindow;
 
     // ── AI companion (built lazily, only when enabled) ──
@@ -221,6 +224,8 @@ public partial class App : Application
         _stateSaveTimer.Start();
 
         _focusTimer = new FocusTimerService(Dispatcher);
+        _focusHistoryService = new FocusHistoryService();
+        _focusTimer.HistoryService = _focusHistoryService;
         _focusTimer.LoadState(_settings);
         _focusTimer.FocusCompleted += OnFocusCompleted;
         _focusTimer.BreakCompleted += OnBreakCompleted;
@@ -229,12 +234,26 @@ public partial class App : Application
         _taskService.TaskCompleted += OnTaskCompleted;
         _taskService.TaskDeleted += OnTaskDeleted;
 
+        _reminderService = new ProductivityReminderService(_taskService, _focusTimer, _settings, Dispatcher);
+        _reminderService.IsQuietOrPresenting = () => _hiddenForQuiet || (_settings.EnableQuietMode && _engine?.IsQuiet == true);
+        _reminderService.TaskDeadlineReminder += (task, msg) =>
+        {
+            if (_settings.EnableQuietMode && (_hiddenForQuiet || _engine?.IsQuiet == true)) return;
+            _engine?.TriggerReaction(PetState.Wave, msg, 3.0);
+        };
+        _reminderService.BreakReminder += msg =>
+        {
+            if (_settings.EnableQuietMode && (_hiddenForQuiet || _engine?.IsQuiet == true)) return;
+            _engine?.TriggerReaction(PetState.Stretch, msg, 3.0);
+        };
+
         if (!string.IsNullOrEmpty(_settings.FocusActiveTaskId))
         {
             var activeTask = _taskService.Get(_settings.FocusActiveTaskId);
             if (activeTask != null)
             {
                 _focusTimer.ActiveTaskTitle = activeTask.Title;
+                _focusTimer.ActiveTaskProject = activeTask.Project;
             }
         }
 
@@ -247,6 +266,7 @@ public partial class App : Application
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
             onToggleFocusHud: ToggleFocusHud,
+            onProductivityHub: () => OpenProductivityHub(),
             onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
@@ -269,6 +289,7 @@ public partial class App : Application
             getFocusLabel: GetFocusLabel,
             onFocusCancel: OnFocusCancel,
             isFocusActive: () => _focusTimer.IsActive,
+            onProductivityHub: () => OpenProductivityHub(),
             onTasks: OpenTasksWindow,
             onQuickNote: OpenQuickNotes,
             onDeveloperEvents: OpenDeveloperEvents,
@@ -641,46 +662,70 @@ public partial class App : Application
     {
         if (!string.IsNullOrEmpty(_focusTimer.ActiveTaskId))
         {
-            _taskService.RecordFocusCompleted(_focusTimer.ActiveTaskId);
+            _taskService.RecordFocusCompleted(_focusTimer.ActiveTaskId, _focusTimer.FocusDurationMinutes);
             _focusTimer.ClearActiveTask();
             _settings.FocusActiveTaskId = null;
             _settingsService.Save();
         }
 
         _engine?.Personality.OnPositiveEvent();
-        if (_settings.EnableFocusReactions)
+        if (_settings.EnableFocusReactions && !_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
         {
-            _engine?.TriggerReaction(PetState.Celebrate, _engine.Personality.GetFocusCompletedLine(), 2.0);
-            _petWindow?.SpawnHearts();
+            double focusToday = _focusHistoryService.GetTodayFocusMinutes();
+            if (focusToday >= _settings.DailyFocusGoalMinutes && (focusToday - _focusTimer.FocusDurationMinutes) < _settings.DailyFocusGoalMinutes)
+            {
+                _engine?.TriggerReaction(PetState.Celebrate, "🌟 Daily focus goal achieved! Fantastic work today! 🎉", 3.0);
+            }
+            else
+            {
+                _engine?.TriggerReaction(PetState.Celebrate, _engine.Personality.GetFocusCompletedLine(), 2.0);
+            }
+
+            if (!_settings.ReducedMotion)
+            {
+                _petWindow?.SpawnHearts();
+            }
         }
 
-        var notif = new FocusNotificationWindow(
-            "Focus session complete! 🎉",
-            "Great work! Time for a 5m break.",
-            "🍅",
-            "Start 5m Break ☕",
-            () =>
-            {
-                _focusTimer.StartBreak(_settings.BreakDurationMinutes);
-                if (_settings.EnableBreakReactions)
-                    _engine?.TriggerReaction(PetState.Stretch, "Break time! Stretch those paws and rest your eyes 🌸", 2.0);
-            });
-        notif.Show();
+        bool isLongBreak = (_focusTimer.LongBreakInterval > 0 && _focusTimer.CompletedSessionsInCycle % _focusTimer.LongBreakInterval == 0);
+        int breakMins = isLongBreak ? _settings.LongBreakDurationMinutes : _settings.BreakDurationMinutes;
+        string breakLabel = isLongBreak ? $"Start {breakMins}m Long Break 🌴" : $"Start {breakMins}m Break ☕";
+
+        bool isQuietOrPresenting = _settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true;
+        if (_settings.EnableFocusCompletedReminders && !isQuietOrPresenting)
+        {
+            var notif = new FocusNotificationWindow(
+                "Focus session complete! 🎉",
+                $"Great work! Time for a {breakMins}m {(isLongBreak ? "long " : "")}break.",
+                "🍅",
+                breakLabel,
+                () =>
+                {
+                    _focusTimer.StartBreak(isLongBreak, breakMins);
+                    if (_settings.EnableBreakReactions && !_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
+                        _engine?.TriggerReaction(PetState.Stretch, "Break time! Stretch those paws and rest your eyes 🌸", 2.0);
+                });
+            notif.Show();
+        }
     }
 
     private void OnBreakCompleted()
     {
         _engine?.Personality.OnPositiveEvent();
-        if (_settings.EnableBreakReactions)
+        if (_settings.EnableBreakReactions && !_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
             _engine?.TriggerReaction(PetState.Wave, _engine.Personality.GetBreakCompletedLine(), 2.0);
 
-        var notif = new FocusNotificationWindow(
-            "Break finished! ✨",
-            "Feeling refreshed? Ready for another session?",
-            "☕",
-            "Start Focus 🎯",
-            () => _focusTimer.StartFocus(_settings.FocusDurationMinutes));
-        notif.Show();
+        bool isQuietOrPresenting = _settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true;
+        if (_settings.EnableBreakCompletedReminders && !isQuietOrPresenting)
+        {
+            var notif = new FocusNotificationWindow(
+                "Break finished! ✨",
+                "Feeling refreshed? Ready for another session?",
+                "☕",
+                "Start Focus 🎯",
+                () => _focusTimer.StartFocus(_settings.FocusDurationMinutes));
+            notif.Show();
+        }
     }
 
     private void OpenQuickNotes()
@@ -708,6 +753,10 @@ public partial class App : Application
             {
                 StartFocusForTask(task);
             };
+            _tasksWindow.OpenHubRequested += () =>
+            {
+                OpenProductivityHub("Tasks");
+            };
             _tasksWindow.Closed += (_, _) => _tasksWindow = null;
             _tasksWindow.Show();
         }
@@ -719,6 +768,31 @@ public partial class App : Application
         }
     }
 
+    private void OpenProductivityHub(string? initialTab = null)
+    {
+        DismissOnboarding();
+        if (_dashboardWindow == null || !_dashboardWindow.IsLoaded)
+        {
+            _dashboardWindow = new DashboardWindow(_taskService, _focusTimer, _focusHistoryService, _settings, initialTab);
+            _dashboardWindow.TaskFocusRequested += task =>
+            {
+                StartFocusForTask(task);
+            };
+            _dashboardWindow.Closed += (_, _) => _dashboardWindow = null;
+            _dashboardWindow.Show();
+        }
+        else
+        {
+            _dashboardWindow.Activate();
+            if (_dashboardWindow.WindowState == WindowState.Minimized)
+                _dashboardWindow.WindowState = WindowState.Normal;
+            if (!string.IsNullOrEmpty(initialTab))
+            {
+                _dashboardWindow.SelectTab(initialTab);
+            }
+        }
+    }
+
     public void StartFocusForTask(TaskItem task)
     {
         if (_focusTimer.IsActive)
@@ -726,11 +800,11 @@ public partial class App : Application
             _focusTimer.Cancel();
         }
         int minutes = _settings.FocusDurationMinutes > 0 ? _settings.FocusDurationMinutes : 25;
-        _focusTimer.StartFocus(minutes, task.Id, task.Title);
+        _focusTimer.StartFocus(minutes, task.Id, task.Title, task.Project);
         _settings.FocusActiveTaskId = task.Id;
         _settingsService.Save();
 
-        if (_settings.EnableFocusReactions)
+        if (_settings.EnableFocusReactions && !_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
         {
             _engine?.Personality.OnPositiveEvent();
             _engine?.TriggerReaction(PetState.Typing, $"🎯 Focusing on:\n\"{task.Title}\"", 2.0);
@@ -740,11 +814,21 @@ public partial class App : Application
     private void OnTaskCompleted(TaskItem task)
     {
         if (!_settings.EnableTaskReactions) return;
-        if (_settings.EnableQuietMode || _hiddenForQuiet) return;
+        if (_settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true) return;
 
-        string line = _engine?.Personality.GetTaskCompletedLine(task.Title) ?? "Task completed! Great job! ✨";
+        int tasksToday = _taskService.Tasks.Count(t => t.IsCompleted && t.CompletedAt.HasValue && TaskItem.ToLocalDate(t.CompletedAt.Value) == DateTime.Today);
         _engine?.Personality.OnPositiveEvent();
-        _engine?.TriggerReaction(PetState.Celebrate, line, 2.0);
+
+        if (tasksToday == _settings.DailyTaskGoal)
+        {
+            _engine?.TriggerReaction(PetState.Celebrate, $"🎯 Daily task goal completed! ({tasksToday} tasks done) ✨", 3.0);
+        }
+        else
+        {
+            string line = _engine?.Personality.GetTaskCompletedLine(task.Title) ?? "Task completed! Great job! ✨";
+            _engine?.TriggerReaction(PetState.Celebrate, line, 2.0);
+        }
+
         if (!_settings.ReducedMotion)
         {
             _petWindow?.SpawnHearts();
@@ -1232,7 +1316,9 @@ public partial class App : Application
         _focusHudWindow?.Close();
         _notesWindow?.Close();
         _tasksWindow?.Close();
+        _dashboardWindow?.Close();
         _devEventsWindow?.Close();
+        _reminderService?.Dispose();
         _tray?.Dispose();
         Shutdown();
     }
@@ -1254,7 +1340,9 @@ public partial class App : Application
         _focusHudWindow?.Close();
         _notesWindow?.Close();
         _tasksWindow?.Close();
+        _dashboardWindow?.Close();
         _devEventsWindow?.Close();
+        _reminderService?.Dispose();
         _http?.Dispose();
         _hookWatchdog?.Dispose();
         _keyboard?.Dispose();

@@ -140,6 +140,15 @@
                             </ComboBox>
                         </Grid>
                         <TextBlock Text="Neku keeps you company and celebrates completed sessions." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="⏰ Productivity &amp; Focus Alerts" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="UpcomingTaskRemindersBox" Content="Remind for tasks due today 📅"/>
+                        <CheckBox x:Name="OverdueTaskRemindersBox" Content="Remind for overdue tasks ⚠️"/>
+                        <CheckBox x:Name="FocusCompletedRemindersBox" Content="Notify when focus session completes 🍅"/>
+                        <CheckBox x:Name="BreakCompletedRemindersBox" Content="Notify when break completes ☕"/>
+                        <TextBlock Text="Independent alert toggles. All alerts respect Quiet Mode and presentation mode." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
                     </StackPanel>
 
                 </ScrollViewer>

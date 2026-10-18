@@ -8,7 +8,58 @@ public enum TaskPriority
 {
     Low = 0,
     Normal = 1,
-    High = 2
+    High = 2,
+    Urgent = 3
+}
+
+public enum TaskItemStatus
+{
+    Inbox = 0,
+    Todo = 1,
+    InProgress = 2,
+    Completed = 3
+}
+
+public enum TaskRecurrenceRule
+{
+    None = 0,
+    Daily = 1,
+    Weekly = 2
+}
+
+public sealed class SubtaskItem : INotifyPropertyChanged
+{
+    private string _id = Guid.NewGuid().ToString("N");
+    private string _title = "";
+    private bool _isCompleted = false;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
+    }
+
+    [JsonPropertyName("id")]
+    public string Id
+    {
+        get => _id;
+        set { if (_id != value) { _id = value; OnPropertyChanged(); } }
+    }
+
+    [JsonPropertyName("title")]
+    public string Title
+    {
+        get => _title;
+        set { if (_title != value) { _title = value; OnPropertyChanged(); } }
+    }
+
+    [JsonPropertyName("isCompleted")]
+    public bool IsCompleted
+    {
+        get => _isCompleted;
+        set { if (_isCompleted != value) { _isCompleted = value; OnPropertyChanged(); } }
+    }
 }
 
 public sealed class TaskItem : INotifyPropertyChanged
@@ -17,10 +68,16 @@ public sealed class TaskItem : INotifyPropertyChanged
     private string _title = "New Task";
     private string _description = "";
     private bool _isCompleted = false;
+    private TaskItemStatus _status = TaskItemStatus.Todo;
     private TaskPriority _priority = TaskPriority.Normal;
     private DateTime? _dueDate;
     private int _estimatedMinutes = 0;
     private int _completedPomodoros = 0;
+    private int _totalFocusMinutes = 0;
+    private string _project = "";
+    private List<string> _tags = new();
+    private List<SubtaskItem> _subtasks = new();
+    private TaskRecurrenceRule _recurrenceRule = TaskRecurrenceRule.None;
     private DateTime _createdAt = DateTime.UtcNow;
     private DateTime? _completedAt;
     private DateTime _updatedAt = DateTime.UtcNow;
@@ -62,6 +119,46 @@ public sealed class TaskItem : INotifyPropertyChanged
             if (_isCompleted != value)
             {
                 _isCompleted = value;
+                if (_isCompleted && _status != TaskItemStatus.Completed)
+                {
+                    _status = TaskItemStatus.Completed;
+                    OnPropertyChanged(nameof(Status));
+                }
+                else if (!_isCompleted && _status == TaskItemStatus.Completed)
+                {
+                    _status = TaskItemStatus.Todo;
+                    OnPropertyChanged(nameof(Status));
+                }
+
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsOverdue));
+                OnPropertyChanged(nameof(IsDueToday));
+                OnPropertyChanged(nameof(StatusDisplay));
+            }
+        }
+    }
+
+    [JsonPropertyName("status")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public TaskItemStatus Status
+    {
+        get => _status;
+        set
+        {
+            if (_status != value)
+            {
+                _status = value;
+                if (_status == TaskItemStatus.Completed && !_isCompleted)
+                {
+                    _isCompleted = true;
+                    OnPropertyChanged(nameof(IsCompleted));
+                }
+                else if (_status != TaskItemStatus.Completed && _isCompleted)
+                {
+                    _isCompleted = false;
+                    OnPropertyChanged(nameof(IsCompleted));
+                }
+
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsOverdue));
                 OnPropertyChanged(nameof(IsDueToday));
@@ -127,6 +224,68 @@ public sealed class TaskItem : INotifyPropertyChanged
         }
     }
 
+    /// <summary>Total minutes spent focusing on this task.</summary>
+    [JsonPropertyName("totalFocusMinutes")]
+    public int TotalFocusMinutes
+    {
+        get => _totalFocusMinutes;
+        set
+        {
+            if (_totalFocusMinutes != value)
+            {
+                _totalFocusMinutes = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>Optional category or project name.</summary>
+    [JsonPropertyName("project")]
+    public string Project
+    {
+        get => _project;
+        set { if (_project != value) { _project = value; OnPropertyChanged(); } }
+    }
+
+    /// <summary>Tags or labels associated with the task.</summary>
+    [JsonPropertyName("tags")]
+    public List<string> Tags
+    {
+        get => _tags;
+        set { _tags = value ?? new List<string>(); OnPropertyChanged(); OnPropertyChanged(nameof(TagsDisplay)); }
+    }
+
+    /// <summary>Checklist of subtasks.</summary>
+    [JsonPropertyName("subtasks")]
+    public List<SubtaskItem> Subtasks
+    {
+        get => _subtasks;
+        set
+        {
+            _subtasks = value ?? new List<SubtaskItem>();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SubtasksSummary));
+            OnPropertyChanged(nameof(HasSubtasks));
+        }
+    }
+
+    /// <summary>Recurrence rule (None, Daily, Weekly).</summary>
+    [JsonPropertyName("recurrenceRule")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public TaskRecurrenceRule RecurrenceRule
+    {
+        get => _recurrenceRule;
+        set
+        {
+            if (_recurrenceRule != value)
+            {
+                _recurrenceRule = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RecurrenceDisplay));
+            }
+        }
+    }
+
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt
     {
@@ -154,6 +313,17 @@ public sealed class TaskItem : INotifyPropertyChanged
         return dt.Kind == DateTimeKind.Utc ? dt.ToLocalTime().Date : dt.Date;
     }
 
+    public static DateTime CalculateNextRecurrenceDate(DateTime currentDate, TaskRecurrenceRule rule)
+    {
+        var baseDate = ToLocalDate(currentDate);
+        return rule switch
+        {
+            TaskRecurrenceRule.Daily => baseDate.AddDays(1),
+            TaskRecurrenceRule.Weekly => baseDate.AddDays(7),
+            _ => baseDate
+        };
+    }
+
     // Helper properties for UI data binding
     [JsonIgnore]
     public bool IsOverdue => !IsCompleted && DueDate.HasValue && ToLocalDate(DueDate.Value) < DateTime.Today;
@@ -167,6 +337,7 @@ public sealed class TaskItem : INotifyPropertyChanged
     [JsonIgnore]
     public string PriorityDisplay => Priority switch
     {
+        TaskPriority.Urgent => "Urgent 🔥",
         TaskPriority.High => "High",
         TaskPriority.Low => "Low",
         _ => "Normal"
@@ -176,13 +347,30 @@ public sealed class TaskItem : INotifyPropertyChanged
     public string PomodoroDisplay => CompletedPomodoros > 0 ? $"🍅 {CompletedPomodoros}" : "";
 
     [JsonIgnore]
-    public string StatusDisplay => IsCompleted ? "Completed" : (IsOverdue ? "Overdue" : (IsDueToday ? "Due Today" : "Pending"));
+    public string StatusDisplay => IsCompleted ? "Completed" : (IsOverdue ? "Overdue" : (IsDueToday ? "Due Today" : _status.ToString()));
+
+    [JsonIgnore]
+    public string SubtasksSummary => Subtasks.Count > 0 ? $"{Subtasks.Count(s => s.IsCompleted)}/{Subtasks.Count} subtasks" : "";
+
+    [JsonIgnore]
+    public bool HasSubtasks => Subtasks.Count > 0;
+
+    [JsonIgnore]
+    public string RecurrenceDisplay => RecurrenceRule switch
+    {
+        TaskRecurrenceRule.Daily => "🔁 Daily",
+        TaskRecurrenceRule.Weekly => "🔁 Weekly",
+        _ => ""
+    };
+
+    [JsonIgnore]
+    public string TagsDisplay => Tags.Count > 0 ? string.Join(", ", Tags) : "";
 }
 
 public sealed class TaskDocument
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
 
     [JsonPropertyName("tasks")]
     public List<TaskItem> Tasks { get; set; } = new();

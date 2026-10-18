@@ -188,6 +188,14 @@ public sealed class TaskService
             task.Description = "";
         }
 
+        if (task.Project == null)
+        {
+            task.Project = "";
+        }
+
+        task.Tags ??= new List<string>();
+        task.Subtasks ??= new List<SubtaskItem>();
+
         if (task.EstimatedMinutes < 0)
         {
             task.EstimatedMinutes = 0;
@@ -196,6 +204,21 @@ public sealed class TaskService
         if (task.CompletedPomodoros < 0)
         {
             task.CompletedPomodoros = 0;
+        }
+
+        if (task.TotalFocusMinutes < 0)
+        {
+            task.TotalFocusMinutes = 0;
+        }
+
+        // Backward compatibility sync between IsCompleted and Status
+        if (task.IsCompleted && task.Status != TaskItemStatus.Completed)
+        {
+            task.Status = TaskItemStatus.Completed;
+        }
+        else if (!task.IsCompleted && task.Status == TaskItemStatus.Completed)
+        {
+            task.Status = TaskItemStatus.Todo;
         }
 
         _tasks.Add(task);
@@ -216,7 +239,7 @@ public sealed class TaskService
 
                 var doc = new TaskDocument
                 {
-                    Version = 1,
+                    Version = 2,
                     Tasks = _tasks.ToList()
                 };
 
@@ -244,7 +267,11 @@ public sealed class TaskService
         string description = "",
         TaskPriority priority = TaskPriority.Normal,
         DateTime? dueDate = null,
-        int estimatedMinutes = 0)
+        int estimatedMinutes = 0,
+        TaskItemStatus status = TaskItemStatus.Todo,
+        string project = "",
+        IEnumerable<string>? tags = null,
+        TaskRecurrenceRule recurrence = TaskRecurrenceRule.None)
     {
         var task = new TaskItem
         {
@@ -254,8 +281,13 @@ public sealed class TaskService
             Priority = priority,
             DueDate = dueDate,
             EstimatedMinutes = Math.Max(0, estimatedMinutes),
+            Status = status,
+            IsCompleted = status == TaskItemStatus.Completed,
+            Project = project?.Trim() ?? "",
+            Tags = tags?.Select(t => t.Trim()).Where(t => !string.IsNullOrEmpty(t)).Distinct().ToList() ?? new List<string>(),
+            RecurrenceRule = recurrence,
             CompletedPomodoros = 0,
-            IsCompleted = false,
+            TotalFocusMinutes = 0,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -291,6 +323,8 @@ public sealed class TaskService
     {
         TaskItem? task;
         bool newState;
+        TaskItem? recurringSpawn = null;
+
         lock (_lock)
         {
             task = _tasks.FirstOrDefault(t => t.Id == id);
@@ -300,6 +334,11 @@ public sealed class TaskService
             task.CompletedAt = task.IsCompleted ? DateTime.UtcNow : null;
             task.UpdatedAt = DateTime.UtcNow;
             newState = task.IsCompleted;
+
+            if (newState && task.RecurrenceRule != TaskRecurrenceRule.None)
+            {
+                recurringSpawn = SpawnNextRecurringTask(task);
+            }
         }
 
         Save();
@@ -320,6 +359,8 @@ public sealed class TaskService
     public bool Complete(string id)
     {
         TaskItem? task;
+        TaskItem? recurringSpawn = null;
+
         lock (_lock)
         {
             task = _tasks.FirstOrDefault(t => t.Id == id);
@@ -328,12 +369,54 @@ public sealed class TaskService
             task.IsCompleted = true;
             task.CompletedAt = DateTime.UtcNow;
             task.UpdatedAt = DateTime.UtcNow;
+
+            if (task.RecurrenceRule != TaskRecurrenceRule.None)
+            {
+                recurringSpawn = SpawnNextRecurringTask(task);
+            }
         }
 
         Save();
         TasksChanged?.Invoke();
         TaskCompleted?.Invoke(task);
         return true;
+    }
+
+    private TaskItem SpawnNextRecurringTask(TaskItem completedTask)
+    {
+        var nextDue = TaskItem.CalculateNextRecurrenceDate(completedTask.DueDate ?? DateTime.Today, completedTask.RecurrenceRule);
+        var rule = completedTask.RecurrenceRule;
+
+        // Strip recurrence from the completed task instance to ensure idempotence
+        completedTask.RecurrenceRule = TaskRecurrenceRule.None;
+
+        var nextTask = new TaskItem
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Title = completedTask.Title,
+            Description = completedTask.Description,
+            Priority = completedTask.Priority,
+            DueDate = nextDue,
+            EstimatedMinutes = completedTask.EstimatedMinutes,
+            Status = TaskItemStatus.Todo,
+            IsCompleted = false,
+            Project = completedTask.Project,
+            Tags = completedTask.Tags.ToList(),
+            RecurrenceRule = rule,
+            Subtasks = completedTask.Subtasks.Select(s => new SubtaskItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = s.Title,
+                IsCompleted = false
+            }).ToList(),
+            CompletedPomodoros = 0,
+            TotalFocusMinutes = 0,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _tasks.Insert(0, nextTask);
+        return nextTask;
     }
 
     public bool Reopen(string id)
@@ -373,10 +456,26 @@ public sealed class TaskService
         return true;
     }
 
+    public int ClearCompleted()
+    {
+        int removedCount;
+        lock (_lock)
+        {
+            removedCount = _tasks.RemoveAll(t => t.IsCompleted);
+        }
+
+        if (removedCount > 0)
+        {
+            Save();
+            TasksChanged?.Invoke();
+        }
+        return removedCount;
+    }
+
     /// <summary>
     /// Records a completed Pomodoro focus session for the specified task without automatically marking it complete.
     /// </summary>
-    public bool RecordFocusCompleted(string id)
+    public bool RecordFocusCompleted(string id, int minutes = 25)
     {
         TaskItem? task;
         lock (_lock)
@@ -385,6 +484,67 @@ public sealed class TaskService
             if (task == null) return false;
 
             task.CompletedPomodoros++;
+            task.TotalFocusMinutes += Math.Max(0, minutes);
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
+        Save();
+        TasksChanged?.Invoke();
+        return true;
+    }
+
+    public bool AddSubtask(string taskId, string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return false;
+
+        lock (_lock)
+        {
+            var task = _tasks.FirstOrDefault(t => t.Id == taskId);
+            if (task == null) return false;
+
+            task.Subtasks.Add(new SubtaskItem
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Title = title.Trim(),
+                IsCompleted = false
+            });
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
+        Save();
+        TasksChanged?.Invoke();
+        return true;
+    }
+
+    public bool ToggleSubtask(string taskId, string subtaskId)
+    {
+        lock (_lock)
+        {
+            var task = _tasks.FirstOrDefault(t => t.Id == taskId);
+            if (task == null) return false;
+
+            var subtask = task.Subtasks.FirstOrDefault(s => s.Id == subtaskId);
+            if (subtask == null) return false;
+
+            subtask.IsCompleted = !subtask.IsCompleted;
+            task.UpdatedAt = DateTime.UtcNow;
+        }
+
+        Save();
+        TasksChanged?.Invoke();
+        return true;
+    }
+
+    public bool DeleteSubtask(string taskId, string subtaskId)
+    {
+        lock (_lock)
+        {
+            var task = _tasks.FirstOrDefault(t => t.Id == taskId);
+            if (task == null) return false;
+
+            int removed = task.Subtasks.RemoveAll(s => s.Id == subtaskId);
+            if (removed == 0) return false;
+
             task.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -398,6 +558,31 @@ public sealed class TaskService
         lock (_lock)
         {
             return _tasks.FirstOrDefault(t => t.Id == id);
+        }
+    }
+
+    public IReadOnlyList<string> GetProjects()
+    {
+        lock (_lock)
+        {
+            return _tasks.Select(t => t.Project.Trim())
+                         .Where(p => !string.IsNullOrEmpty(p))
+                         .Distinct(StringComparer.OrdinalIgnoreCase)
+                         .OrderBy(p => p)
+                         .ToList();
+        }
+    }
+
+    public IReadOnlyList<string> GetTags()
+    {
+        lock (_lock)
+        {
+            return _tasks.SelectMany(t => t.Tags)
+                         .Select(t => t.Trim())
+                         .Where(t => !string.IsNullOrEmpty(t))
+                         .Distinct(StringComparer.OrdinalIgnoreCase)
+                         .OrderBy(t => t)
+                         .ToList();
         }
     }
 }

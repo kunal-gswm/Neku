@@ -23,6 +23,12 @@ public partial class TasksWindow : Window
     private bool _suppressEditEvents;
 
     public event Action<TaskItem>? TaskFocusRequested;
+    public event Action? OpenHubRequested;
+
+    private void OpenHubBtn_Click(object sender, RoutedEventArgs e)
+    {
+        OpenHubRequested?.Invoke();
+    }
 
     public TasksWindow(TaskService taskService, FocusTimerService focusTimer, AppSettings settings)
     {
@@ -237,6 +243,9 @@ public partial class TasksWindow : Window
         // Priority
         switch (task.Priority)
         {
+            case TaskPriority.Urgent:
+                PriorityCombo.SelectedIndex = 3;
+                break;
             case TaskPriority.High:
                 PriorityCombo.SelectedIndex = 2;
                 break;
@@ -370,6 +379,7 @@ public partial class TasksWindow : Window
         {
             0 => TaskPriority.Low,
             2 => TaskPriority.High,
+            3 => TaskPriority.Urgent,
             _ => TaskPriority.Normal
         };
         _taskService.Update(_selectedTask.Id, t => t.Priority = priority);

@@ -351,6 +351,7 @@ public partial class PetWindow : Window, IPetView
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
         Action onToggleFocusHud,
+        Action onProductivityHub,
         Action onTasks,
         Action onQuickNote,
         Action onDeveloperEvents,
@@ -365,6 +366,9 @@ public partial class PetWindow : Window, IPetView
         Action onExit)
     {
         var menu = new ContextMenu();
+
+        var hubItem = new MenuItem { Header = "🐾 Productivity Hub…", FontWeight = FontWeights.Bold };
+        hubItem.Click += (_, _) => onProductivityHub();
 
         // 1. Focus Session
         var focusItem = new MenuItem { Header = getFocusLabel() };
@@ -435,6 +439,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(focusCancelItem);
         menu.Items.Add(focusHudItem);
         menu.Items.Add(new Separator());
+        menu.Items.Add(hubItem);
         menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
         menu.Items.Add(devEventsItem);

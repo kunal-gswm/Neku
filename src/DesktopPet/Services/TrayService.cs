@@ -27,6 +27,7 @@ public sealed class TrayService : IDisposable
     public TrayService(
         Action onFocusToggle, Func<string> getFocusLabel,
         Action onFocusCancel, Func<bool> isFocusActive,
+        Action onProductivityHub,
         Action onTasks,
         Action onQuickNote,
         Action onDeveloperEvents,
@@ -39,6 +40,9 @@ public sealed class TrayService : IDisposable
     {
         _onUpdate = onUpdate;
         var menu = new ContextMenuStrip();
+
+        var hubItem = new ToolStripMenuItem("🐾 Productivity Hub…") { Font = new Font(menu.Font, FontStyle.Bold) };
+        hubItem.Click += (_, _) => onProductivityHub();
 
         _focusItem = new ToolStripMenuItem(getFocusLabel());
         _focusItem.Click += (_, _) => onFocusToggle();
@@ -97,7 +101,8 @@ public sealed class TrayService : IDisposable
             _pauseItem.Text = _pauseItem.Checked ? "Resume" : "Pause";
         };
 
-        // 1. Focus Session & Tasks
+        // 1. Productivity Hub, Focus Session & Tasks
+        menu.Items.Add(hubItem);
         menu.Items.Add(_focusItem);
         menu.Items.Add(_focusCancelItem);
         menu.Items.Add(_tasksItem);
