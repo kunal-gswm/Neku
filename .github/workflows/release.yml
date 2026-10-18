@@ -53,18 +53,44 @@ jobs:
           Get-FileHash dist/Neku.exe -Algorithm SHA256 |
             ForEach-Object { "SHA256: $($_.Hash)" } | Tee-Object -FilePath dist/SHA256.txt
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress
+
+      - name: Build Windows Installer
+        shell: pwsh
+        run: |
+          .\scripts\build-installer.ps1 -SkipPublish
+          $installer = Get-ChildItem artifacts/Neku-Setup-*.exe | Select-Object -First 1
+          Get-FileHash $installer.FullName -Algorithm SHA256 |
+            ForEach-Object { "SHA256 ($($installer.Name)): $($_.Hash)" } | Tee-Object -FilePath artifacts/SHA256-installer.txt
+          Get-Content artifacts/SHA256-installer.txt | Add-Content dist/SHA256.txt
+
       - name: Create the release
         uses: softprops/action-gh-release@v3
         with:
           files: |
+            artifacts/Neku-Setup-*.exe
             dist/Neku.exe
             dist/SHA256.txt
           generate_release_notes: true
           body: |
-            ## Install
+            ## Install Options
 
+            ### 1. Windows Setup Installer (Recommended)
+            Download **Neku-Setup-*.exe** below and run it.
+            - Installs per-user without requiring administrator privileges (`%LocalAppData%\Programs\Neku`).
+            - Configures the Start Menu shortcut with the native **Ctrl + Alt + N** summon hotkey.
+            - Optional Desktop shortcut and automatic startup with Windows.
+            - Clean uninstaller included; never touches user notes, settings, or custom companions.
+
+            ### 2. Standalone Portable Executable
             Download **Neku.exe** below and run it. That's the whole install — no .NET, no
-            git, no extra folders. Windows may warn about an unrecognised app the first time;
+            git, no extra folders. Windows may warn about an unrecognized app the first time;
             choose **More info → Run anyway**.
+
+            ### Keyboard Shortcuts
+            - **Ctrl + Alt + N**: Launch or unhide Neku
+            - **Ctrl + Alt + Q**: Gracefully exit Neku
 
             Already running Neku? It will offer to update itself.

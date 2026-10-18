@@ -20,14 +20,22 @@ Built with **C# / WPF on .NET 10**.
 
 ## 🚀 Quick Start
 
-### Option A: Download Pre-built Release (Recommended)
+### Option A: Windows Installer (Recommended)
+1. Download **`Neku-Setup-0.4.0.exe`** from the latest [GitHub Releases](https://github.com/kunal-gswm/Neku/releases).
+2. Run the setup wizard.
+   - Installs per-user without requiring administrator privileges (`%LocalAppData%\Programs\Neku`).
+   - Configures the Start Menu shortcut with the native **`Ctrl + Alt + N`** summon hotkey.
+   - Optionally creates a Desktop icon and enables automatic launch on Windows sign-in.
+   - Clean uninstaller included; never touches user notes, settings, or custom companions in `%AppData%\Neku`.
+
+### Option B: Standalone Portable Executable
 1. Download **`Neku.exe`** from the latest [GitHub Releases](https://github.com/kunal-gswm/Neku/releases).
-2. Run `Neku.exe`. That's it!
-   - Neku is packaged as a **single self-contained executable** (~156 MB).
+2. Place it in any folder and run `Neku.exe`. That's it!
+   - Packaged as a **single self-contained executable** (~156 MB).
    - No .NET runtime installation, Git, or external folders required.
    - *Note on first launch:* Windows SmartScreen may show an unrecognized app prompt. Click **More info → Run anyway**.
 
-### Option B: Build from Source
+### Option C: Build from Source
 **Requirements:** Windows 10 (1809+) or Windows 11 x64, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
@@ -44,7 +52,25 @@ dotnet test DesktopPet.sln -c Release
 
 # Or publish the single-file release artifact
 .\scripts\publish.ps1
+
+# Or build the Inno Setup Windows installer
+.\scripts\build-installer.ps1
 ```
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+Neku features dedicated global and system-level keyboard shortcuts for effortless desktop control:
+
+| Shortcut | Scope | Action | Description |
+| :--- | :--- | :--- | :--- |
+| **`Ctrl + Alt + N`** | System / Start Menu | **Summon / Launch Neku** | Launches Neku if stopped. If already running, seamlessly unhides Neku or clamps Neku into the visible work area with an acknowledgment reaction (without stealing active window focus). |
+| **`Ctrl + Alt + Q`** | Global (while running) | **Graceful Exit** | Instantly saves all settings, active Pomodoro focus state, and notes, releases the single-instance mutex, and cleanly exits the application. |
+| **`Ctrl + Space`** | Global (configurable) | **AI Assistant Chat** | Opens the AI companion chat drawer when enabled in Settings. |
+| **`Ctrl + N`** | Quick Notes Window | **New Note** | Creates a new scratchpad note. |
+| **`Ctrl + F`** | Quick Notes Window | **Find / Search** | Focuses the search bar to filter notes by title or body content. |
+| **`Delete`** | Quick Notes Window | **Delete Note** | Deletes the currently selected note. |
 
 ---
 

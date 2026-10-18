@@ -35,6 +35,7 @@ settings.json
 
 # Release artifacts
 dist/
+artifacts/
 
 # Local personal companion assets and private scripts
 src/DesktopPet/Assets/pets/neku-personal-local/

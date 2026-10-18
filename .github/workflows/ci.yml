@@ -34,3 +34,12 @@ jobs:
           if ($stray) { throw "Publish produced more than the exe: $($stray.Name -join ', ')" }
           $mb = [math]::Round((Get-Item dist/Neku.exe).Length / 1MB, 1)
           Write-Host "Neku.exe is $mb MB"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress
+
+      - name: Build and verify Windows Installer
+        shell: pwsh
+        run: |
+          .\scripts\build-installer.ps1 -SkipPublish

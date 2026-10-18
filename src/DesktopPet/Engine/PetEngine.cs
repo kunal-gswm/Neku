@@ -309,6 +309,24 @@ public sealed class PetEngine
         EnterState(PetState.Idle);
     }
 
+    /// <summary>Checks whether the companion is currently outside the bounds of all connected displays.</summary>
+    public bool IsOffScreen()
+    {
+        var b = _desktop.Bounds;
+        double cx = _x + _w / 2;
+        double cy = _y + _h / 2;
+        return (cx < b.Left || cx > b.Right || cy < b.Top - _h || cy > b.Bottom);
+    }
+
+    /// <summary>Clamps the companion back into the visible work area if it has drifted off-screen.</summary>
+    public void EnsureVisibleWorkArea()
+    {
+        if (IsOffScreen())
+        {
+            ResetPosition();
+        }
+    }
+
     private double _sizeScale = 1.0;
 
     /// <summary>Write the cat's current position into settings so the next launch can resume it.</summary>

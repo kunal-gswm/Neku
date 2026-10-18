@@ -50,6 +50,7 @@ public partial class App : Application
     private ChatInputWindow? _chatWindow;
     private DispatcherTimer? _chatterTimer;
     private HotkeyService?   _hotkey;
+    private LauncherIpcService? _ipcServer;
     private readonly Random  _rng = new();
 
     private static readonly string CrashLog =
@@ -75,10 +76,71 @@ public partial class App : Application
         _singleInstance = new Mutex(initiallyOwned: true, "Neku.SingleInstance", out bool isNew);
         if (!isNew)
         {
+            bool isLauncherStart = e.Args.Contains("--launcher-start") ||
+                                   Environment.GetCommandLineArgs().Contains("--launcher-start");
+
+            // Forward activation request to running instance via named pipe (bounded timeout)
+            bool signaled = LauncherIpcService.TrySignalRunningInstance(timeoutMs: 800);
+
+            if (isLauncherStart)
+            {
+                DebugLog.Write($"[Startup] --launcher-start duplicate detected; signaled={signaled}. Exiting cleanly without dialog.");
+                Shutdown();
+                return;
+            }
+
+            if (signaled)
+            {
+                DebugLog.Write("[Startup] Duplicate instance signaled running instance via IPC. Exiting cleanly.");
+                Shutdown();
+                return;
+            }
+
             HandleAlreadyRunningInstance();
             Shutdown();
             return;
         }
+
+        // Primary instance starts IPC server for incoming launcher activations
+        _ipcServer = new LauncherIpcService();
+        _ipcServer.ActivationRequested += () =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                DebugLog.Write("[LauncherIPC] Activation received from launcher.");
+
+                // 1. Respect quiet mode / full-screen suppression rules
+                if (_hiddenForQuiet || (_settings.EnableQuietMode && _engine?.IsQuiet == true))
+                {
+                    DebugLog.Write("[LauncherIPC] Activation suppressed: quiet mode or full-screen application is active.");
+                    return;
+                }
+
+                // 2. If pet was hidden by the user, restore it to visible state
+                if (_userHidden)
+                {
+                    DebugLog.Write("[LauncherIPC] Pet was hidden by user; unhiding.");
+                    OnHideToggled(false);
+                    return;
+                }
+
+                // 3. If pet is off-screen, clamp it back into visible work area
+                if (_engine != null && _engine.IsOffScreen())
+                {
+                    DebugLog.Write("[LauncherIPC] Pet is off-screen; resetting to visible work area.");
+                    _engine.ResetPosition();
+                    return;
+                }
+
+                // 4. If pet is already visible and normal, play gentle acknowledgement reaction without stealing focus
+                if (_engine != null)
+                {
+                    DebugLog.Write("[LauncherIPC] Pet is already visible; triggering gentle acknowledgement.");
+                    _engine.TriggerReaction(PetState.Wave, "👋 Here I am!", cooldownSeconds: 1.0);
+                }
+            });
+        };
+        _ipcServer.Start();
 
         var legacyConflict = CheckLegacyPixelPawsConflict();
         if (legacyConflict != null)
@@ -235,6 +297,26 @@ public partial class App : Application
         _hotkey = new HotkeyService();
         _hotkey.Attach(_petWindow.Handle);
         _hotkey.Pressed += OpenChat;
+
+        // Global exit hotkey (Ctrl + Alt + Q)
+        bool exitRegistered = _hotkey.Register(
+            HotkeyService.ExitHotkeyId,
+            ModifierKeys.Control | ModifierKeys.Alt,
+            Key.Q,
+            () =>
+            {
+                DebugLog.Write("[Hotkey] Global exit shortcut (Ctrl+Alt+Q) triggered. Gracefully quitting.");
+                QuitApp();
+            });
+
+        if (exitRegistered)
+        {
+            DebugLog.Write("[Hotkey] Global exit shortcut Ctrl+Alt+Q registered successfully.");
+        }
+        else
+        {
+            DebugLog.Write("[Hotkey] Global exit shortcut Ctrl+Alt+Q could not be registered (combo in use). Context menu/tray exit remains available.");
+        }
 
         ApplyAiState();
 
@@ -1026,10 +1108,12 @@ public partial class App : Application
     {
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         SavePetState();
+        try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();
         _quietWatchTimer?.Stop();
         _chatterTimer?.Stop();
         _developerEvents?.Dispose();
+        _ipcServer?.Dispose();
         _hotkey?.Dispose();
         _chatWindow?.Close();
         _http?.Dispose();
@@ -1049,10 +1133,12 @@ public partial class App : Application
     {
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         SavePetState();
+        try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();
         _quietWatchTimer?.Stop();
         _chatterTimer?.Stop();
         _developerEvents?.Dispose();
+        _ipcServer?.Dispose();
         _hotkey?.Dispose();
         _chatWindow?.Close();
         _focusTimer?.Dispose();

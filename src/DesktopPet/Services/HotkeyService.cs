@@ -5,24 +5,29 @@ using System.Windows.Interop;
 namespace DesktopPet.Services;
 
 /// <summary>
-/// Registers a single user-configurable global hotkey on a host window and raises
-/// <see cref="Pressed"/> when it fires. Uses RegisterHotKey + a WndProc hook on the
-/// pet window's HWND — no extra low-level keyboard hook needed.
+/// Registers global hotkeys on a host window using RegisterHotKey + a WndProc hook on the
+/// pet window's HWND — no extra low-level keyboard hook needed. Supports multiple hotkey IDs
+/// (e.g. Chat and Exit).
 /// </summary>
 public sealed class HotkeyService : IDisposable
 {
     private const int WM_HOTKEY = 0x0312;
-    private const int HotkeyId  = 0xB001;
+
+    public const int ChatHotkeyId = 0xB001;
+    public const int ExitHotkeyId = 0xB002;
 
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
-    [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+    private readonly Dictionary<int, Action> _callbacks = new();
+    private readonly HashSet<int> _registeredIds = new();
     private HwndSource? _source;
     private IntPtr _hwnd;
-    private bool _registered;
+    private bool _disposed;
 
+    /// <summary>Event raised when the default Chat hotkey is pressed.</summary>
     public event Action? Pressed;
 
     /// <summary>Hook the host window so WM_HOTKEY messages reach us.</summary>
@@ -33,10 +38,21 @@ public sealed class HotkeyService : IDisposable
         _source?.AddHook(WndProc);
     }
 
-    /// <summary>Register (replacing any prior binding). Returns false if the combo is taken or invalid.</summary>
+    /// <summary>
+    /// Register the default Chat hotkey (replacing prior binding).
+    /// Returns false if the combo is taken or invalid.
+    /// </summary>
     public bool Register(ModifierKeys mods, Key key)
     {
-        Unregister();
+        return Register(ChatHotkeyId, mods, key, () => Pressed?.Invoke());
+    }
+
+    /// <summary>
+    /// Register a specific hotkey ID with callback. Returns false if registration fails (e.g. conflict).
+    /// </summary>
+    public bool Register(int id, ModifierKeys mods, Key key, Action action)
+    {
+        Unregister(id);
         if (_hwnd == IntPtr.Zero || key == Key.None) return false;
 
         uint fs = MOD_NOREPEAT;
@@ -46,30 +62,64 @@ public sealed class HotkeyService : IDisposable
         if (mods.HasFlag(ModifierKeys.Windows)) fs |= MOD_WIN;
 
         uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
-        _registered = RegisterHotKey(_hwnd, HotkeyId, fs, vk);
-        return _registered;
+        bool ok = RegisterHotKey(_hwnd, id, fs, vk);
+        if (ok)
+        {
+            _registeredIds.Add(id);
+            _callbacks[id] = action;
+        }
+        return ok;
     }
 
+    /// <summary>Unregister the default Chat hotkey.</summary>
     public void Unregister()
     {
-        if (_registered && _hwnd != IntPtr.Zero) UnregisterHotKey(_hwnd, HotkeyId);
-        _registered = false;
+        Unregister(ChatHotkeyId);
     }
+
+    /// <summary>Unregister a specific hotkey ID.</summary>
+    public void Unregister(int id)
+    {
+        if (_registeredIds.Contains(id) && _hwnd != IntPtr.Zero)
+        {
+            try { UnregisterHotKey(_hwnd, id); } catch { }
+            _registeredIds.Remove(id);
+        }
+        _callbacks.Remove(id);
+    }
+
+    public bool IsRegistered(int id) => _registeredIds.Contains(id);
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == WM_HOTKEY && wParam.ToInt32() == HotkeyId)
+        if (msg == WM_HOTKEY)
         {
-            Pressed?.Invoke();
-            handled = true;
+            int id = wParam.ToInt32();
+            if (_callbacks.TryGetValue(id, out var action))
+            {
+                action?.Invoke();
+                handled = true;
+            }
         }
         return IntPtr.Zero;
     }
 
     public void Dispose()
     {
-        Unregister();
-        _source?.RemoveHook(WndProc);
+        if (_disposed) return;
+        _disposed = true;
+
+        foreach (var id in _registeredIds.ToList())
+        {
+            if (_hwnd != IntPtr.Zero)
+            {
+                try { UnregisterHotKey(_hwnd, id); } catch { }
+            }
+        }
+        _registeredIds.Clear();
+        _callbacks.Clear();
+
+        try { _source?.RemoveHook(WndProc); } catch { }
         _source = null;
     }
 }

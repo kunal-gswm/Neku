@@ -232,6 +232,25 @@
                             <Button x:Name="UpdateCheckButton" Content="Check update" Width="110" Margin="8,0,0,0" Click="UpdateCheckButton_Click"/>
                         </StackPanel>
 
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource Head}"/>
+                        <Grid Margin="0,2,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + Alt + N" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Launch or show Neku (Start Menu hotkey)" Style="{StaticResource Hint}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl + Alt + Q" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="Gracefully quit Neku from anywhere" Style="{StaticResource Hint}" Margin="0,4,0,0"/>
+                        </Grid>
+
                         <TextBlock x:Name="VersionText" Style="{StaticResource Hint}" Margin="0,4,0,4"/>
                         <TextBlock x:Name="UpdateResult" Style="{StaticResource Hint}" Margin="0,0,0,0"/>
                     </StackPanel>
