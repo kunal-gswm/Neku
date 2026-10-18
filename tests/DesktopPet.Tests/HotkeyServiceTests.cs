@@ -11,15 +11,30 @@ public class HotkeyServiceTests
     [Fact]
     public void HotkeyConstants_AreDistinct()
     {
+        Assert.NotEqual(HotkeyService.SummonHotkeyId, HotkeyService.ExitHotkeyId);
+        Assert.NotEqual(HotkeyService.SummonHotkeyId, HotkeyService.PaletteHotkeyId);
         Assert.NotEqual(HotkeyService.ExitHotkeyId, HotkeyService.PaletteHotkeyId);
+        Assert.NotEqual(HotkeyService.PaletteHotkeyId, HotkeyService.PaletteFallbackHotkeyId);
+        Assert.True(HotkeyService.SummonHotkeyId > 0);
         Assert.True(HotkeyService.ExitHotkeyId > 0);
         Assert.True(HotkeyService.PaletteHotkeyId > 0);
+        Assert.True(HotkeyService.PaletteFallbackHotkeyId > 0);
+    }
+
+    [Fact]
+    public void HotkeyService_FormatHotkey_FormatsAllModifiersAndKeys()
+    {
+        Assert.Equal("Ctrl + Alt + P", HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P));
+        Assert.Equal("Ctrl + Shift + P", HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Shift, Key.P));
+        Assert.Equal("Alt + Win + Space", HotkeyService.FormatHotkey(ModifierKeys.Windows | ModifierKeys.Alt, Key.Space));
+        Assert.Equal("Escape", HotkeyService.FormatHotkey(ModifierKeys.None, Key.Escape));
     }
 
     [Fact]
     public void HotkeyService_InitialState_IsNotRegistered()
     {
         using var service = new HotkeyService();
+        Assert.False(service.IsRegistered(HotkeyService.SummonHotkeyId));
         Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
         Assert.False(service.IsRegistered(HotkeyService.PaletteHotkeyId));
     }
@@ -63,6 +78,35 @@ public class HotkeyServiceTests
         bool helperRegistered = service.RegisterExit(() => { });
         Assert.False(helperRegistered);
         Assert.False(service.IsRegistered(HotkeyService.ExitHotkeyId));
+    }
+
+    [Fact]
+    public void HotkeyService_SummonHotkeyCombination_IsValidModifiersAndKey()
+    {
+        // Ctrl + Alt + N definition
+        var mods = ModifierKeys.Control | ModifierKeys.Alt;
+        var key = Key.N;
+
+        Assert.True(mods.HasFlag(ModifierKeys.Control));
+        Assert.True(mods.HasFlag(ModifierKeys.Alt));
+        Assert.False(mods.HasFlag(ModifierKeys.Shift));
+        Assert.Equal(Key.N, key);
+
+        using var service = new HotkeyService();
+        bool registered = service.Register(HotkeyService.SummonHotkeyId, mods, key, () => { });
+        Assert.False(registered);
+
+        bool helperRegistered = service.RegisterSummon(() => { });
+        Assert.False(helperRegistered);
+        Assert.False(service.IsRegistered(HotkeyService.SummonHotkeyId));
+    }
+
+    [Fact]
+    public void HotkeyService_UnregisterSummon_SucceedsSafely()
+    {
+        using var service = new HotkeyService();
+        service.UnregisterSummon();
+        Assert.False(service.IsRegistered(HotkeyService.SummonHotkeyId));
     }
 
     [Fact]

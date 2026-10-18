@@ -199,13 +199,13 @@ public partial class App : Application
         _petWindow.Effects = overlay;
 
         // Input monitors — installed on the UI thread so the hook callbacks run here.
-        _keyboard = new KeyboardMonitor();
-        _mouse    = new MouseMonitor();
-        _system   = new SystemMonitor();
-
-        // Windows drops low-level hooks silently if the UI thread ever stalls; this notices and
-        // reinstalls them rather than leaving typing/scroll reactions dead for the session.
-        _hookWatchdog = new HookWatchdog(_keyboard, _mouse, _system);
+        _system = new SystemMonitor();
+        if (!_settings.DisableOptionalMonitoring)
+        {
+            _keyboard = new KeyboardMonitor();
+            _mouse    = new MouseMonitor();
+            _hookWatchdog = new HookWatchdog(_keyboard, _mouse, _system);
+        }
 
         var surfaceProvider = new SurfaceProvider(() => _petWindow!.Handle);
         var stateMachine    = new StateMachine(_settings, _system);
@@ -381,6 +381,21 @@ public partial class App : Application
         else
         {
             DebugLog.Write("[Hotkey] Global exit shortcut Ctrl+Alt+Q could not be registered (combo in use). Context menu/tray exit remains available.");
+        }
+
+        // Global summon hotkey (Ctrl + Alt + N)
+        bool summonRegistered = _hotkey.RegisterSummon(() =>
+        {
+            Dispatcher.Invoke(SummonNeku);
+        });
+
+        if (summonRegistered)
+        {
+            DebugLog.Write("[Hotkey] Global summon shortcut Ctrl+Alt+N registered successfully.");
+        }
+        else
+        {
+            DebugLog.Write("[Hotkey] Global summon shortcut Ctrl+Alt+N could not be registered (combo in use).");
         }
 
         InitializePaletteCommands();
@@ -1027,10 +1042,31 @@ public partial class App : Application
     /// <summary>Access to the central CommandPaletteService instance for testing and dynamic commands.</summary>
     public CommandPaletteService PaletteService => _paletteService;
 
+    /// <summary>Returns true if the Command Palette global hotkey is currently registered and active.</summary>
+    public bool IsPaletteHotkeyRegistered =>
+        _hotkey != null && (_hotkey.IsRegistered(HotkeyService.PaletteHotkeyId) || _hotkey.IsRegistered(HotkeyService.PaletteFallbackHotkeyId));
+
+    /// <summary>Returns the display text for the currently active Command Palette hotkey, or null if inactive.</summary>
+    public string? GetPaletteHotkeyLabel()
+    {
+        if (_hotkey == null || !_settings.EnableCommandPaletteHotkey) return null;
+        if (_hotkey.IsRegistered(HotkeyService.PaletteHotkeyId))
+        {
+            var mods = (ModifierKeys)_settings.CommandPaletteHotkeyModifiers;
+            var key = (Key)_settings.CommandPaletteHotkeyKey;
+            return HotkeyService.FormatHotkey(mods, key);
+        }
+        if (_hotkey.IsRegistered(HotkeyService.PaletteFallbackHotkeyId))
+        {
+            return "Ctrl + Alt + Space";
+        }
+        return null;
+    }
+
     /// <summary>Toggles the Command Palette overlay open or closed.</summary>
     public void ToggleCommandPalette()
     {
-        if (_paletteWindow is { IsLoaded: true })
+        if (_paletteWindow is { IsVisible: true })
         {
             _paletteWindow.Close();
             return;
@@ -1043,7 +1079,7 @@ public partial class App : Application
     public void OpenCommandPalette()
     {
         DismissOnboarding();
-        if (_paletteWindow is { IsLoaded: true })
+        if (_paletteWindow is { IsVisible: true })
         {
             _paletteWindow.Activate();
             return;
@@ -1085,6 +1121,9 @@ public partial class App : Application
     private void ApplyPaletteHotkey()
     {
         if (_hotkey == null) return;
+        _hotkey.Unregister(HotkeyService.PaletteHotkeyId);
+        _hotkey.Unregister(HotkeyService.PaletteFallbackHotkeyId);
+
         if (_settings.EnableCommandPaletteHotkey)
         {
             var mods = (ModifierKeys)_settings.CommandPaletteHotkeyModifiers;
@@ -1100,13 +1139,31 @@ public partial class App : Application
             }
             else
             {
-                DebugLog.Write($"[Hotkey] Command Palette hotkey ({mods}+{key}) could not be registered (combo in use). Context menu/tray entry points remain available.");
+                DebugLog.Write($"[Hotkey] Command Palette hotkey ({mods}+{key}) could not be registered (combo in use). Attempting fallback Ctrl+Alt+Space...");
+                bool fallback = _hotkey.Register(HotkeyService.PaletteFallbackHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.Space, () =>
+                {
+                    Dispatcher.Invoke(ToggleCommandPalette);
+                });
+
+                if (fallback)
+                {
+                    DebugLog.Write("[Hotkey] Command Palette fallback hotkey (Ctrl+Alt+Space) registered successfully.");
+                }
+                else
+                {
+                    DebugLog.Write("[Hotkey] Command Palette hotkeys unavailable (all combos in use). Context menu/tray entry points remain available.");
+                }
             }
         }
-        else
-        {
-            _hotkey.UnregisterPalette();
-        }
+
+        UpdatePaletteShortcutMenuLabels();
+    }
+
+    private void UpdatePaletteShortcutMenuLabels()
+    {
+        string? label = GetPaletteHotkeyLabel();
+        _tray?.UpdatePaletteShortcut(label);
+        _petWindow?.UpdatePaletteShortcut(label);
     }
 
     private void InitializePaletteCommands()
@@ -1668,6 +1725,22 @@ public partial class App : Application
             ShowDeveloperHud();
         else
             HideDeveloperHud();
+
+        if (_settings.DisableOptionalMonitoring)
+        {
+            _hookWatchdog?.Dispose();
+            _hookWatchdog = null;
+            _keyboard?.Dispose();
+            _keyboard = null;
+            _mouse?.Dispose();
+            _mouse = null;
+        }
+        else
+        {
+            _keyboard ??= new KeyboardMonitor();
+            _mouse ??= new MouseMonitor();
+            _hookWatchdog ??= new HookWatchdog(_keyboard, _mouse, _system);
+        }
 
         UpdateQuietHiding();
         ApplyPaletteHotkey();

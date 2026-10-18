@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DesktopPet.Engine;
@@ -543,6 +544,40 @@ public partial class CompanionStudioWindow : Window
     private void DoneButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape || (e.Key == Key.W && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control))
+        {
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.P && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            App.CurrentApp?.ToggleCommandPalette();
+            e.Handled = true;
+            return;
+        }
+
+        if ((e.Key == Key.F5 && Keyboard.Modifiers == ModifierKeys.None) || (e.Key == Key.R && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control))
+        {
+            PopulateLibrary();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            if (PacksListBox.IsKeyboardFocusWithin || PacksListBox.SelectedItem != null)
+            {
+                SetActivePetButton_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+                return;
+            }
+        }
     }
 }
 

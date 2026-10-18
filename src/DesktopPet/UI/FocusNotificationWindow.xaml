@@ -11,7 +11,8 @@
         Focusable="False"
         ShowActivated="False"
         Width="380" Height="100"
-        WindowStartupLocation="Manual">
+        WindowStartupLocation="Manual"
+        KeyDown="Window_KeyDown">
     <Border Background="#FFF7F3FF"
             CornerRadius="14"
             BorderBrush="#FFBEB0E8"

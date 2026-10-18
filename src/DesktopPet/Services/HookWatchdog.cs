@@ -46,17 +46,20 @@ public sealed class HookWatchdog : IDisposable
         _system.Poll();
         if (_system.IdleSeconds > ActiveWithinSeconds) return;   // nobody typing or moving: proves nothing
 
-        // A re-arm is cheap and harmless, so a false positive (e.g. the user mousing for a long
-        // stretch without touching the keyboard) costs nothing but a reinstall.
-        if (_keyboard != null && _keyboard.SecondsSinceLastEvent > SilenceSeconds)
+        // Only reinstall a hook if system activity is detected BUT the other input device
+        // was NOT the source of the activity. For example, if the user was actively moving the mouse,
+        // keyboard silence is completely expected and must NOT trigger repeated keyboard hook rearming.
+        bool mouseActive = _mouse != null && _mouse.SecondsSinceLastEvent <= ActiveWithinSeconds;
+        if (!mouseActive && _keyboard != null && _keyboard.SecondsSinceLastEvent > SilenceSeconds)
         {
-            DebugLog.Write("Keyboard hook went silent while the user was active - reinstalling.");
+            DebugLog.Write("Keyboard hook went silent while the user was typing - reinstalling.");
             _keyboard.Rearm();
         }
 
-        if (_mouse != null && _mouse.SecondsSinceLastEvent > SilenceSeconds)
+        bool keyboardActive = _keyboard != null && _keyboard.SecondsSinceLastEvent <= ActiveWithinSeconds;
+        if (!keyboardActive && _mouse != null && _mouse.SecondsSinceLastEvent > SilenceSeconds)
         {
-            DebugLog.Write("Mouse hook went silent while the user was active - reinstalling.");
+            DebugLog.Write("Mouse hook went silent while the user was mousing - reinstalling.");
             _mouse.Rearm();
         }
     }

@@ -12,7 +12,8 @@
         ShowActivated="False"
         Width="350" Height="42"
         WindowStartupLocation="Manual"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        KeyDown="Window_KeyDown">
     <Border Background="#F21E1A29"
             CornerRadius="21"
             BorderBrush="#FF8B5CF6"

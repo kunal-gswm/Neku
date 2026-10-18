@@ -21,6 +21,7 @@ namespace DesktopPet.UI;
 public partial class PetWindow : Window, IPetView
 {
     private PetEngine? _engine;
+    private MenuItem? _paletteMenuItem;
     private readonly Stopwatch _clock = new();
     private double _lastSeconds;
     private readonly Random _rng = new();
@@ -363,8 +364,8 @@ public partial class PetWindow : Window, IPetView
     {
         var menu = new ContextMenu();
 
-        var paletteItem = new MenuItem { Header = "⚡ Command Palette… (Ctrl+Alt+P)" };
-        paletteItem.Click += (_, _) => onCommandPalette();
+        _paletteMenuItem = new MenuItem { Header = "⚡ Command Palette… (Ctrl+Alt+P)" };
+        _paletteMenuItem.Click += (_, _) => onCommandPalette();
 
         var hubItem = new MenuItem { Header = "🐾 Productivity Hub…", FontWeight = FontWeights.Bold };
         hubItem.Click += (_, _) => onProductivityHub();
@@ -452,7 +453,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(focusCancelItem);
         menu.Items.Add(focusHudItem);
         menu.Items.Add(new Separator());
-        menu.Items.Add(paletteItem);
+        menu.Items.Add(_paletteMenuItem);
         menu.Items.Add(hubItem);
         menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
@@ -473,6 +474,14 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(exitItem);
 
         ContextMenu = menu;
+    }
+
+    public void UpdatePaletteShortcut(string? shortcutLabel)
+    {
+        if (_paletteMenuItem == null) return;
+        _paletteMenuItem.Header = string.IsNullOrWhiteSpace(shortcutLabel)
+            ? "⚡ Command Palette…"
+            : $"⚡ Command Palette… ({shortcutLabel})";
     }
 
 }

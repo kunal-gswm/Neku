@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using DesktopPet.Native;
 
@@ -6,6 +7,7 @@ namespace DesktopPet.Services;
 /// <summary>
 /// Low-level global keyboard hook. Tracks keystroke rate so the pet can react to typing.
 /// Must be created on the UI thread (which has a message pump for the hook callback).
+/// Uses lock-free queue so the low-level hook never blocks the OS input pipeline.
 /// </summary>
 public sealed class KeyboardMonitor : IDisposable
 {
@@ -13,9 +15,8 @@ public sealed class KeyboardMonitor : IDisposable
     private readonly Win32.LowLevelKeyboardProc _proc;
     private IntPtr _hook;
 
-    private readonly Queue<long> _timestamps = new();        // Stopwatch ticks of recent keydowns
-    private readonly long _windowTicks = Stopwatch.Frequency; // 1-second rolling window
-    private readonly object _gate = new();
+    private readonly ConcurrentQueue<long> _timestamps = new(); // Stopwatch ticks of recent keydowns
+    private readonly long _windowTicks = Stopwatch.Frequency;    // 1-second rolling window
 
     // Liveness: Windows silently drops a low-level hook whose thread overran
     // LowLevelHooksTimeout, without changing the handle or reporting an error. The only signal
@@ -34,11 +35,13 @@ public sealed class KeyboardMonitor : IDisposable
     {
         get
         {
-            lock (_gate)
+            long now = Stopwatch.GetTimestamp();
+            long cutoff = now - _windowTicks;
+            while (_timestamps.TryPeek(out long ts) && ts < cutoff)
             {
-                Prune(Stopwatch.GetTimestamp());
-                return _timestamps.Count;   // window is exactly 1s, so count == keys/sec
+                _timestamps.TryDequeue(out _);
             }
+            return _timestamps.Count;
         }
     }
 
@@ -66,13 +69,6 @@ public sealed class KeyboardMonitor : IDisposable
         Install();
     }
 
-    private void Prune(long now)
-    {
-        long cutoff = now - _windowTicks;
-        while (_timestamps.Count > 0 && _timestamps.Peek() < cutoff)
-            _timestamps.Dequeue();
-    }
-
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         // Stamp on every callback, not just key-downs: key-ups prove the hook is alive too.
@@ -80,12 +76,7 @@ public sealed class KeyboardMonitor : IDisposable
 
         if (nCode >= 0 && (wParam == (IntPtr)Win32.WM_KEYDOWN || wParam == (IntPtr)Win32.WM_SYSKEYDOWN))
         {
-            long now = Stopwatch.GetTimestamp();
-            lock (_gate)
-            {
-                _timestamps.Enqueue(now);
-                Prune(now);
-            }
+            _timestamps.Enqueue(Stopwatch.GetTimestamp());
         }
         return Win32.CallNextHookEx(_hook, nCode, wParam, lParam);
     }

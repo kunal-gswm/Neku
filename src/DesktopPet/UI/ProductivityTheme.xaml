@@ -222,9 +222,12 @@
                         <ScrollViewer x:Name="PART_ContentHost"
                                       Focusable="False"
                                       HorizontalScrollBarVisibility="Hidden"
-                                      VerticalScrollBarVisibility="Hidden"/>
+                                      VerticalScrollBarVisibility="Disabled"/>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="AcceptsReturn" Value="True">
+                            <Setter TargetName="PART_ContentHost" Property="VerticalScrollBarVisibility" Value="Auto"/>
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource ThemeInputBorderHoverBrush}"/>
                             <Setter TargetName="border" Property="Background" Value="{StaticResource ThemeInputBgHoverBrush}"/>
@@ -737,7 +740,7 @@
                         <ScrollViewer x:Name="PART_ContentHost"
                                       Focusable="False"
                                       HorizontalScrollBarVisibility="Hidden"
-                                      VerticalScrollBarVisibility="Hidden"/>
+                                      VerticalScrollBarVisibility="Disabled"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

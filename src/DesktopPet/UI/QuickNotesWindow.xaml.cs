@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using DesktopPet.Services;
 using MessageBox = System.Windows.MessageBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace DesktopPet.UI;
 
@@ -41,6 +42,12 @@ public partial class QuickNotesWindow : Window
         {
             CreateNewNote();
         }
+
+        Loaded += (_, _) =>
+        {
+            if (string.IsNullOrEmpty(ContentBox.Text)) TitleBox.Focus();
+            else ContentBox.Focus();
+        };
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -158,6 +165,10 @@ public partial class QuickNotesWindow : Window
         {
             if (_currentNote?.Id != selected.Note.Id)
             {
+                if (_isDirty)
+                {
+                    SaveCurrentNote();
+                }
                 SelectNote(selected.Note);
             }
         }
@@ -192,20 +203,71 @@ public partial class QuickNotesWindow : Window
 
     private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key == Key.S && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        HandleKeyDown(e.Key, Keyboard.Modifiers, e);
+    }
+
+    internal void HandleKeyDown(Key key, ModifierKeys modifiers, System.Windows.Input.KeyEventArgs? e = null)
+    {
+        if (key == Key.P && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            App.CurrentApp?.ToggleCommandPalette();
+            if (e != null) e.Handled = true;
+            return;
+        }
+
+        if (key == Key.S && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             SaveCurrentNote();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
         }
-        else if (e.Key == Key.N && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        else if (key == Key.N && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             CreateNewNote();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
         }
-        else if (e.Key == Key.Escape)
+        else if (key == Key.F && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+            if (e != null) e.Handled = true;
+        }
+        else if (key == Key.W && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             Close();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
+        }
+        else if (key == Key.Delete && modifiers == ModifierKeys.None)
+        {
+            if (NotesListBox.IsKeyboardFocusWithin && !TitleBox.IsKeyboardFocusWithin && !ContentBox.IsKeyboardFocusWithin && !SearchBox.IsKeyboardFocusWithin)
+            {
+                DeleteCurrentNote();
+                if (e != null) e.Handled = true;
+            }
+        }
+        else if ((key == Key.F5 && modifiers == ModifierKeys.None) || (key == Key.R && modifiers == ModifierKeys.Control))
+        {
+            RefreshNotesList(SearchBox.Text);
+            if (e != null) e.Handled = true;
+            return;
+        }
+        else if (key == Key.Escape)
+        {
+            if (!string.IsNullOrEmpty(SearchBox.Text))
+            {
+                SearchBox.Text = "";
+                if (e != null) e.Handled = true;
+                return;
+            }
+
+            if (TitleBox.IsKeyboardFocusWithin || ContentBox.IsKeyboardFocusWithin || (FocusManager.GetFocusedElement(this) is TextBox))
+            {
+                Keyboard.ClearFocus();
+                if (e != null) e.Handled = true;
+                return;
+            }
+
+            Close();
+            if (e != null) e.Handled = true;
         }
     }
 

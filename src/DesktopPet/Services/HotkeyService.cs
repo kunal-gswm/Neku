@@ -13,8 +13,10 @@ public sealed class HotkeyService : IDisposable
 {
     private const int WM_HOTKEY = 0x0312;
 
+    public const int SummonHotkeyId = 0xB001;
     public const int ExitHotkeyId = 0xB002;
     public const int PaletteHotkeyId = 0xB003;
+    public const int PaletteFallbackHotkeyId = 0xB004;
 
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
@@ -26,6 +28,18 @@ public sealed class HotkeyService : IDisposable
     private HwndSource? _source;
     private IntPtr _hwnd;
     private bool _disposed;
+
+    /// <summary>Formats modifier keys and a key into standard human-readable format (e.g. "Ctrl + Alt + P").</summary>
+    public static string FormatHotkey(ModifierKeys mods, Key key)
+    {
+        var parts = new List<string>();
+        if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
+        if (mods.HasFlag(ModifierKeys.Alt))     parts.Add("Alt");
+        if (mods.HasFlag(ModifierKeys.Shift))   parts.Add("Shift");
+        if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
+        parts.Add(key.ToString());
+        return string.Join(" + ", parts);
+    }
 
     /// <summary>Hook the host window so WM_HOTKEY messages reach us.</summary>
     public void Attach(IntPtr hwnd)
@@ -51,12 +65,32 @@ public sealed class HotkeyService : IDisposable
 
         uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
         bool ok = RegisterHotKey(_hwnd, id, fs, vk);
+        if (!ok && (fs & MOD_NOREPEAT) != 0)
+        {
+            ok = RegisterHotKey(_hwnd, id, fs & ~MOD_NOREPEAT, vk);
+        }
+
         if (ok)
         {
             _registeredIds.Add(id);
             _callbacks[id] = action;
         }
         return ok;
+    }
+
+    /// <summary>
+    /// Register the global summon hotkey (Ctrl + Alt + N).
+    /// Returns false if the combination is taken, invalid, or window is unattached.
+    /// </summary>
+    public bool RegisterSummon(Action action)
+    {
+        return Register(SummonHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.N, action);
+    }
+
+    /// <summary>Unregister the global summon hotkey.</summary>
+    public void UnregisterSummon()
+    {
+        Unregister(SummonHotkeyId);
     }
 
     /// <summary>

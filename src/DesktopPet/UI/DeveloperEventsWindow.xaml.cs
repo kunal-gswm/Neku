@@ -83,4 +83,35 @@ public partial class DeveloperEventsWindow : Window
     {
         _service?.HandleEvent("test_fail");
     }
+
+    private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Escape)
+        {
+            if (System.Windows.Input.FocusManager.GetFocusedElement(this) is System.Windows.Controls.TextBox)
+            {
+                System.Windows.Input.Keyboard.ClearFocus();
+                e.Handled = true;
+                return;
+            }
+
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == System.Windows.Input.Key.W && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == System.Windows.Input.Key.P && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control)
+        {
+            App.CurrentApp?.ToggleCommandPalette();
+            e.Handled = true;
+            return;
+        }
+    }
 }

@@ -6,7 +6,8 @@
         WindowStartupLocation="CenterScreen"
         Background="#FF1E1A29"
         Foreground="#FFF3E8FF"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        KeyDown="Window_KeyDown">
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Background" Value="#FF8B5CF6"/>

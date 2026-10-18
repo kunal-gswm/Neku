@@ -48,6 +48,7 @@ public partial class DashboardWindow : Window
     private DispatcherTimer? _uiRefreshTimer;
 
     public event Action<TaskItem>? TaskFocusRequested;
+    public string CurrentTab => _currentTab;
 
     public DashboardWindow(
         TaskService taskService,
@@ -1706,33 +1707,172 @@ public partial class DashboardWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (Keyboard.Modifiers == ModifierKeys.Control)
+        HandleKeyDown(e.Key, Keyboard.Modifiers, e);
+    }
+
+    internal void HandleKeyDown(Key key, ModifierKeys modifiers, KeyEventArgs? e = null)
+    {
+        // 0. Command Palette shortcut (Ctrl+P, Ctrl+Shift+P, Ctrl+Alt+P)
+        if (key == Key.P && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
-            if (e.Key == Key.N)
+            App.CurrentApp?.ToggleCommandPalette();
+            if (e != null) e.Handled = true;
+            return;
+        }
+
+        // 1. Ctrl + Number (Tab switching Ctrl+1 to Ctrl+8)
+        if (modifiers == ModifierKeys.Control)
+        {
+            switch (key)
             {
-                SelectTab("Tasks");
-                TaskAddNewBtn_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            else if (e.Key == Key.F)
-            {
-                SelectTab("Tasks");
-                TaskSearchBox.Focus();
-                TaskSearchBox.SelectAll();
-                e.Handled = true;
+                case Key.D1 or Key.NumPad1:
+                    SelectTab("Overview");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D2 or Key.NumPad2:
+                    SelectTab("Tasks");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D3 or Key.NumPad3:
+                    SelectTab("Focus");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D4 or Key.NumPad4:
+                    SelectTab("History");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D5 or Key.NumPad5:
+                    SelectTab("Insights");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D6 or Key.NumPad6:
+                    SelectTab("Goals");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D7 or Key.NumPad7:
+                    SelectTab("Agent");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D8 or Key.NumPad8:
+                    SelectTab("Radar");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.N:
+                    SelectTab("Tasks");
+                    TaskAddNewBtn_Click(this, new RoutedEventArgs());
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.F:
+                    if (_currentTab == "History")
+                    {
+                        HistoryNotesTextBox.Focus();
+                        HistoryNotesTextBox.SelectAll();
+                    }
+                    else
+                    {
+                        SelectTab("Tasks");
+                        TaskSearchBox.Focus();
+                        TaskSearchBox.SelectAll();
+                    }
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.Enter:
+                    if (_currentTab == "Tasks" && _selectedTask != null)
+                    {
+                        DetailStartFocusBtn_Click(this, new RoutedEventArgs());
+                        if (e != null) e.Handled = true;
+                        return;
+                    }
+                    break;
+                case Key.W:
+                    Close();
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.S:
+                    if (_currentTab == "History" || HistoryNotesTextBox.IsKeyboardFocusWithin)
+                    {
+                        HistorySaveNotesBtn_Click(this, new RoutedEventArgs());
+                        if (e != null) e.Handled = true;
+                        return;
+                    }
+                    break;
+                case Key.R:
+                    SelectTab(_currentTab);
+                    if (e != null) e.Handled = true;
+                    return;
             }
         }
-        else if (e.Key == Key.Escape)
+
+        // F5 refresh for active tab
+        if (key == Key.F5 && modifiers == ModifierKeys.None)
+        {
+            SelectTab(_currentTab);
+            if (e != null) e.Handled = true;
+            return;
+        }
+
+        // 2. Ctrl+Tab / Ctrl+Shift+Tab (Tab cycling)
+        if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
+        {
+            string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals", "Agent", "Radar"];
+            int currentIndex = Array.IndexOf(tabs, _currentTab == "AgentActivity" ? "Agent" : _currentTab);
+            if (currentIndex < 0) currentIndex = 0;
+
+            bool reverse = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+            int nextIndex = reverse
+                ? (currentIndex - 1 + tabs.Length) % tabs.Length
+                : (currentIndex + 1) % tabs.Length;
+
+            SelectTab(tabs[nextIndex]);
+            if (e != null) e.Handled = true;
+            return;
+        }
+
+        // 3. Task list shortcuts when TasksListBox is focused
+        if (TasksListBox.IsKeyboardFocusWithin && _selectedTask != null)
+        {
+            if (key == Key.Space && modifiers == ModifierKeys.None)
+            {
+                _taskService.ToggleComplete(_selectedTask.Id);
+                RefreshTaskList();
+                if (e != null) e.Handled = true;
+                return;
+            }
+            if (key == Key.Delete && modifiers == ModifierKeys.None)
+            {
+                DetailDeleteBtn_Click(this, new RoutedEventArgs());
+                if (e != null) e.Handled = true;
+                return;
+            }
+        }
+
+        // 4. Escape handling
+        else if (key == Key.Escape)
         {
             if (AgentSetupModal.Visibility == Visibility.Visible)
             {
                 AgentSetupModal.Visibility = Visibility.Collapsed;
-                e.Handled = true;
+                if (e != null) e.Handled = true;
+                return;
+            }
+
+            if (TaskSearchBox.IsKeyboardFocusWithin && !string.IsNullOrEmpty(TaskSearchBox.Text))
+            {
+                TaskSearchBox.Text = "";
+                if (e != null) e.Handled = true;
+                return;
+            }
+
+            // If a TextBox has focus, unfocus it first instead of immediately closing window or wiping content
+            if (FocusManager.GetFocusedElement(this) is TextBox || HistoryNotesTextBox.IsKeyboardFocusWithin)
+            {
+                Keyboard.ClearFocus();
+                if (e != null) e.Handled = true;
                 return;
             }
 
             Close();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
         }
     }
 

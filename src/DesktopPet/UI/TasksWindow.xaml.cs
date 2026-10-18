@@ -10,6 +10,7 @@ using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using Brushes = System.Windows.Media.Brushes;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace DesktopPet.UI;
 
@@ -20,6 +21,7 @@ public partial class TasksWindow : Window
     private readonly AppSettings _settings;
     private TaskItem? _selectedTask;
     private string _activeTab = "All";
+    public string ActiveTab => _activeTab;
     private bool _suppressEditEvents;
     private bool _isInitialized;
 
@@ -204,13 +206,18 @@ public partial class TasksWindow : Window
         }
     }
 
+    public void SelectTab(string tabName)
+    {
+        _activeTab = tabName;
+        UpdateTabButtons();
+        RefreshList();
+    }
+
     private void TabBtn_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string tabName)
         {
-            _activeTab = tabName;
-            UpdateTabButtons();
-            RefreshList();
+            SelectTab(tabName);
         }
     }
 
@@ -437,58 +444,130 @@ public partial class TasksWindow : Window
 
     private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.N)
+        HandleKeyDown(e.Key, Keyboard.Modifiers, e);
+    }
+
+    internal void HandleKeyDown(Key key, ModifierKeys modifiers, System.Windows.Input.KeyEventArgs? e = null)
+    {
+        if (key == Key.P && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
-            NewTaskBtn_Click(sender, e);
-            e.Handled = true;
+            App.CurrentApp?.ToggleCommandPalette();
+            if (e != null) e.Handled = true;
+            return;
         }
-        else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.F)
+
+        if (modifiers == ModifierKeys.Control)
         {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
-            e.Handled = true;
-        }
-        else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Enter)
-        {
-            if (_selectedTask != null)
+            switch (key)
             {
-                StartFocusBtn_Click(sender, e);
-                e.Handled = true;
+                case Key.D1 or Key.NumPad1:
+                    SelectTab("Today");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D2 or Key.NumPad2:
+                    SelectTab("Upcoming");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D3 or Key.NumPad3:
+                    SelectTab("All");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.D4 or Key.NumPad4:
+                    SelectTab("Completed");
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.N:
+                    NewTaskBtn_Click(this, new RoutedEventArgs());
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.F:
+                    SearchBox.Focus();
+                    SearchBox.SelectAll();
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.Enter:
+                    if (_selectedTask != null)
+                    {
+                        StartFocusBtn_Click(this, new RoutedEventArgs());
+                        if (e != null) e.Handled = true;
+                        return;
+                    }
+                    break;
+                case Key.W:
+                    Close();
+                    if (e != null) e.Handled = true;
+                    return;
+                case Key.R:
+                    RefreshList();
+                    if (e != null) e.Handled = true;
+                    return;
             }
         }
-        else if (e.Key == Key.Delete && Keyboard.Modifiers == ModifierKeys.None)
+
+        // F5 refresh task list
+        if (key == Key.F5 && modifiers == ModifierKeys.None)
         {
-            // Only trigger delete if not typing in TitleBox or DescriptionBox
-            if (!TitleBox.IsKeyboardFocusWithin && !DescriptionBox.IsKeyboardFocusWithin && !SearchBox.IsKeyboardFocusWithin)
+            RefreshList();
+            if (e != null) e.Handled = true;
+            return;
+        }
+
+        // Ctrl+Tab / Ctrl+Shift+Tab (Tab cycling)
+        if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
+        {
+            string[] tabs = ["Today", "Upcoming", "All", "Completed"];
+            int currentIndex = Array.IndexOf(tabs, _activeTab);
+            if (currentIndex < 0) currentIndex = 0;
+
+            bool reverse = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+            int nextIndex = reverse
+                ? (currentIndex - 1 + tabs.Length) % tabs.Length
+                : (currentIndex + 1) % tabs.Length;
+
+            SelectTab(tabs[nextIndex]);
+            if (e != null) e.Handled = true;
+            return;
+        }
+        else if (key == Key.Delete && modifiers == ModifierKeys.None)
+        {
+            // Only trigger delete if focused on the task list
+            if (TasksListBox.IsKeyboardFocusWithin && !TitleBox.IsKeyboardFocusWithin && !DescriptionBox.IsKeyboardFocusWithin && !SearchBox.IsKeyboardFocusWithin)
             {
                 if (_selectedTask != null)
                 {
-                    DeleteTaskBtn_Click(sender, e);
-                    e.Handled = true;
+                    DeleteTaskBtn_Click(this, new RoutedEventArgs());
+                    if (e != null) e.Handled = true;
                 }
             }
         }
-        else if (e.Key == Key.Space && Keyboard.Modifiers == ModifierKeys.None)
+        else if (key == Key.Space && modifiers == ModifierKeys.None)
         {
             // Only toggle complete if focused on the task list
             if (TasksListBox.IsKeyboardFocusWithin && _selectedTask != null)
             {
                 _taskService.ToggleComplete(_selectedTask.Id);
                 RefreshList();
-                e.Handled = true;
+                if (e != null) e.Handled = true;
             }
         }
-        else if (e.Key == Key.Escape)
+        else if (key == Key.Escape)
         {
             if (!string.IsNullOrEmpty(SearchBox.Text))
             {
                 SearchBox.Text = "";
-                e.Handled = true;
+                if (e != null) e.Handled = true;
+                return;
             }
-            else
+
+            if (TitleBox.IsKeyboardFocusWithin || DescriptionBox.IsKeyboardFocusWithin || (FocusManager.GetFocusedElement(this) is TextBox))
             {
-                Close();
+                Keyboard.ClearFocus();
+                if (e != null) e.Handled = true;
+                return;
             }
+
+            Close();
+            if (e != null) e.Handled = true;
         }
     }
 }

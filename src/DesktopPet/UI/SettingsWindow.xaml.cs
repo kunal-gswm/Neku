@@ -9,6 +9,7 @@ using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
 // UseWindowsForms adds a global `using System.Windows.Forms`, whose ComboBox collides with WPF's.
 using ComboBox = System.Windows.Controls.ComboBox;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace DesktopPet.UI;
 
@@ -109,7 +110,8 @@ public partial class SettingsWindow : Window
         AutoUpdateBox.IsChecked    = settings.EnableAutoUpdate;
         RememberStateBox.IsChecked = settings.RememberPetState;
         CommandPaletteHotkeyBox.IsChecked = settings.EnableCommandPaletteHotkey;
-        PaletteHotkeyCaptureBox.Text = FormatHotkey((ModifierKeys)settings.CommandPaletteHotkeyModifiers, (Key)settings.CommandPaletteHotkeyKey);
+        PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)settings.CommandPaletteHotkeyModifiers, (Key)settings.CommandPaletteHotkeyKey);
+        UpdatePaletteHotkeyStatus();
 
         VersionText.Text = $"Neku {AppVersion.Display}  •  settings in %AppData%\\Neku";
 
@@ -367,14 +369,29 @@ public partial class SettingsWindow : Window
 
         _service.Save();
         _onChanged?.Invoke();   // apply live (e.g. resize or change opacity)
+        UpdatePaletteHotkeyStatus();
     }
 
     /// <summary>Capture a new Command Palette shortcut: record first non-modifier key with modifier held.</summary>
     private void PaletteHotkeyCaptureBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        e.Handled = true;
         Key k = e.Key == Key.System ? e.SystemKey : e.Key;
 
+        // Allow Tab and Shift+Tab to navigate away normally without getting trapped
+        if (k == Key.Tab) return;
+
+        // Allow Escape to cancel or close dialog
+        if (k == Key.Escape) return;
+
+        // Allow Backspace or Delete to reset to default
+        if (k is Key.Back or Key.Delete && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            e.Handled = true;
+            ResetPaletteHotkeyButton_Click(sender, e);
+            return;
+        }
+
+        // Ignore bare modifier keys
         if (k is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
               or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System or Key.None)
             return;
@@ -382,29 +399,90 @@ public partial class SettingsWindow : Window
         var mods = Keyboard.Modifiers;
         if (mods == ModifierKeys.None) return;
 
+        e.Handled = true;
         _settings.CommandPaletteHotkeyModifiers = (int)mods;
         _settings.CommandPaletteHotkeyKey       = (int)k;
-        PaletteHotkeyCaptureBox.Text            = FormatHotkey(mods, k);
+        PaletteHotkeyCaptureBox.Text            = HotkeyService.FormatHotkey(mods, k);
         Apply();
+        UpdatePaletteHotkeyStatus();
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            if (PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || (FocusManager.GetFocusedElement(this) is TextBox))
+            {
+                Keyboard.ClearFocus();
+                e.Handled = true;
+                return;
+            }
+
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.W && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            Close();
+            e.Handled = true;
+            return;
+        }
+
+        // Allow opening Command Palette via Ctrl+P, Ctrl+Shift+P, or Ctrl+Alt+P when not capturing hotkey
+        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && e.Key == Key.P)
+        {
+            var mods = Keyboard.Modifiers;
+            if (mods == ModifierKeys.Control ||
+                mods == (ModifierKeys.Control | ModifierKeys.Shift) ||
+                mods == (ModifierKeys.Control | ModifierKeys.Alt))
+            {
+                App.CurrentApp?.ToggleCommandPalette();
+                e.Handled = true;
+                return;
+            }
+        }
     }
 
     private void ResetPaletteHotkeyButton_Click(object sender, RoutedEventArgs e)
     {
         _settings.CommandPaletteHotkeyModifiers = (int)(ModifierKeys.Control | ModifierKeys.Alt);
         _settings.CommandPaletteHotkeyKey       = (int)Key.P;
-        PaletteHotkeyCaptureBox.Text            = FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
+        PaletteHotkeyCaptureBox.Text            = HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
         Apply();
+        UpdatePaletteHotkeyStatus();
     }
 
-    private static string FormatHotkey(ModifierKeys mods, Key key)
+    private void UpdatePaletteHotkeyStatus()
     {
-        var parts = new List<string>();
-        if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
-        if (mods.HasFlag(ModifierKeys.Alt))     parts.Add("Alt");
-        if (mods.HasFlag(ModifierKeys.Shift))   parts.Add("Shift");
-        if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
-        parts.Add(key.ToString());
-        return string.Join(" + ", parts);
+        if (PaletteHotkeyStatusText == null) return;
+
+        if (CommandPaletteHotkeyBox.IsChecked != true)
+        {
+            PaletteHotkeyStatusText.Text = "Disabled";
+            PaletteHotkeyStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            return;
+        }
+
+        if (App.CurrentApp == null)
+        {
+            PaletteHotkeyStatusText.Text = "✓ Ready";
+            PaletteHotkeyStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
+            return;
+        }
+
+        if (App.CurrentApp.IsPaletteHotkeyRegistered)
+        {
+            string? active = App.CurrentApp.GetPaletteHotkeyLabel();
+            PaletteHotkeyStatusText.Text = $"✓ Active ({active})";
+            PaletteHotkeyStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
+        }
+        else
+        {
+            PaletteHotkeyStatusText.Text = "⚠ Conflict (in use by another app)";
+            PaletteHotkeyStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+        }
     }
 
     // Developer Test Buttons
@@ -468,7 +546,7 @@ public partial class SettingsWindow : Window
             DevEventsBox.IsChecked       = _settings.EnableDeveloperEvents;
             ClickThroughBox.IsChecked    = _settings.ClickThrough;
             CommandPaletteHotkeyBox.IsChecked = _settings.EnableCommandPaletteHotkey;
-            PaletteHotkeyCaptureBox.Text = FormatHotkey((ModifierKeys)_settings.CommandPaletteHotkeyModifiers, (Key)_settings.CommandPaletteHotkeyKey);
+            PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)_settings.CommandPaletteHotkeyModifiers, (Key)_settings.CommandPaletteHotkeyKey);
 
             SelectByTag(SizeBox, "1.0", 1);
             SelectByTag(StretchIntervalBox, "30", 2);

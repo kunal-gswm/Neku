@@ -12,6 +12,7 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem _focusItem;
     private readonly ToolStripMenuItem _focusCancelItem;
     private readonly ToolStripMenuItem _tasksItem;
+    private readonly ToolStripMenuItem _paletteItem;
     private readonly ToolStripMenuItem _quickNoteItem;
     private readonly ToolStripMenuItem _devEventsItem;
     private readonly ToolStripMenuItem _pauseItem;
@@ -41,8 +42,8 @@ public sealed class TrayService : IDisposable
         _onUpdate = onUpdate;
         var menu = new ContextMenuStrip();
 
-        var paletteItem = new ToolStripMenuItem("⚡ Command Palette… (Ctrl+Alt+P)");
-        paletteItem.Click += (_, _) => onCommandPalette();
+        _paletteItem = new ToolStripMenuItem("⚡ Command Palette… (Ctrl+Alt+P)");
+        _paletteItem.Click += (_, _) => onCommandPalette();
 
         var hubItem = new ToolStripMenuItem("🐾 Productivity Hub…") { Font = new Font(menu.Font, FontStyle.Bold) };
         hubItem.Click += (_, _) => onProductivityHub();
@@ -114,7 +115,7 @@ public sealed class TrayService : IDisposable
         };
 
         // 1. Productivity Hub, Focus Session & Tasks
-        menu.Items.Add(paletteItem);
+        menu.Items.Add(_paletteItem);
         menu.Items.Add(hubItem);
         menu.Items.Add(_focusItem);
         menu.Items.Add(_focusCancelItem);
@@ -199,6 +200,18 @@ public sealed class TrayService : IDisposable
     }
 
     private void OnBalloonClicked(object? sender, EventArgs e) => _onUpdate();
+
+    public void UpdatePaletteShortcut(string? shortcutLabel)
+    {
+        if (string.IsNullOrWhiteSpace(shortcutLabel))
+        {
+            _paletteItem.Text = "⚡ Command Palette…";
+        }
+        else
+        {
+            _paletteItem.Text = $"⚡ Command Palette… ({shortcutLabel})";
+        }
+    }
 
     public void Dispose()
     {

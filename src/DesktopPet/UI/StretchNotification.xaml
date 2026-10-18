@@ -8,8 +8,11 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
+        Focusable="False"
+        ShowActivated="False"
         Width="360" Height="90"
-        WindowStartupLocation="Manual">
+        WindowStartupLocation="Manual"
+        KeyDown="Window_KeyDown">
     <Border Background="#FFEEDDFF"
             CornerRadius="14"
             BorderBrush="#FFCC99DD"

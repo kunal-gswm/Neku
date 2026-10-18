@@ -7,7 +7,8 @@
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         Background="#FF161320"
-        Foreground="#FFF3E8FF">
+        Foreground="#FFF3E8FF"
+        KeyDown="Window_KeyDown">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -328,6 +329,7 @@
                                      PreviewKeyDown="PaletteHotkeyCaptureBox_PreviewKeyDown"/>
                             <Button x:Name="ResetPaletteHotkeyButton" Content="Reset Default" Margin="8,0,0,0" Padding="8,2"
                                     Click="ResetPaletteHotkeyButton_Click"/>
+                            <TextBlock x:Name="PaletteHotkeyStatusText" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
                         </StackPanel>
 
                         <TextBlock Text="System Shortcuts" Style="{StaticResource Head}" Margin="0,4,0,2"/>
