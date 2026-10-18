@@ -62,4 +62,21 @@ public class AppVersionTests
         Assert.False(AppVersion.IsNewerThanCurrent("not-a-version"));
         Assert.False(AppVersion.IsNewerThanCurrent(null));
     }
+
+    [Theory]
+    [InlineData("v0.4.0", "v0.2.1", true)]
+    [InlineData("v0.4.0", "v0.2.0", true)]
+    [InlineData("v0.2.1", "v0.4.0", false)]
+    [InlineData("v0.4.0", "v0.4.0", false)]
+    public void Updater_recognizes_0_4_0_as_newer_than_earlier_releases(string newerTag, string baseTag, bool expected)
+    {
+        var newer = AppVersion.ParseTag(newerTag);
+        var baseVersion = AppVersion.ParseTag(baseTag);
+        Assert.NotNull(newer);
+        Assert.NotNull(baseVersion);
+
+        var them = new Version(newer!.Major, newer.Minor, Math.Max(newer.Build, 0));
+        var us = new Version(baseVersion!.Major, baseVersion.Minor, Math.Max(baseVersion.Build, 0));
+        Assert.Equal(expected, them > us);
+    }
 }

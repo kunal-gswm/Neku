@@ -1,18 +1,20 @@
-# Neku v0.2 — A Lightweight, Playful & Productive Windows Desktop Companion
+# Neku v0.4 — A Lightweight, Playful & Productive Windows Desktop Companion
 
-**Neku** is a tiny, mischievous desktop companion that lives right on your Windows desktop. Native, feather-light, and expressive, Neku combines playful desktop pet physics with a local Pomodoro focus timer, a quick-notes scratchpad, and developer event reactions.
+**Neku** is a tiny, mischievous desktop companion that lives right on your Windows desktop. Native, feather-light, and expressive, Neku combines playful desktop pet physics with a local Pomodoro focus timer, a quick-notes scratchpad, developer event reactions, and a full Companion Studio.
 
 Built with **C# / WPF on .NET 10**.
 
 ---
 
-## 🌟 What's New in v0.2
+## 🌟 What's New in v0.4 (Companion Studio)
 
-- ⏱️ **Focus Timer (Pomodoro):** Stay in flow with a 25-minute focus session and 5-minute break timer. Includes a sleek HUD pill overlay, deadline recovery across restarts, and subtle companion dialogue reactions.
-- 📝 **Quick Notes:** Built-in lightweight desktop scratchpad with real-time search, autosave, and keyboard navigation. Stored 100% locally.
-- 🎯 **Native Action Menu:** Compact, non-activating WPF menu accessible from right-clicking Neku or the system tray. Never steals keyboard focus from active code or terminal windows (`WS_EX_NOACTIVATE`).
-- ⚡ **Optimized Memory & Lifecycle:** On-demand full-screen composition surfaces, direct memory-mapped single-file publishing, and an optional software rendering pipeline (`--software-rendering`) to eliminate GPU driver RAM overhead on laptops.
-- 🛡️ **Privacy & Custom Pack Isolation:** 100% offline, zero telemetry. Supports custom local character packs without modifying repository files or public builds.
+- 🎨 **Companion Studio:** Complete management interface for Neku and public companion packs. Browse characters, preview genuine animation frames at 60 FPS, and swap companions in-flight without restarting the application.
+- 🎭 **Personality Presets & Reaction Triggers:** Tune companion temperament with `Calm`, `Playful`, `Expressive`, and `Custom` presets. Configure granular reactions for Pomodoro focus milestones, breaks, cursor petting, and optional developer builds/tests.
+- 📏 **Granular Scaling & Appearance Controls:** Custom size scale (0.5x to 2.0x), animation speed multiplier, and window opacity sliders.
+- ♿ **Protected Accessibility:** "Restore Defaults" safely resets companion personality without overwriting user accessibility preferences (`ReducedMotion` and `EnableQuietMode`).
+- ⏱️ **Focus Timer & Quick Notes:** 25-minute Pomodoro focus timer with break alerts, HUD overlay, and built-in local desktop notes scratchpad.
+- ⚡ **Optimized Memory & Lifecycle:** On-demand full-screen composition surfaces, memory-mapped single-file binary, and optional software rendering (`--software-rendering`).
+- 🛡️ **Privacy & Custom Pack Isolation:** 100% offline, zero telemetry. Supports custom local companion packs stored securely in `%AppData%\Neku\Assets\pets\`.
 
 ---
 
