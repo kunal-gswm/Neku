@@ -1,20 +1,38 @@
-<div align="center">
+<p align="center">
+  <img src="docs/assets/readme/neku-logo.png" alt="Neku, the playful desktop companion" width="680" />
+</p>
 
-# Neku
+<p align="center">
+  <strong>A playful desktop companion for focus, creativity, and everyday work.</strong><br>
+  Neku lives unobtrusively on your desktop, reacting to your focus sprints, keyboard typing, and build events.<br>
+  Built natively in C# and WPF on .NET 10 with genuine physics, deep customizability, and zero system bloat.
+</p>
 
-**The lightweight, character-driven desktop companion and productivity pet for Windows.**
+<p align="center">
+  <a href="https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml"><img src="https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="#download-installation"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20x64-0078D4?logo=windows&logoColor=white" alt="Platform" /></a>
+  <a href="#technology-architecture"><img src="https://img.shields.io/badge/.NET-10.0%20WPF-512BD4?logo=dotnet&logoColor=white" alt=".NET 10" /></a>
+  <a href="#privacy-security-offline-first"><img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20%26%20Zero%20Telemetry-10B981" alt="Offline" /></a>
+</p>
 
-Neku lives unobtrusively on your desktop, reacting to your focus sprints, typing, and development events. Built natively in C# and WPF on .NET 10, Neku delivers expressive pixel-art companions with genuine physics, deep customizability, and zero system bloat.
-
-[![CI](https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml/badge.svg)](https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20x64-0078D4?logo=windows&logoColor=white)](#download--installation)
-[![.NET](https://img.shields.io/badge/.NET-10.0%20WPF-512BD4?logo=dotnet&logoColor=white)](#technology--architecture)
-[![Offline](https://img.shields.io/badge/Privacy-100%25%20Offline%20%26%20Zero%20Telemetry-10B981)](#privacy-security--offline-first)
-
-[Overview](#overview) • [Highlights](#feature-highlights) • [Companion Gallery](#companion-gallery--character-system) • [Download](#download--installation) • [Getting Started](#getting-started) • [Productivity](#productivity-tools) • [Custom Companions](#custom-companions--modding) • [Developer Events](#developer-integration) • [Architecture](#technology--architecture) • [Contributing](#building-testing--contributing)
-
-</div>
+<p align="center">
+  <a href="https://github.com/kunal-gswm/Neku/releases">Releases</a>
+  ·
+  <a href="#overview">Overview</a>
+  ·
+  <a href="#feature-highlights">Features</a>
+  ·
+  <a href="#companion-gallery-character-system">Companions</a>
+  ·
+  <a href="#download-installation">Download</a>
+  ·
+  <a href="#getting-started">Getting Started</a>
+  ·
+  <a href="#productivity-tools">Productivity</a>
+  ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a>
+</p>
 
 ---
 
