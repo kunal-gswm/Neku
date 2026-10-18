@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Windows.Threading;
 using DesktopPet.Services;
 using Xunit;
@@ -879,5 +880,44 @@ public sealed class ProductivityHubTests : IDisposable
         Assert.True(restored.EnableOverdueTaskReminders);
         Assert.False(restored.EnableFocusCompletedReminders);
         Assert.True(restored.EnableBreakCompletedReminders);
+    }
+
+    [Fact]
+    public void DashboardWindow_InitializesAndSwitchesTabsWithoutExceptions()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var taskService = new TaskService(_tasksFile);
+                var timer = new FocusTimerService();
+                var history = new FocusHistoryService(_historyFile);
+                var settings = new AppSettings();
+
+                var dashboard = new DesktopPet.UI.DashboardWindow(taskService, timer, history, settings);
+                Assert.NotNull(dashboard);
+
+                // Verify all tabs can be selected without any XAML or binding exceptions
+                dashboard.SelectTab("Overview");
+                dashboard.SelectTab("Tasks");
+                dashboard.SelectTab("Focus");
+                dashboard.SelectTab("History");
+                dashboard.SelectTab("Insights");
+                dashboard.SelectTab("Goals");
+
+                dashboard.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "DashboardWindow initialization timed out");
+        Assert.Null(threadEx);
     }
 }

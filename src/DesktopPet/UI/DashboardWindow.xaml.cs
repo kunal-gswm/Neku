@@ -33,6 +33,7 @@ public partial class DashboardWindow : Window
     private string _currentTaskFilterTab = "All";
     private TaskItem? _selectedTask;
     private bool _suppressTaskEvents = false;
+    private bool _isInitialized = false;
     private DispatcherTimer? _uiRefreshTimer;
 
     public event Action<TaskItem>? TaskFocusRequested;
@@ -44,11 +45,13 @@ public partial class DashboardWindow : Window
         AppSettings settings,
         string? initialTab = null)
     {
-        InitializeComponent();
         _taskService = taskService;
         _focusTimer = focusTimer;
         _historyService = historyService;
         _settings = settings;
+
+        InitializeComponent();
+        _isInitialized = true;
 
         // Wire event listeners
         _taskService.TasksChanged += OnTasksChanged;
@@ -274,6 +277,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshOverview()
     {
+        if (!_isInitialized) return;
         OverviewDateText.Text = DateTime.Today.ToString("dddd, MMMM d, yyyy");
 
         var allTasks = _taskService.Tasks;
@@ -473,6 +477,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshTaskList()
     {
+        if (!_isInitialized) return;
         var allTasks = _taskService.Tasks;
 
         // Update Project & Tag ComboBox options
@@ -654,11 +659,21 @@ public partial class DashboardWindow : Window
         }
     }
 
-    private void TaskSearchBox_TextChanged(object sender, TextChangedEventArgs e) => RefreshTaskList();
-    private void TaskFilter_Changed(object sender, SelectionChangedEventArgs e) => RefreshTaskList();
+    private void TaskSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!_isInitialized) return;
+        RefreshTaskList();
+    }
+
+    private void TaskFilter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_isInitialized) return;
+        RefreshTaskList();
+    }
 
     private void TasksListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_isInitialized) return;
         if (TasksListBox.SelectedItem is TaskItem item)
         {
             ShowTaskDetail(item);
@@ -958,6 +973,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshFocusView()
     {
+        if (!_isInitialized) return;
         PopulateFocusTaskSelector();
 
         FocusDurBox.Text = _settings.FocusDurationMinutes.ToString();
@@ -1104,6 +1120,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshHistory()
     {
+        if (!_isInitialized) return;
         string? rangeChoice = (HistoryRangeCombo?.SelectedItem as ComboBoxItem)?.Content?.ToString();
         var preset = rangeChoice switch
         {
@@ -1291,6 +1308,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshInsights()
     {
+        if (!_isInitialized) return;
         var preset = (InsightsRangeCombo?.SelectedItem as ComboBoxItem)?.Content?.ToString() switch
         {
             "Today" => TimeRangePreset.Today,
@@ -1517,6 +1535,7 @@ public partial class DashboardWindow : Window
 
     private void RefreshGoals()
     {
+        if (!_isInitialized) return;
         // Daily Focus Goal
         double todayFocus = _historyService.GetTodayFocusMinutes();
         int dailyGoal = _settings.DailyFocusGoalMinutes;

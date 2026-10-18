@@ -229,10 +229,10 @@
                 <!-- Mini Active Focus Bar at Bottom -->
                 <Border DockPanel.Dock="Bottom" Background="#FF161320" Margin="8,8,8,10" Padding="10" CornerRadius="8" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="SpaceBetween">
-                            <TextBlock x:Name="RailTimerBadge" Text="IDLE" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
-                            <TextBlock x:Name="RailTimerDigits" Text="25:00" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentOrangeBrush}"/>
-                        </StackPanel>
+                        <DockPanel LastChildFill="False">
+                            <TextBlock DockPanel.Dock="Left" x:Name="RailTimerBadge" Text="IDLE" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock DockPanel.Dock="Right" x:Name="RailTimerDigits" Text="25:00" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentOrangeBrush}"/>
+                        </DockPanel>
                         <TextBlock x:Name="RailActiveTaskText" Text="No active task" FontSize="11" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis" Margin="0,4,0,6"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <Button x:Name="RailPlayPauseBtn" Content="▶ Play" Style="{StaticResource SecondaryButton}" Padding="8,3" FontSize="11" Margin="0,0,4,0" Click="RailPlayPauseBtn_Click"/>
@@ -434,7 +434,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" x:Name="TaskAddNewBtn" Content="+ New Task" Style="{StaticResource Button}" Margin="0,0,4,0" Click="TaskAddNewBtn_Click"/>
+                        <Button Grid.Column="0" x:Name="TaskAddNewBtn" Content="+ New Task" Margin="0,0,4,0" Click="TaskAddNewBtn_Click"/>
                         <Button Grid.Column="1" Content="📥 CSV" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="0,0,4,0" Click="TasksExportCsv_Click" ToolTip="Export tasks to CSV"/>
                         <Button Grid.Column="2" Content="📥 JSON" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Click="TasksExportJson_Click" ToolTip="Export tasks to JSON"/>
                     </Grid>
