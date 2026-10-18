@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/readme/neku-logo.png" alt="Neku, the playful desktop companion" width="680" />
+  <img src="docs/assets/readme/neku-logo.png" alt="Neku, the playful desktop companion" width="460" />
 </p>
 
 <p align="center">
