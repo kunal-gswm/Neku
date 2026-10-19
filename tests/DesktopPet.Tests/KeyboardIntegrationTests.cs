@@ -330,6 +330,35 @@ public class KeyboardIntegrationTests : IDisposable
     }
 
     [Fact]
+    public void CommandPaletteWindow_CloseAndDeactivate_DoesNotThrowWhileClosing()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var service = new CommandPaletteService();
+                var palette = new CommandPaletteWindow(service);
+                palette.Show();
+
+                // Calling Close() multiple times or raising deactivated during closing must be completely safe
+                palette.Close();
+                palette.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "CommandPaletteWindow Close test timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
     public void Windows_InAppCommandPaletteShortcuts_TriggerSafely()
     {
         Exception? threadEx = null;

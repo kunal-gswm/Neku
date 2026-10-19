@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using DesktopPet.Services;
@@ -12,6 +13,7 @@ public partial class CommandPaletteWindow : Window
 {
     private readonly CommandPaletteService _service;
     private bool _isExecuting;
+    private bool _isClosing;
 
     public CommandPaletteWindow(CommandPaletteService service)
     {
@@ -276,9 +278,29 @@ public partial class CommandPaletteWindow : Window
         }
     }
 
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        _isClosing = true;
+        base.OnClosing(e);
+    }
+
+    public new void Close()
+    {
+        if (_isClosing) return;
+        _isClosing = true;
+        try
+        {
+            base.Close();
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore if WPF is already closing
+        }
+    }
+
     private void ExecuteSelected()
     {
-        if (_isExecuting) return;
+        if (_isExecuting || _isClosing) return;
         if (ResultsListBox.SelectedItem is not PaletteCommand cmd) return;
 
         _isExecuting = true;
@@ -300,7 +322,7 @@ public partial class CommandPaletteWindow : Window
 
     private void Window_Deactivated(object? sender, EventArgs e)
     {
-        if (!_isExecuting)
+        if (!_isExecuting && !_isClosing)
         {
             Close();
         }
