@@ -24,14 +24,14 @@ public sealed class EffectsOverlay : Window
 
     public EffectsOverlay()
     {
-        WindowStyle        = WindowStyle.None;
+        WindowStyle = WindowStyle.None;
         AllowsTransparency = true;
-        Background         = Brushes.Transparent;
-        Topmost            = true;
-        ShowInTaskbar      = false;
-        ResizeMode         = ResizeMode.NoResize;
-        IsHitTestVisible   = false;
-        Content            = _canvas;
+        Background = Brushes.Transparent;
+        Topmost = true;
+        ShowInTaskbar = false;
+        ResizeMode = ResizeMode.NoResize;
+        IsHitTestVisible = false;
+        Content = _canvas;
 
         ApplyVirtualScreenBounds();
 
@@ -80,9 +80,9 @@ public sealed class EffectsOverlay : Window
         if (hwnd == IntPtr.Zero)
         {
             // Before the HWND exists: a close-enough first placement, corrected in OnSourceInitialized.
-            Left   = SystemParameters.VirtualScreenLeft;
-            Top    = SystemParameters.VirtualScreenTop;
-            Width  = SystemParameters.VirtualScreenWidth;
+            Left = SystemParameters.VirtualScreenLeft;
+            Top = SystemParameters.VirtualScreenTop;
+            Width = SystemParameters.VirtualScreenWidth;
             Height = SystemParameters.VirtualScreenHeight;
             return;
         }
@@ -118,9 +118,9 @@ public sealed class EffectsOverlay : Window
     private readonly List<FrameworkElement> _tpParts = new();
     private System.Windows.Shapes.Rectangle? _tpPole;
     private Ellipse? _tpBase, _tpRoll, _tpHole, _tpPile;
-    private Border?  _tpSheet;
+    private Border? _tpSheet;
     private static readonly SolidColorBrush PaperOutline = new(Color.FromRgb(180, 180, 198));
-    private static readonly SolidColorBrush HolderBrush  = new(Color.FromRgb(170, 174, 190));
+    private static readonly SolidColorBrush HolderBrush = new(Color.FromRgb(170, 174, 190));
 
     private static System.Windows.Media.Effects.DropShadowEffect SoftShadow() =>
         new() { Color = Colors.Black, BlurRadius = 7, ShadowDepth = 1, Opacity = 0.22 };
@@ -131,7 +131,7 @@ public sealed class EffectsOverlay : Window
     /// </summary>
     public void DrawToiletPaper(double catLeft, double catTop, double catW, double catH, double length)
     {
-        double rollR  = Math.Max(9, Math.Min(15, catW * 0.10));
+        double rollR = Math.Max(9, Math.Min(15, catW * 0.10));
         double sheetW = rollR * 1.25;
 
         if (_tpSheet == null)
@@ -139,26 +139,30 @@ public sealed class EffectsOverlay : Window
             // Horizontal perforation ticks tiled down the hanging sheet.
             var perf = new DrawingBrush
             {
-                TileMode      = TileMode.Tile,
+                TileMode = TileMode.Tile,
                 ViewportUnits = BrushMappingMode.Absolute,
-                Viewport      = new Rect(0, 0, sheetW, 16),
+                Viewport = new Rect(0, 0, sheetW, 16),
                 Drawing = new GeometryDrawing(
                     null,
                     new Pen(new SolidColorBrush(Color.FromArgb(55, 150, 150, 170)), 1.1)
                     { DashStyle = new DashStyle(new double[] { 2, 2 }, 0) },
                     new LineGeometry(new Point(0, 15), new Point(sheetW, 15)))
             };
-            _tpPole  = new System.Windows.Shapes.Rectangle { Fill = HolderBrush, RadiusX = 3, RadiusY = 3, IsHitTestVisible = false, Effect = SoftShadow() };
-            _tpBase  = new Ellipse { Fill = HolderBrush, IsHitTestVisible = false, Effect = SoftShadow() };
+            _tpPole = new System.Windows.Shapes.Rectangle { Fill = HolderBrush, RadiusX = 3, RadiusY = 3, IsHitTestVisible = false, Effect = SoftShadow() };
+            _tpBase = new Ellipse { Fill = HolderBrush, IsHitTestVisible = false, Effect = SoftShadow() };
             _tpSheet = new Border
             {
-                Background = Brushes.White, BorderBrush = PaperOutline, BorderThickness = new Thickness(1.5),
-                CornerRadius = new CornerRadius(2, 2, 4, 4), IsHitTestVisible = false,
-                Child = new System.Windows.Shapes.Rectangle { Fill = perf }, Effect = SoftShadow()
+                Background = Brushes.White,
+                BorderBrush = PaperOutline,
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(2, 2, 4, 4),
+                IsHitTestVisible = false,
+                Child = new System.Windows.Shapes.Rectangle { Fill = perf },
+                Effect = SoftShadow()
             };
-            _tpRoll  = new Ellipse { Fill = Brushes.White, Stroke = PaperOutline, StrokeThickness = 1.5, IsHitTestVisible = false, Effect = SoftShadow() };
-            _tpHole  = new Ellipse { Fill = new SolidColorBrush(Color.FromRgb(150, 150, 168)), IsHitTestVisible = false };
-            _tpPile  = new Ellipse { Fill = Brushes.White, Stroke = PaperOutline, StrokeThickness = 1.5, IsHitTestVisible = false, Effect = SoftShadow() };
+            _tpRoll = new Ellipse { Fill = Brushes.White, Stroke = PaperOutline, StrokeThickness = 1.5, IsHitTestVisible = false, Effect = SoftShadow() };
+            _tpHole = new Ellipse { Fill = new SolidColorBrush(Color.FromRgb(150, 150, 168)), IsHitTestVisible = false };
+            _tpPile = new Ellipse { Fill = Brushes.White, Stroke = PaperOutline, StrokeThickness = 1.5, IsHitTestVisible = false, Effect = SoftShadow() };
 
             EnsureVisible();
             // z-order: pole/base behind, then sheet, then roll + hole on top.
@@ -174,8 +178,8 @@ public sealed class EffectsOverlay : Window
         }
 
         // Local (overlay) coordinates.
-        double catCx  = catLeft + catW / 2 - Left;
-        double feetY  = catTop + catH - Top;
+        double catCx = catLeft + catW / 2 - Left;
+        double feetY = catTop + catH - Top;
 
         // Holder stands right beside the cat (on the roomier side), with the roll up at about
         // the cat's reaching-paw height so the paper hangs down next to the paw.
@@ -223,9 +227,11 @@ public sealed class EffectsOverlay : Window
         EnsureVisible();
         var pebble = new Ellipse
         {
-            Width = 12, Height = 12,
+            Width = 12,
+            Height = 12,
             Fill = new SolidColorBrush(Color.FromRgb(120, 116, 130)),
-            Stroke = new SolidColorBrush(Color.FromRgb(80, 78, 92)), StrokeThickness = 1,
+            Stroke = new SolidColorBrush(Color.FromRgb(80, 78, 92)),
+            StrokeThickness = 1,
             IsHitTestVisible = false
         };
         Canvas.SetLeft(pebble, screenX - Left - 6);
@@ -253,12 +259,12 @@ public sealed class EffectsOverlay : Window
     }
 
     // ── Speech bubble (AI companion) — a rounded card floating above the cat's head ──
-    private Border?    _bubble;
+    private Border? _bubble;
     private TextBlock? _bubbleInk;
-    private string     _bubbleCurrent = "";
-    private static readonly SolidColorBrush BubbleFill   = new(Color.FromRgb(255, 255, 255));
+    private string _bubbleCurrent = "";
+    private static readonly SolidColorBrush BubbleFill = new(Color.FromRgb(255, 255, 255));
     private static readonly SolidColorBrush BubbleStroke = new(Color.FromRgb(190, 180, 214));
-    private static readonly SolidColorBrush BubbleInk    = new(Color.FromRgb(58, 50, 72));
+    private static readonly SolidColorBrush BubbleInk = new(Color.FromRgb(58, 50, 72));
 
     /// <summary>Draw/refresh a speech bubble centred above the cat. Re-called every frame so it tracks the cat.</summary>
     public void DrawSpeechBubble(double catLeft, double catTop, double catW, double catH, string text)
@@ -268,14 +274,22 @@ public sealed class EffectsOverlay : Window
         {
             _bubbleInk = new TextBlock
             {
-                Foreground = BubbleInk, FontSize = 13, TextWrapping = TextWrapping.Wrap,
-                MaxWidth = 220, IsHitTestVisible = false
+                Foreground = BubbleInk,
+                FontSize = 13,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 220,
+                IsHitTestVisible = false
             };
             _bubble = new Border
             {
-                Background = BubbleFill, BorderBrush = BubbleStroke, BorderThickness = new Thickness(1.5),
-                CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 7, 10, 7),
-                IsHitTestVisible = false, Effect = SoftShadow(), Child = _bubbleInk
+                Background = BubbleFill,
+                BorderBrush = BubbleStroke,
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(10, 7, 10, 7),
+                IsHitTestVisible = false,
+                Effect = SoftShadow(),
+                Child = _bubbleInk
             };
             _canvas.Children.Add(_bubble);
         }
@@ -288,7 +302,7 @@ public sealed class EffectsOverlay : Window
             _bubble.Measure(new System.Windows.Size(240, double.PositiveInfinity));
         }
 
-        double bw = _bubble.DesiredSize.Width  > 0 ? _bubble.DesiredSize.Width  : 60;
+        double bw = _bubble.DesiredSize.Width > 0 ? _bubble.DesiredSize.Width : 60;
         double bh = _bubble.DesiredSize.Height > 0 ? _bubble.DesiredSize.Height : 30;
 
         // Overlay-local coords (same conversion as DrawToiletPaper): centred above the cat's head.
@@ -298,7 +312,7 @@ public sealed class EffectsOverlay : Window
         double y = headY - bh - 8;
 
         // Keep the whole bubble on-screen.
-        x = Math.Max(2, Math.Min(x, Width  - bw - 2));
+        x = Math.Max(2, Math.Min(x, Width - bw - 2));
         y = Math.Max(2, Math.Min(y, Height - bh - 2));
         Canvas.SetLeft(_bubble, x);
         Canvas.SetTop(_bubble, y);
@@ -329,9 +343,9 @@ public sealed class EffectsOverlay : Window
 
         var tb = new TextBlock
         {
-            Text             = symbols[_rng.Next(symbols.Length)],
-            FontSize         = 18 + _rng.Next(12),
-            Foreground       = new SolidColorBrush(Color.FromRgb(r, g, b)),
+            Text = symbols[_rng.Next(symbols.Length)],
+            FontSize = 18 + _rng.Next(12),
+            Foreground = new SolidColorBrush(Color.FromRgb(r, g, b)),
             IsHitTestVisible = false
         };
 

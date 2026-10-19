@@ -15,11 +15,11 @@ namespace DesktopPet.UI;
 
 public partial class SettingsWindow : Window
 {
-    private readonly AppSettings     _settings;
+    private readonly AppSettings _settings;
     private readonly SettingsService _service;
-    private readonly Action?         _onChanged;
+    private readonly Action? _onChanged;
     private readonly Func<Task<string>>? _onCheckUpdate;
-    private readonly Action?         _onResetPosition;
+    private readonly Action? _onResetPosition;
     private readonly Action<string, string>? _onTriggerDevEvent;
     private readonly string _initialPet;
     private bool _loaded;
@@ -31,65 +31,65 @@ public partial class SettingsWindow : Window
                           Action<string, string>? onTriggerDevEvent = null)
     {
         InitializeComponent();
-        _settings          = settings;
-        _service           = service;
-        _onChanged         = onChanged;
-        _onCheckUpdate     = onCheckUpdate;
-        _onResetPosition   = onResetPosition;
+        _settings = settings;
+        _service = service;
+        _onChanged = onChanged;
+        _onCheckUpdate = onCheckUpdate;
+        _onResetPosition = onResetPosition;
         _onTriggerDevEvent = onTriggerDevEvent;
-        _initialPet        = settings.ActivePet;
+        _initialPet = settings.ActivePet;
 
         // Appearance
-        SpeedSlider.Value            = settings.Speed;
-        OpacitySlider.Value          = settings.Opacity;
+        SpeedSlider.Value = settings.Speed;
+        OpacitySlider.Value = settings.Opacity;
 
         // Behavior
-        AutonomousWanderBox.IsChecked= settings.EnableAutonomousWandering;
-        WindowWalkingBox.IsChecked   = settings.EnableWindowWalking;
-        CursorChaseBox.IsChecked     = settings.EnableCursorChase;
+        AutonomousWanderBox.IsChecked = settings.EnableAutonomousWandering;
+        WindowWalkingBox.IsChecked = settings.EnableWindowWalking;
+        CursorChaseBox.IsChecked = settings.EnableCursorChase;
         RandomReactionsBox.IsChecked = settings.EnableRandomReactions;
-        SleepBox.IsChecked           = settings.EnableSleep;
-        ScrollPlayBox.IsChecked      = settings.EnableScrollPlay;
-        MoodsBox.IsChecked           = settings.EnableMoods;
+        SleepBox.IsChecked = settings.EnableSleep;
+        ScrollPlayBox.IsChecked = settings.EnableScrollPlay;
+        MoodsBox.IsChecked = settings.EnableMoods;
         SystemReactionsBox.IsChecked = settings.EnableSystemReactions;
-        TaskReactionsBox.IsChecked   = settings.EnableTaskReactions;
-        SmoothMovementBox.IsChecked  = settings.EnableSmoothMovement;
-        EdgeRestingBox.IsChecked     = settings.EnableEdgeResting;
+        TaskReactionsBox.IsChecked = settings.EnableTaskReactions;
+        SmoothMovementBox.IsChecked = settings.EnableSmoothMovement;
+        EdgeRestingBox.IsChecked = settings.EnableEdgeResting;
         ToyInteractionsBox.IsChecked = settings.EnableToyInteractions;
 
         // Dropzone
-        DropzoneBox.IsChecked        = settings.EnableDropzone;
-        DropzonePanel.Visibility     = settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
+        DropzoneBox.IsChecked = settings.EnableDropzone;
+        DropzonePanel.Visibility = settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
         SelectByTag(DropzoneActionBox, settings.DropzoneDefaultAction, fallbackIndex: 0);
 
         // Productivity Alerts
         UpcomingTaskRemindersBox.IsChecked = settings.EnableUpcomingTaskReminders;
-        OverdueTaskRemindersBox.IsChecked  = settings.EnableOverdueTaskReminders;
+        OverdueTaskRemindersBox.IsChecked = settings.EnableOverdueTaskReminders;
         FocusCompletedRemindersBox.IsChecked = settings.EnableFocusCompletedReminders;
         BreakCompletedRemindersBox.IsChecked = settings.EnableBreakCompletedReminders;
 
         // Performance
-        ReducedMotionBox.IsChecked     = settings.ReducedMotion;
-        BatteryConsciousBox.IsChecked  = settings.BatteryConscious;
+        ReducedMotionBox.IsChecked = settings.ReducedMotion;
+        BatteryConsciousBox.IsChecked = settings.BatteryConscious;
         DisableMonitoringBox.IsChecked = settings.DisableOptionalMonitoring;
-        QuietModeBox.IsChecked         = settings.EnableQuietMode;
-        HidePresentBox.IsChecked       = settings.HideWhenPresenting;
+        QuietModeBox.IsChecked = settings.EnableQuietMode;
+        HidePresentBox.IsChecked = settings.HideWhenPresenting;
         SoftwareRenderingBox.IsChecked = settings.UseSoftwareRendering;
 
         // Developer
         DevEventsBox.IsChecked = settings.EnableDeveloperEvents;
-        DevPortBox.Text        = settings.DeveloperPort.ToString();
-        DevPanel.Visibility    = settings.EnableDeveloperEvents ? Visibility.Visible : Visibility.Collapsed;
+        DevPortBox.Text = settings.DeveloperPort.ToString();
+        DevPanel.Visibility = settings.EnableDeveloperEvents ? Visibility.Visible : Visibility.Collapsed;
 
         // Agent Companion
         AgentCompanionBox.IsChecked = settings.EnableAgentCompanion;
         AgentReactionsBox.IsChecked = settings.EnableAgentReactions;
-        AgentStartedBox.IsChecked   = settings.EnableAgentStartedReaction;
-        AgentWaitingBox.IsChecked   = settings.EnableAgentWaitingReaction;
+        AgentStartedBox.IsChecked = settings.EnableAgentStartedReaction;
+        AgentWaitingBox.IsChecked = settings.EnableAgentWaitingReaction;
         AgentCompletedBox.IsChecked = settings.EnableAgentCompletedReaction;
-        AgentFailedBox.IsChecked    = settings.EnableAgentFailedReaction;
-        AgentIdleBox.IsChecked      = settings.EnableAgentIdleReaction;
-        AgentPanel.Visibility       = settings.EnableAgentCompanion ? Visibility.Visible : Visibility.Collapsed;
+        AgentFailedBox.IsChecked = settings.EnableAgentFailedReaction;
+        AgentIdleBox.IsChecked = settings.EnableAgentIdleReaction;
+        AgentPanel.Visibility = settings.EnableAgentCompanion ? Visibility.Visible : Visibility.Collapsed;
 
         // DeskSense
         DeskSenseBox.IsChecked = settings.EnableDeskSense;
@@ -123,9 +123,9 @@ public partial class SettingsWindow : Window
         HealthPanel.Visibility = settings.EnableSystemHealthMonitoring ? Visibility.Visible : Visibility.Collapsed;
 
         // System
-        AutostartBox.IsChecked     = AutostartService.IsEnabled();
-        ClickThroughBox.IsChecked  = settings.ClickThrough;
-        AutoUpdateBox.IsChecked    = settings.EnableAutoUpdate;
+        AutostartBox.IsChecked = AutostartService.IsEnabled();
+        ClickThroughBox.IsChecked = settings.ClickThrough;
+        AutoUpdateBox.IsChecked = settings.EnableAutoUpdate;
         RememberStateBox.IsChecked = settings.RememberPetState;
         CommandPaletteHotkeyBox.IsChecked = settings.EnableCommandPaletteHotkey;
         PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)settings.CommandPaletteHotkeyModifiers, (Key)settings.CommandPaletteHotkeyKey);
@@ -176,7 +176,7 @@ public partial class SettingsWindow : Window
     /// initial values doesn't trigger a save-and-reapply storm on open.</summary>
     private void WireUp()
     {
-        SpeedSlider.ValueChanged   += (_, _) => Apply();
+        SpeedSlider.ValueChanged += (_, _) => Apply();
         OpacitySlider.ValueChanged += (_, _) => Apply();
 
         foreach (var box in new[]
@@ -197,7 +197,7 @@ public partial class SettingsWindow : Window
                      HealthMonitoringBox, HealthCompanionAlertsBox, HealthHudBox,
                  })
         {
-            box.Checked   += (_, _) => Apply();
+            box.Checked += (_, _) => Apply();
             box.Unchecked += (_, _) => Apply();
         }
 
@@ -234,7 +234,7 @@ public partial class SettingsWindow : Window
         foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, FocusDurationBox, BreakDurationBox, DropzoneActionBox })
             combo.SelectionChanged += (_, _) => Apply();
 
-        DevPortBox.TextChanged    += (_, _) => Apply();
+        DevPortBox.TextChanged += (_, _) => Apply();
     }
 
     private static void SelectByTag(ComboBox box, string tag, int fallbackIndex)
@@ -318,23 +318,23 @@ public partial class SettingsWindow : Window
     {
         if (!_loaded) return;
 
-        _settings.Speed                      = SpeedSlider.Value;
-        _settings.Opacity                    = OpacitySlider.Value;
-        _settings.EnableAutonomousWandering  = AutonomousWanderBox.IsChecked == true;
-        _settings.EnableWindowWalking        = WindowWalkingBox.IsChecked    == true;
-        _settings.EnableCursorChase          = CursorChaseBox.IsChecked      == true;
-        _settings.EnableRandomReactions      = RandomReactionsBox.IsChecked  == true;
-        _settings.EnableSleep                = SleepBox.IsChecked            == true;
-        _settings.EnableScrollPlay           = ScrollPlayBox.IsChecked       == true;
-        _settings.EnableMoods                = MoodsBox.IsChecked            == true;
-        _settings.EnableSystemReactions      = SystemReactionsBox.IsChecked  == true;
-        _settings.EnableTaskReactions        = TaskReactionsBox.IsChecked    == true;
-        _settings.EnableSmoothMovement       = SmoothMovementBox.IsChecked   == true;
-        _settings.EnableEdgeResting          = EdgeRestingBox.IsChecked      == true;
-        _settings.EnableToyInteractions      = ToyInteractionsBox.IsChecked  == true;
+        _settings.Speed = SpeedSlider.Value;
+        _settings.Opacity = OpacitySlider.Value;
+        _settings.EnableAutonomousWandering = AutonomousWanderBox.IsChecked == true;
+        _settings.EnableWindowWalking = WindowWalkingBox.IsChecked == true;
+        _settings.EnableCursorChase = CursorChaseBox.IsChecked == true;
+        _settings.EnableRandomReactions = RandomReactionsBox.IsChecked == true;
+        _settings.EnableSleep = SleepBox.IsChecked == true;
+        _settings.EnableScrollPlay = ScrollPlayBox.IsChecked == true;
+        _settings.EnableMoods = MoodsBox.IsChecked == true;
+        _settings.EnableSystemReactions = SystemReactionsBox.IsChecked == true;
+        _settings.EnableTaskReactions = TaskReactionsBox.IsChecked == true;
+        _settings.EnableSmoothMovement = SmoothMovementBox.IsChecked == true;
+        _settings.EnableEdgeResting = EdgeRestingBox.IsChecked == true;
+        _settings.EnableToyInteractions = ToyInteractionsBox.IsChecked == true;
 
         // Dropzone
-        _settings.EnableDropzone             = DropzoneBox.IsChecked         == true;
+        _settings.EnableDropzone = DropzoneBox.IsChecked == true;
         string dropAction = TagOf(DropzoneActionBox);
         if (!string.IsNullOrEmpty(dropAction))
         {
@@ -342,61 +342,61 @@ public partial class SettingsWindow : Window
         }
         DropzonePanel.Visibility = _settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
 
-        _settings.EnableUpcomingTaskReminders   = UpcomingTaskRemindersBox.IsChecked   == true;
-        _settings.EnableOverdueTaskReminders    = OverdueTaskRemindersBox.IsChecked    == true;
+        _settings.EnableUpcomingTaskReminders = UpcomingTaskRemindersBox.IsChecked == true;
+        _settings.EnableOverdueTaskReminders = OverdueTaskRemindersBox.IsChecked == true;
         _settings.EnableFocusCompletedReminders = FocusCompletedRemindersBox.IsChecked == true;
         _settings.EnableBreakCompletedReminders = BreakCompletedRemindersBox.IsChecked == true;
-        _settings.ReducedMotion              = ReducedMotionBox.IsChecked    == true;
-        _settings.BatteryConscious           = BatteryConsciousBox.IsChecked == true;
-        _settings.DisableOptionalMonitoring  = DisableMonitoringBox.IsChecked == true;
-        _settings.EnableQuietMode            = QuietModeBox.IsChecked        == true;
-        _settings.HideWhenPresenting         = HidePresentBox.IsChecked      == true;
-        _settings.UseSoftwareRendering       = SoftwareRenderingBox.IsChecked == true;
-        _settings.EnableDeveloperEvents      = DevEventsBox.IsChecked        == true;
+        _settings.ReducedMotion = ReducedMotionBox.IsChecked == true;
+        _settings.BatteryConscious = BatteryConsciousBox.IsChecked == true;
+        _settings.DisableOptionalMonitoring = DisableMonitoringBox.IsChecked == true;
+        _settings.EnableQuietMode = QuietModeBox.IsChecked == true;
+        _settings.HideWhenPresenting = HidePresentBox.IsChecked == true;
+        _settings.UseSoftwareRendering = SoftwareRenderingBox.IsChecked == true;
+        _settings.EnableDeveloperEvents = DevEventsBox.IsChecked == true;
         if (int.TryParse(DevPortBox.Text.Trim(), out int port) && port > 1024 && port < 65535)
             _settings.DeveloperPort = port;
 
         DevPanel.Visibility = _settings.EnableDeveloperEvents ? Visibility.Visible : Visibility.Collapsed;
 
         // Agent Companion
-        _settings.EnableAgentCompanion       = AgentCompanionBox.IsChecked == true;
-        _settings.EnableAgentReactions       = AgentReactionsBox.IsChecked == true;
+        _settings.EnableAgentCompanion = AgentCompanionBox.IsChecked == true;
+        _settings.EnableAgentReactions = AgentReactionsBox.IsChecked == true;
         _settings.EnableAgentStartedReaction = AgentStartedBox.IsChecked == true;
         _settings.EnableAgentWaitingReaction = AgentWaitingBox.IsChecked == true;
         _settings.EnableAgentCompletedReaction = AgentCompletedBox.IsChecked == true;
-        _settings.EnableAgentFailedReaction  = AgentFailedBox.IsChecked == true;
-        _settings.EnableAgentIdleReaction    = AgentIdleBox.IsChecked == true;
+        _settings.EnableAgentFailedReaction = AgentFailedBox.IsChecked == true;
+        _settings.EnableAgentIdleReaction = AgentIdleBox.IsChecked == true;
 
         // DeskSense
-        _settings.EnableDeskSense                   = DeskSenseBox.IsChecked == true;
-        _settings.EnableForegroundAppDetection      = DeskSenseForegroundBox.IsChecked == true;
-        _settings.EnableIdleDetection               = DeskSenseIdleBox.IsChecked == true;
-        _settings.IdleThresholdSeconds              = (int)DeskSenseIdleSlider.Value;
-        _settings.EnableDeskSenseReactions          = DeskSenseReactionsBox.IsChecked == true;
-        _settings.EnableCodingStartedReaction       = DeskSenseCodingBox.IsChecked == true;
-        _settings.EnableTerminalActiveReaction      = DeskSenseTerminalBox.IsChecked == true;
-        _settings.EnableUserIdleReaction            = DeskSenseIdleReactionBox.IsChecked == true;
-        _settings.EnableUserReturnedReaction        = DeskSenseReturnedBox.IsChecked == true;
+        _settings.EnableDeskSense = DeskSenseBox.IsChecked == true;
+        _settings.EnableForegroundAppDetection = DeskSenseForegroundBox.IsChecked == true;
+        _settings.EnableIdleDetection = DeskSenseIdleBox.IsChecked == true;
+        _settings.IdleThresholdSeconds = (int)DeskSenseIdleSlider.Value;
+        _settings.EnableDeskSenseReactions = DeskSenseReactionsBox.IsChecked == true;
+        _settings.EnableCodingStartedReaction = DeskSenseCodingBox.IsChecked == true;
+        _settings.EnableTerminalActiveReaction = DeskSenseTerminalBox.IsChecked == true;
+        _settings.EnableUserIdleReaction = DeskSenseIdleReactionBox.IsChecked == true;
+        _settings.EnableUserReturnedReaction = DeskSenseReturnedBox.IsChecked == true;
         _settings.EnablePresentationStartedReaction = DeskSensePresentationBox.IsChecked == true;
         DeskSensePanel.Visibility = _settings.EnableDeskSense ? Visibility.Visible : Visibility.Collapsed;
 
         // Radar
-        _settings.EnableDeveloperRadar        = RadarEnabledBox.IsChecked == true;
-        _settings.EnableDeveloperHud          = RadarHudBox.IsChecked == true;
-        _settings.PauseRepositoryMonitoring   = RadarPauseBox.IsChecked == true;
+        _settings.EnableDeveloperRadar = RadarEnabledBox.IsChecked == true;
+        _settings.EnableDeveloperHud = RadarHudBox.IsChecked == true;
+        _settings.PauseRepositoryMonitoring = RadarPauseBox.IsChecked == true;
         RadarPanel.Visibility = _settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
 
         // System Health
         _settings.EnableSystemHealthMonitoring = HealthMonitoringBox.IsChecked == true;
-        _settings.EnableHealthCompanionAlerts  = HealthCompanionAlertsBox.IsChecked == true;
-        _settings.EnableHealthHud              = HealthHudBox.IsChecked == true;
-        _settings.SystemHealthCpuThreshold     = (int)HealthCpuSlider.Value;
-        _settings.SystemHealthRamThreshold     = (int)HealthRamSlider.Value;
+        _settings.EnableHealthCompanionAlerts = HealthCompanionAlertsBox.IsChecked == true;
+        _settings.EnableHealthHud = HealthHudBox.IsChecked == true;
+        _settings.SystemHealthCpuThreshold = (int)HealthCpuSlider.Value;
+        _settings.SystemHealthRamThreshold = (int)HealthRamSlider.Value;
         HealthPanel.Visibility = _settings.EnableSystemHealthMonitoring ? Visibility.Visible : Visibility.Collapsed;
 
-        _settings.ClickThrough               = ClickThroughBox.IsChecked     == true;
-        _settings.EnableAutoUpdate           = AutoUpdateBox.IsChecked       == true;
-        _settings.RememberPetState           = RememberStateBox.IsChecked    == true;
+        _settings.ClickThrough = ClickThroughBox.IsChecked == true;
+        _settings.EnableAutoUpdate = AutoUpdateBox.IsChecked == true;
+        _settings.RememberPetState = RememberStateBox.IsChecked == true;
         _settings.EnableCommandPaletteHotkey = CommandPaletteHotkeyBox.IsChecked == true;
 
         bool autostart = AutostartBox.IsChecked == true;
@@ -459,45 +459,87 @@ public partial class SettingsWindow : Window
 
         e.Handled = true;
         _settings.CommandPaletteHotkeyModifiers = (int)mods;
-        _settings.CommandPaletteHotkeyKey       = (int)k;
-        PaletteHotkeyCaptureBox.Text            = HotkeyService.FormatHotkey(mods, k);
+        _settings.CommandPaletteHotkeyKey = (int)k;
+        PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey(mods, k);
         Apply();
         UpdatePaletteHotkeyStatus();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        HandleKeyDown(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers, e);
+    }
+
+    internal void HandleKeyDown(Key key, ModifierKeys modifiers, KeyEventArgs? e = null)
+    {
+        if (key == Key.Escape)
         {
             if (PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || (FocusManager.GetFocusedElement(this) is TextBox))
             {
                 Keyboard.ClearFocus();
-                e.Handled = true;
+                if (e != null) e.Handled = true;
                 return;
             }
 
             Close();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
             return;
         }
 
-        if (e.Key == Key.W && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        if (key == Key.W && (modifiers & ModifierKeys.Control) == ModifierKeys.Control)
         {
             Close();
-            e.Handled = true;
+            if (e != null) e.Handled = true;
             return;
         }
 
         // Allow opening Command Palette via Ctrl+P, Ctrl+Shift+P, or Ctrl+Alt+P when not capturing hotkey
-        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && e.Key == Key.P)
+        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && key == Key.P)
         {
-            var mods = Keyboard.Modifiers;
-            if (mods == ModifierKeys.Control ||
-                mods == (ModifierKeys.Control | ModifierKeys.Shift) ||
-                mods == (ModifierKeys.Control | ModifierKeys.Alt))
+            if (modifiers == ModifierKeys.Control ||
+                modifiers == (ModifierKeys.Control | ModifierKeys.Shift) ||
+                modifiers == (ModifierKeys.Control | ModifierKeys.Alt))
             {
                 App.CurrentApp?.ToggleCommandPalette();
-                e.Handled = true;
+                if (e != null) e.Handled = true;
+                return;
+            }
+        }
+
+        // Ctrl+Tab / Ctrl+Shift+Tab cycling through tabs
+        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && (modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
+        {
+            int count = SettingsTabControl.Items.Count;
+            if (count > 0)
+            {
+                bool reverse = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+                int current = SettingsTabControl.SelectedIndex;
+                if (current < 0) current = 0;
+                int next = reverse ? (current - 1 + count) % count : (current + 1) % count;
+                SettingsTabControl.SelectedIndex = next;
+                if (e != null) e.Handled = true;
+                return;
+            }
+        }
+
+        // Ctrl + 1..6 direct tab navigation
+        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && modifiers == ModifierKeys.Control)
+        {
+            int targetTab = key switch
+            {
+                Key.D1 or Key.NumPad1 => 0,
+                Key.D2 or Key.NumPad2 => 1,
+                Key.D3 or Key.NumPad3 => 2,
+                Key.D4 or Key.NumPad4 => 3,
+                Key.D5 or Key.NumPad5 => 4,
+                Key.D6 or Key.NumPad6 => 5,
+                _ => -1
+            };
+
+            if (targetTab >= 0 && targetTab < SettingsTabControl.Items.Count)
+            {
+                SettingsTabControl.SelectedIndex = targetTab;
+                if (e != null) e.Handled = true;
                 return;
             }
         }
@@ -506,8 +548,8 @@ public partial class SettingsWindow : Window
     private void ResetPaletteHotkeyButton_Click(object sender, RoutedEventArgs e)
     {
         _settings.CommandPaletteHotkeyModifiers = (int)(ModifierKeys.Control | ModifierKeys.Alt);
-        _settings.CommandPaletteHotkeyKey       = (int)Key.P;
-        PaletteHotkeyCaptureBox.Text            = HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
+        _settings.CommandPaletteHotkeyKey = (int)Key.P;
+        PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
         Apply();
         UpdatePaletteHotkeyStatus();
     }
@@ -567,66 +609,66 @@ public partial class SettingsWindow : Window
         if (answer == MessageBoxResult.Yes)
         {
             var def = new AppSettings();
-            _settings.Speed                     = def.Speed;
-            _settings.Opacity                   = def.Opacity;
-            _settings.SizeScale                 = def.SizeScale;
+            _settings.Speed = def.Speed;
+            _settings.Opacity = def.Opacity;
+            _settings.SizeScale = def.SizeScale;
             _settings.EnableAutonomousWandering = def.EnableAutonomousWandering;
-            _settings.EnableWindowWalking       = def.EnableWindowWalking;
-            _settings.EnableCursorChase         = def.EnableCursorChase;
-            _settings.EnableRandomReactions     = def.EnableRandomReactions;
-            _settings.EnableSleep               = def.EnableSleep;
-            _settings.EnableScrollPlay          = def.EnableScrollPlay;
-            _settings.ReducedMotion             = def.ReducedMotion;
-            _settings.BatteryConscious          = def.BatteryConscious;
+            _settings.EnableWindowWalking = def.EnableWindowWalking;
+            _settings.EnableCursorChase = def.EnableCursorChase;
+            _settings.EnableRandomReactions = def.EnableRandomReactions;
+            _settings.EnableSleep = def.EnableSleep;
+            _settings.EnableScrollPlay = def.EnableScrollPlay;
+            _settings.ReducedMotion = def.ReducedMotion;
+            _settings.BatteryConscious = def.BatteryConscious;
             _settings.DisableOptionalMonitoring = def.DisableOptionalMonitoring;
-            _settings.EnableQuietMode           = def.EnableQuietMode;
-            _settings.HideWhenPresenting        = def.HideWhenPresenting;
-            _settings.EnableDeveloperEvents     = def.EnableDeveloperEvents;
-            _settings.ClickThrough              = def.ClickThrough;
-            _settings.StretchIntervalMinutes    = def.StretchIntervalMinutes;
-            _settings.EnableCommandPaletteHotkey    = def.EnableCommandPaletteHotkey;
+            _settings.EnableQuietMode = def.EnableQuietMode;
+            _settings.HideWhenPresenting = def.HideWhenPresenting;
+            _settings.EnableDeveloperEvents = def.EnableDeveloperEvents;
+            _settings.ClickThrough = def.ClickThrough;
+            _settings.StretchIntervalMinutes = def.StretchIntervalMinutes;
+            _settings.EnableCommandPaletteHotkey = def.EnableCommandPaletteHotkey;
             _settings.CommandPaletteHotkeyModifiers = def.CommandPaletteHotkeyModifiers;
-            _settings.CommandPaletteHotkeyKey       = def.CommandPaletteHotkeyKey;
-            _settings.EnableSmoothMovement          = def.EnableSmoothMovement;
-            _settings.EnableEdgeResting             = def.EnableEdgeResting;
-            _settings.EnableToyInteractions         = def.EnableToyInteractions;
-            _settings.EnableDropzone                = def.EnableDropzone;
-            _settings.DropzoneDefaultAction         = def.DropzoneDefaultAction;
-            _settings.EnableSystemHealthMonitoring  = def.EnableSystemHealthMonitoring;
-            _settings.EnableHealthCompanionAlerts   = def.EnableHealthCompanionAlerts;
-            _settings.EnableHealthHud               = def.EnableHealthHud;
-            _settings.SystemHealthCpuThreshold      = def.SystemHealthCpuThreshold;
-            _settings.SystemHealthRamThreshold      = def.SystemHealthRamThreshold;
+            _settings.CommandPaletteHotkeyKey = def.CommandPaletteHotkeyKey;
+            _settings.EnableSmoothMovement = def.EnableSmoothMovement;
+            _settings.EnableEdgeResting = def.EnableEdgeResting;
+            _settings.EnableToyInteractions = def.EnableToyInteractions;
+            _settings.EnableDropzone = def.EnableDropzone;
+            _settings.DropzoneDefaultAction = def.DropzoneDefaultAction;
+            _settings.EnableSystemHealthMonitoring = def.EnableSystemHealthMonitoring;
+            _settings.EnableHealthCompanionAlerts = def.EnableHealthCompanionAlerts;
+            _settings.EnableHealthHud = def.EnableHealthHud;
+            _settings.SystemHealthCpuThreshold = def.SystemHealthCpuThreshold;
+            _settings.SystemHealthRamThreshold = def.SystemHealthRamThreshold;
 
-            SpeedSlider.Value            = _settings.Speed;
-            OpacitySlider.Value          = _settings.Opacity;
-            AutonomousWanderBox.IsChecked= _settings.EnableAutonomousWandering;
-            WindowWalkingBox.IsChecked   = _settings.EnableWindowWalking;
-            CursorChaseBox.IsChecked     = _settings.EnableCursorChase;
+            SpeedSlider.Value = _settings.Speed;
+            OpacitySlider.Value = _settings.Opacity;
+            AutonomousWanderBox.IsChecked = _settings.EnableAutonomousWandering;
+            WindowWalkingBox.IsChecked = _settings.EnableWindowWalking;
+            CursorChaseBox.IsChecked = _settings.EnableCursorChase;
             RandomReactionsBox.IsChecked = _settings.EnableRandomReactions;
-            SleepBox.IsChecked           = _settings.EnableSleep;
-            ScrollPlayBox.IsChecked      = _settings.EnableScrollPlay;
-            SmoothMovementBox.IsChecked  = _settings.EnableSmoothMovement;
-            EdgeRestingBox.IsChecked     = _settings.EnableEdgeResting;
+            SleepBox.IsChecked = _settings.EnableSleep;
+            ScrollPlayBox.IsChecked = _settings.EnableScrollPlay;
+            SmoothMovementBox.IsChecked = _settings.EnableSmoothMovement;
+            EdgeRestingBox.IsChecked = _settings.EnableEdgeResting;
             ToyInteractionsBox.IsChecked = _settings.EnableToyInteractions;
-            DropzoneBox.IsChecked        = _settings.EnableDropzone;
+            DropzoneBox.IsChecked = _settings.EnableDropzone;
             SelectByTag(DropzoneActionBox, _settings.DropzoneDefaultAction, 0);
 
-            HealthMonitoringBox.IsChecked      = _settings.EnableSystemHealthMonitoring;
+            HealthMonitoringBox.IsChecked = _settings.EnableSystemHealthMonitoring;
             HealthCompanionAlertsBox.IsChecked = _settings.EnableHealthCompanionAlerts;
-            HealthHudBox.IsChecked             = _settings.EnableHealthHud;
-            HealthCpuSlider.Value              = _settings.SystemHealthCpuThreshold;
-            HealthCpuValText.Text              = $"{_settings.SystemHealthCpuThreshold}%";
-            HealthRamSlider.Value              = _settings.SystemHealthRamThreshold;
-            HealthRamValText.Text              = $"{_settings.SystemHealthRamThreshold}%";
+            HealthHudBox.IsChecked = _settings.EnableHealthHud;
+            HealthCpuSlider.Value = _settings.SystemHealthCpuThreshold;
+            HealthCpuValText.Text = $"{_settings.SystemHealthCpuThreshold}%";
+            HealthRamSlider.Value = _settings.SystemHealthRamThreshold;
+            HealthRamValText.Text = $"{_settings.SystemHealthRamThreshold}%";
 
-            ReducedMotionBox.IsChecked   = _settings.ReducedMotion;
-            BatteryConsciousBox.IsChecked= _settings.BatteryConscious;
+            ReducedMotionBox.IsChecked = _settings.ReducedMotion;
+            BatteryConsciousBox.IsChecked = _settings.BatteryConscious;
             DisableMonitoringBox.IsChecked = _settings.DisableOptionalMonitoring;
-            QuietModeBox.IsChecked       = _settings.EnableQuietMode;
-            HidePresentBox.IsChecked     = _settings.HideWhenPresenting;
-            DevEventsBox.IsChecked       = _settings.EnableDeveloperEvents;
-            ClickThroughBox.IsChecked    = _settings.ClickThrough;
+            QuietModeBox.IsChecked = _settings.EnableQuietMode;
+            HidePresentBox.IsChecked = _settings.HideWhenPresenting;
+            DevEventsBox.IsChecked = _settings.EnableDeveloperEvents;
+            ClickThroughBox.IsChecked = _settings.ClickThrough;
             CommandPaletteHotkeyBox.IsChecked = _settings.EnableCommandPaletteHotkey;
             PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)_settings.CommandPaletteHotkeyModifiers, (Key)_settings.CommandPaletteHotkeyKey);
 
@@ -642,7 +684,7 @@ public partial class SettingsWindow : Window
         if (_onCheckUpdate == null) return;
         UpdateCheckButton.IsEnabled = false;
         UpdateResult.Text = "Checking…";
-        try   { UpdateResult.Text = await _onCheckUpdate(); }
+        try { UpdateResult.Text = await _onCheckUpdate(); }
         catch (Exception ex) { UpdateResult.Text = ex.Message; }
         finally { UpdateCheckButton.IsEnabled = true; }
     }

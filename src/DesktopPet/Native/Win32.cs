@@ -7,13 +7,13 @@ namespace DesktopPet.Native;
 /// the internal Win32 class) so the mapping that consumes it can be unit-tested.</summary>
 public enum UserNotificationState
 {
-    NotPresent            = 1, // screensaver / locked / logged off
-    Busy                  = 2, // a full-screen app is running (not D3D)
-    RunningD3dFullScreen  = 3, // a full-screen D3D app - usually a game
-    PresentationMode      = 4, // presentation mode is on
-    AcceptsNotifications  = 5, // the normal, interruptible case
-    QuietTime             = 6, // the first hour after a fresh install, or focus assist
-    AppScreenSaver        = 7,
+    NotPresent = 1, // screensaver / locked / logged off
+    Busy = 2, // a full-screen app is running (not D3D)
+    RunningD3dFullScreen = 3, // a full-screen D3D app - usually a game
+    PresentationMode = 4, // presentation mode is on
+    AcceptsNotifications = 5, // the normal, interruptible case
+    QuietTime = 6, // the first hour after a fresh install, or focus assist
+    AppScreenSaver = 7,
 }
 
 /// <summary>
@@ -214,9 +214,9 @@ internal static class Win32
     private static extern int GetSystemMetrics(int index);
 
     private const uint MONITOR_DEFAULTTOPRIMARY = 1;
-    private const int  MDT_EFFECTIVE_DPI        = 0;
+    private const int MDT_EFFECTIVE_DPI = 0;
     private const uint SWP_NOSIZE = 0x0001, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010;
-    private const int  SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77,
+    private const int SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77,
                        SM_CXVIRTUALSCREEN = 78, SM_CYVIRTUALSCREEN = 79;
 
     /// <summary>
@@ -247,7 +247,7 @@ internal static class Win32
 
     /// <summary>The virtual screen (every monitor together) in physical pixels.</summary>
     public static (int X, int Y, int W, int H) VirtualScreenPhysical() =>
-        (GetSystemMetrics(SM_XVIRTUALSCREEN),  GetSystemMetrics(SM_YVIRTUALSCREEN),
+        (GetSystemMetrics(SM_XVIRTUALSCREEN), GetSystemMetrics(SM_YVIRTUALSCREEN),
          GetSystemMetrics(SM_CXVIRTUALSCREEN), GetSystemMetrics(SM_CYVIRTUALSCREEN));
 
     // ── "Is the user presenting?" ───────────────────────────────────────────

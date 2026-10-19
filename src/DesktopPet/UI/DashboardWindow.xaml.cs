@@ -252,14 +252,20 @@ public partial class DashboardWindow : Window
         }
     }
 
+    private static readonly SolidColorBrush ActiveNavBgBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0x8B, 0x5C, 0xF6));
+    private static readonly SolidColorBrush InactiveNavFgBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0xA7, 0x8B, 0xFA));
+
+    private static SolidColorBrush CreateFrozenBrush(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
+    }
+
     private void UpdateNavButton(Button btn, bool isActive)
     {
-        var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8B5CF6"));
-        var activeFg = Brushes.White;
-        var inactiveFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFA78BFA"));
-
-        btn.Background = isActive ? activeBg : Brushes.Transparent;
-        btn.Foreground = isActive ? activeFg : inactiveFg;
+        btn.Background = isActive ? ActiveNavBgBrush : Brushes.Transparent;
+        btn.Foreground = isActive ? Brushes.White : InactiveNavFgBrush;
     }
 
     private void NavBtn_Click(object sender, RoutedEventArgs e)
@@ -1110,8 +1116,8 @@ public partial class DashboardWindow : Window
     {
         _settings.EnableFocusCompletedReminders = FocusNotifyFocusCheck.IsChecked ?? true;
         _settings.EnableBreakCompletedReminders = FocusNotifyBreakCheck.IsChecked ?? true;
-        _settings.EnableUpcomingTaskReminders   = FocusNotifyUpcomingCheck.IsChecked ?? true;
-        _settings.EnableOverdueTaskReminders    = FocusNotifyOverdueCheck.IsChecked ?? true;
+        _settings.EnableUpcomingTaskReminders = FocusNotifyUpcomingCheck.IsChecked ?? true;
+        _settings.EnableOverdueTaskReminders = FocusNotifyOverdueCheck.IsChecked ?? true;
     }
 
     private void PopulateFocusTaskSelector()
@@ -1787,6 +1793,10 @@ public partial class DashboardWindow : Window
                     SelectTab("Radar");
                     if (e != null) e.Handled = true;
                     return;
+                case Key.D9 or Key.NumPad9:
+                    SelectTab("Health");
+                    if (e != null) e.Handled = true;
+                    return;
                 case Key.N:
                     SelectTab("Tasks");
                     TaskAddNewBtn_Click(this, new RoutedEventArgs());
@@ -1844,7 +1854,7 @@ public partial class DashboardWindow : Window
         // 2. Ctrl+Tab / Ctrl+Shift+Tab (Tab cycling)
         if ((modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
         {
-            string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals", "Agent", "Radar"];
+            string[] tabs = ["Overview", "Tasks", "Focus", "History", "Insights", "Goals", "Agent", "Radar", "Health"];
             int currentIndex = Array.IndexOf(tabs, _currentTab == "AgentActivity" ? "Agent" : _currentTab);
             if (currentIndex < 0) currentIndex = 0;
 

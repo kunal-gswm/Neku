@@ -114,20 +114,20 @@ Right-click Neku and select **Companion Studio...** to access the customization 
 
 ### Release Status
 
-- **Latest Published Release:** **v0.2.1** is available as a portable binary download on the [GitHub Releases](https://github.com/kunal-gswm/Neku/releases) page.
-- **Current Development Version:** Version **0.4.0** (introducing the Inno Setup installer, Companion Studio, Billu, and refined global hotkeys) is in final release preparation on `main`. You can build and run it directly from source today, or download `v0.2.1` from Releases.
+- **Latest Published Release:** **v1.0.0** is available on the [GitHub Releases](https://github.com/kunal-gswm/Neku/releases) page.
+- **Release Highlights:** Neku 1.0 brings Desktop Pet Physics 2.0, virtual desktop toys, Dropzone file/note/task capture, System Health Companion, DeskSense, Developer Radar, local coding-agent monitoring, Pomodoro focus timer, tasks, notes, global command palette, and an official Windows installer.
 
-### Installation Methods (v0.4.0+)
+### Installation Methods (v1.0.0)
 
 #### Option A: Windows Setup Installer (Recommended)
-1. Download `Neku-Setup-x.x.x.exe` from the [Releases](https://github.com/kunal-gswm/Neku/releases) page once published, or build it locally using `.\scripts\build-installer.ps1`.
+1. Download `Neku-Setup-v1.0.0.exe` from the [Releases](https://github.com/kunal-gswm/Neku/releases) page, or build it locally using `.\scripts\build-installer.ps1`.
 2. Run the installer. It will install Neku to `%LocalAppData%\Programs\Neku` without requiring administrator privileges.
 3. Choose whether to add a desktop shortcut or start Neku automatically with Windows.
 4. Manage or uninstall cleanly at any time through Windows **Installed apps** or **Settings**.
 
-#### Option B: Portable Executable
-1. Download `Neku.exe` from [Releases](https://github.com/kunal-gswm/Neku/releases), or build it via `.\scripts\publish.ps1`.
-2. Place `Neku.exe` in any folder of your choice (e.g., `C:\Tools\Neku\`).
+#### Option B: Portable Package / Executable
+1. Download `Neku-v1.0.0-win-x64.zip` (or `Neku.exe`) from [Releases](https://github.com/kunal-gswm/Neku/releases), or build via `.\scripts\publish.ps1`.
+2. Extract or place `Neku.exe` in any folder of your choice (e.g., `C:\Tools\Neku\`).
 3. Double-click to run. All assets are self-contained within the executable.
 
 ### System Requirements

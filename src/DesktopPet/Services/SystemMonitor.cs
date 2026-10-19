@@ -84,11 +84,11 @@ public sealed class SystemMonitor
     /// </summary>
     public static QuietReason MapQuiet(UserNotificationState state) => state switch
     {
-        UserNotificationState.PresentationMode     => QuietReason.Presenting,
+        UserNotificationState.PresentationMode => QuietReason.Presenting,
         UserNotificationState.RunningD3dFullScreen => QuietReason.FullScreenGame,
-        UserNotificationState.Busy                 => QuietReason.FullScreenApp,
-        UserNotificationState.QuietTime            => QuietReason.FocusAssist,
-        _                                                => QuietReason.None,
+        UserNotificationState.Busy => QuietReason.FullScreenApp,
+        UserNotificationState.QuietTime => QuietReason.FocusAssist,
+        _ => QuietReason.None,
     };
 
     private void SampleIdle()

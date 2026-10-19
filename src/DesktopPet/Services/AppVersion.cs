@@ -37,7 +37,7 @@ public static class AppVersion
 
         // Compare only major.minor.build — the revision field is not part of our tags.
         var them = new Version(v.Major, v.Minor, Math.Max(v.Build, 0));
-        var us   = new Version(Current.Major, Current.Minor, Math.Max(Current.Build, 0));
+        var us = new Version(Current.Major, Current.Minor, Math.Max(Current.Build, 0));
         return them > us;
     }
 }

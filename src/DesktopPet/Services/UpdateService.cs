@@ -20,7 +20,7 @@ namespace DesktopPet.Services;
 public sealed class UpdateService
 {
     public const string Owner = "kunal-gswm";
-    public const string Repo  = "Neku";
+    public const string Repo = "Neku";
     public const string LatestReleaseUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest";
 
     private readonly HttpClient _http;
@@ -41,7 +41,7 @@ public sealed class UpdateService
 
     public UpdateService(HttpClient http)
     {
-        _http    = http;
+        _http = http;
         RepoRoot = FindRepoRoot();
     }
 
@@ -135,9 +135,9 @@ public sealed class UpdateService
 
         string currentExe = Environment.ProcessPath
                             ?? Path.Combine(AppContext.BaseDirectory, "Neku.exe");
-        string dir        = Path.GetDirectoryName(currentExe)!;
-        string stagedExe  = Path.Combine(dir, "Neku.new.exe");
-        string script     = Path.Combine(Path.GetTempPath(), "neku_update.cmd");
+        string dir = Path.GetDirectoryName(currentExe)!;
+        string stagedExe = Path.Combine(dir, "Neku.new.exe");
+        string script = Path.Combine(Path.GetTempPath(), "neku_update.cmd");
 
         try
         {
@@ -160,10 +160,10 @@ public sealed class UpdateService
 
             Process.Start(new ProcessStartInfo
             {
-                FileName        = script,
+                FileName = script,
                 UseShellExecute = true,
-                CreateNoWindow  = true,
-                WindowStyle     = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
             });
             return true;
         }

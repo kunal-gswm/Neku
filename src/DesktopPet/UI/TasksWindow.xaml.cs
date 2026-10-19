@@ -182,16 +182,21 @@ public partial class TasksWindow : Window
         CompletedTabBtn.Content = completedCount > 0 ? $"✅ Done ({completedCount})" : "✅ Done";
     }
 
+    private static readonly SolidColorBrush ActiveTabBgBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0x45, 0x2C, 0x63));
+    private static readonly SolidColorBrush ActiveTabBorderBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0x8B, 0x5C, 0xF6));
+    private static readonly SolidColorBrush NormalTabBgBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0x22, 0x1B, 0x30));
+    private static readonly SolidColorBrush NormalTabBorderBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0x38, 0x2F, 0x4A));
+    private static readonly SolidColorBrush NormalTabFgBrush = CreateFrozenBrush(Color.FromArgb(0xFF, 0xA7, 0x8B, 0xFA));
+
+    private static SolidColorBrush CreateFrozenBrush(Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        return brush;
+    }
+
     private void UpdateTabButtons()
     {
-        var activeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF452C63"));
-        var activeBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8B5CF6"));
-        var activeFg = Brushes.White;
-
-        var normalBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF221B30"));
-        var normalBorder = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF382F4A"));
-        var normalFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFA78BFA"));
-
         ApplyTabStyle(TodayTabBtn, _activeTab == "Today");
         ApplyTabStyle(UpcomingTabBtn, _activeTab == "Upcoming");
         ApplyTabStyle(AllTabBtn, _activeTab == "All");
@@ -199,9 +204,9 @@ public partial class TasksWindow : Window
 
         void ApplyTabStyle(Button btn, bool isActive)
         {
-            btn.Background = isActive ? activeBg : normalBg;
-            btn.BorderBrush = isActive ? activeBorder : normalBorder;
-            btn.Foreground = isActive ? activeFg : normalFg;
+            btn.Background = isActive ? ActiveTabBgBrush : NormalTabBgBrush;
+            btn.BorderBrush = isActive ? ActiveTabBorderBrush : NormalTabBorderBrush;
+            btn.Foreground = isActive ? Brushes.White : NormalTabFgBrush;
             btn.FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal;
         }
     }

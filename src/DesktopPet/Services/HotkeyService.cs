@@ -34,8 +34,8 @@ public sealed class HotkeyService : IDisposable
     {
         var parts = new List<string>();
         if (mods.HasFlag(ModifierKeys.Control)) parts.Add("Ctrl");
-        if (mods.HasFlag(ModifierKeys.Alt))     parts.Add("Alt");
-        if (mods.HasFlag(ModifierKeys.Shift))   parts.Add("Shift");
+        if (mods.HasFlag(ModifierKeys.Alt)) parts.Add("Alt");
+        if (mods.HasFlag(ModifierKeys.Shift)) parts.Add("Shift");
         if (mods.HasFlag(ModifierKeys.Windows)) parts.Add("Win");
         parts.Add(key.ToString());
         return string.Join(" + ", parts);
@@ -44,7 +44,7 @@ public sealed class HotkeyService : IDisposable
     /// <summary>Hook the host window so WM_HOTKEY messages reach us.</summary>
     public void Attach(IntPtr hwnd)
     {
-        _hwnd   = hwnd;
+        _hwnd = hwnd;
         _source = HwndSource.FromHwnd(hwnd);
         _source?.AddHook(WndProc);
     }
@@ -58,9 +58,9 @@ public sealed class HotkeyService : IDisposable
         if (_hwnd == IntPtr.Zero || key == Key.None) return false;
 
         uint fs = MOD_NOREPEAT;
-        if (mods.HasFlag(ModifierKeys.Alt))     fs |= MOD_ALT;
+        if (mods.HasFlag(ModifierKeys.Alt)) fs |= MOD_ALT;
         if (mods.HasFlag(ModifierKeys.Control)) fs |= MOD_CONTROL;
-        if (mods.HasFlag(ModifierKeys.Shift))   fs |= MOD_SHIFT;
+        if (mods.HasFlag(ModifierKeys.Shift)) fs |= MOD_SHIFT;
         if (mods.HasFlag(ModifierKeys.Windows)) fs |= MOD_WIN;
 
         uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);

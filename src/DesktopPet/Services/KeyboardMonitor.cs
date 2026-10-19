@@ -45,7 +45,7 @@ public sealed class KeyboardMonitor : IDisposable
         }
     }
 
-    public bool IsTyping     => KeysPerSecond > 1.0f;
+    public bool IsTyping => KeysPerSecond > 1.0f;
     public bool IsTypingFast => KeysPerSecond > 7.5f;
 
     public KeyboardMonitor()

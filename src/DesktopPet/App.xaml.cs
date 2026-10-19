@@ -21,18 +21,18 @@ public partial class App : Application
 {
     public static App? CurrentApp => Application.Current as App;
 
-    private Mutex?           _singleInstance;
-    private SettingsService  _settingsService = new();
-    private AppSettings      _settings        = new();
-    private PetWindow?       _petWindow;
-    private PetEngine?       _engine;
-    private TrayService?     _tray;
-    private SettingsWindow?  _settingsWindow;
+    private Mutex? _singleInstance;
+    private SettingsService _settingsService = new();
+    private AppSettings _settings = new();
+    private PetWindow? _petWindow;
+    private PetEngine? _engine;
+    private TrayService? _tray;
+    private SettingsWindow? _settingsWindow;
     private KeyboardMonitor? _keyboard;
-    private MouseMonitor?    _mouse;
-    private SystemMonitor?   _system;
-    private HookWatchdog?    _hookWatchdog;
-    private UpdateService?   _updateService;
+    private MouseMonitor? _mouse;
+    private SystemMonitor? _system;
+    private HookWatchdog? _hookWatchdog;
+    private UpdateService? _updateService;
     private DispatcherTimer? _stretchTimer;
     private DispatcherTimer? _stateSaveTimer;
     private DispatcherTimer? _quietWatchTimer;
@@ -61,10 +61,10 @@ public partial class App : Application
     private readonly List<ToyWindow> _activeToyWindows = new();
     private DesktopPet.Services.Health.SystemHealthService? _healthService;
 
-    private HttpClient?      _http;
-    private HotkeyService?   _hotkey;
+    private HttpClient? _http;
+    private HotkeyService? _hotkey;
     private LauncherIpcService? _ipcServer;
-    private readonly Random  _rng = new();
+    private readonly Random _rng = new();
 
     private static readonly string CrashLog =
         Path.Combine(Path.GetTempPath(), "neku_crash.log");
@@ -206,12 +206,12 @@ public partial class App : Application
         if (!_settings.DisableOptionalMonitoring)
         {
             _keyboard = new KeyboardMonitor();
-            _mouse    = new MouseMonitor();
+            _mouse = new MouseMonitor();
             _hookWatchdog = new HookWatchdog(_keyboard, _mouse, _system);
         }
 
         var surfaceProvider = new SurfaceProvider(() => _petWindow!.Handle);
-        var stateMachine    = new StateMachine(_settings, _system);
+        var stateMachine = new StateMachine(_settings, _system);
         _engine = new PetEngine(_petWindow, animator, surfaceProvider, stateMachine, _settings, _keyboard, _mouse, _system, _toyService);
         _petWindow.TargetFps = _settings.TargetFps;
         _petWindow.Attach(_engine, _engine.Width, _engine.Height);
@@ -923,6 +923,8 @@ public partial class App : Application
         }
         else
         {
+            if (_notesWindow.WindowState == WindowState.Minimized)
+                _notesWindow.WindowState = WindowState.Normal;
             _notesWindow.Activate();
         }
     }
@@ -946,9 +948,9 @@ public partial class App : Application
         }
         else
         {
-            _tasksWindow.Activate();
             if (_tasksWindow.WindowState == WindowState.Minimized)
                 _tasksWindow.WindowState = WindowState.Normal;
+            _tasksWindow.Activate();
         }
     }
 
@@ -1043,6 +1045,8 @@ public partial class App : Application
         }
         else
         {
+            if (_devEventsWindow.WindowState == WindowState.Minimized)
+                _devEventsWindow.WindowState = WindowState.Normal;
             _devEventsWindow.Activate();
         }
     }
@@ -1060,7 +1064,13 @@ public partial class App : Application
     private void ShowSettings()
 
     {
-        if (_settingsWindow is { IsLoaded: true }) { _settingsWindow.Activate(); return; }
+        if (_settingsWindow is { IsLoaded: true })
+        {
+            if (_settingsWindow.WindowState == WindowState.Minimized)
+                _settingsWindow.WindowState = WindowState.Normal;
+            _settingsWindow.Activate();
+            return;
+        }
 
         _settingsWindow = new SettingsWindow(
             _settings, _settingsService,
@@ -1082,6 +1092,8 @@ public partial class App : Application
     {
         if (_studioWindow is { IsLoaded: true })
         {
+            if (_studioWindow.WindowState == WindowState.Minimized)
+                _studioWindow.WindowState = WindowState.Normal;
             _studioWindow.Activate();
             return;
         }

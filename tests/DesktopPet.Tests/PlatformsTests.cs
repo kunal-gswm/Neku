@@ -6,8 +6,8 @@ namespace DesktopPet.Tests;
 /// <summary>Standing and landing. A pet that can't land reliably falls off the world.</summary>
 public class PlatformsTests
 {
-    private static readonly Surface Floor  = new(0, 3440, 1392);
-    private static readonly Surface Ledge  = new(500, 1200, 800);   // a window top
+    private static readonly Surface Floor = new(0, 3440, 1392);
+    private static readonly Surface Ledge = new(500, 1200, 800);   // a window top
     private static readonly Surface[] World = { Floor, Ledge };
 
     [Fact]

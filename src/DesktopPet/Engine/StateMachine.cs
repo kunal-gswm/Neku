@@ -19,16 +19,16 @@ public sealed class StateMachine
     private double _energy = 0.7;
     private double _hunger = 0.2;
 
-    private const double EnergyDrain   = 1.0 / 45.0;   // full -> empty over ~45s of hard activity
+    private const double EnergyDrain = 1.0 / 45.0;   // full -> empty over ~45s of hard activity
     private const double EnergyRecover = 1.0 / 35.0;   // empty -> full over ~35s of rest
-    private const double EnergyDrift   = 1.0 / 90.0;   // idle drift toward a neutral 0.6
-    private const double HungerFill    = 1.0 / 900.0;  // peckish after ~15 min
-    private const double HungerEat     = 1.0 / 6.0;    // a meal satisfies in ~6s
+    private const double EnergyDrift = 1.0 / 90.0;   // idle drift toward a neutral 0.6
+    private const double HungerFill = 1.0 / 900.0;  // peckish after ~15 min
+    private const double HungerEat = 1.0 / 6.0;    // a meal satisfies in ~6s
 
     public StateMachine(AppSettings settings, SystemMonitor? system = null)
     {
         _settings = settings;
-        _system   = system;
+        _system = system;
 
         // Continuity: carry the cat's mood across restarts so it wakes up as the same animal
         // rather than resetting to a neutral one every launch.
@@ -77,7 +77,7 @@ public sealed class StateMachine
         }
 
         if (state == PetState.Eat) _hunger -= HungerEat * dt;
-        else                        _hunger += HungerFill * dt;
+        else _hunger += HungerFill * dt;
 
         _energy = Math.Clamp(_energy, 0, 1);
         _hunger = Math.Clamp(_hunger, 0, 1);
@@ -91,23 +91,23 @@ public sealed class StateMachine
     public PetState NextAction()
     {
         bool moods = _settings.EnableMoods;
-        bool sys   = _settings.EnableSystemReactions && _system != null;
+        bool sys = _settings.EnableSystemReactions && _system != null;
 
         int hour = DateTime.Now.Hour;
-        bool night   = moods && (hour >= 22 || hour < 6);
+        bool night = moods && (hour >= 22 || hour < 6);
         bool evening = moods && hour >= 18 && hour < 22;
 
         double energy = moods ? _energy : 0.6;
         double hunger = moods ? _hunger : 0.3;
 
         double cpu = sys ? _system!.CpuLoad : 0.0;
-        var fg     = sys ? _system!.Foreground : AppContextKind.Other;
+        var fg = sys ? _system!.Foreground : AppContextKind.Other;
         bool lowBatt = sys && _system!.OnBattery && _system.BatteryPercent is (> 0 and < 20);
         bool focus = fg == AppContextKind.Focus;
         bool playful = fg is AppContextKind.Play or AppContextKind.Browse;
 
         // restful when low energy / night / low battery; lively when high energy / load / play app.
-        double rest   = 1.0 + (1.0 - energy) * 2.5 + (night ? 3.0 : 0) + (evening ? 1.0 : 0)
+        double rest = 1.0 + (1.0 - energy) * 2.5 + (night ? 3.0 : 0) + (evening ? 1.0 : 0)
                             + (lowBatt ? 2.0 : 0) + (focus ? 1.0 : 0);
         double active = 1.0 + energy * 2.0 + cpu * 1.5 + (playful ? 1.5 : 0)
                             - (night ? 0.7 : 0) - (focus ? 0.6 : 0) - (lowBatt ? 0.6 : 0);
@@ -145,20 +145,20 @@ public sealed class StateMachine
         return allowWander ? PetState.Walk : PetState.Sit;
     }
 
-    public double WalkDuration()       => 1.5 + _rng.NextDouble() * 3.0;
-    public double SleepDuration()      => 4.0 + _rng.NextDouble() * 6.0;
-    public double ChaseDuration()      => 2.5 + _rng.NextDouble() * 3.0;
-    public double ZoomiesDuration()    => 1.4 + _rng.NextDouble() * 1.8;
-    public double GroomDuration()      => 2.5 + _rng.NextDouble() * 3.0;
-    public double LoafDuration()       => 5.0 + _rng.NextDouble() * 6.0;
-    public double SitDuration()        => 4.0 + _rng.NextDouble() * 5.0;
-    public double SideRestDuration()   => 5.0 + _rng.NextDouble() * 7.0;
-    public double SpinDuration()       => 1.0 + _rng.NextDouble() * 0.8;
-    public double BlinkDuration()      => 0.5 + _rng.NextDouble() * 0.5;
+    public double WalkDuration() => 1.5 + _rng.NextDouble() * 3.0;
+    public double SleepDuration() => 4.0 + _rng.NextDouble() * 6.0;
+    public double ChaseDuration() => 2.5 + _rng.NextDouble() * 3.0;
+    public double ZoomiesDuration() => 1.4 + _rng.NextDouble() * 1.8;
+    public double GroomDuration() => 2.5 + _rng.NextDouble() * 3.0;
+    public double LoafDuration() => 5.0 + _rng.NextDouble() * 6.0;
+    public double SitDuration() => 4.0 + _rng.NextDouble() * 5.0;
+    public double SideRestDuration() => 5.0 + _rng.NextDouble() * 7.0;
+    public double SpinDuration() => 1.0 + _rng.NextDouble() * 0.8;
+    public double BlinkDuration() => 0.5 + _rng.NextDouble() * 0.5;
     public double LookAroundDuration() => 1.5 + _rng.NextDouble() * 1.5;
-    public double HappyDuration()      => 1.5 + _rng.NextDouble() * 1.0;
-    public double AnnoyedDuration()    => 1.2 + _rng.NextDouble() * 0.8;
-    public double SurprisedDuration()  => 1.0 + _rng.NextDouble() * 0.5;
+    public double HappyDuration() => 1.5 + _rng.NextDouble() * 1.0;
+    public double AnnoyedDuration() => 1.2 + _rng.NextDouble() * 0.8;
+    public double SurprisedDuration() => 1.0 + _rng.NextDouble() * 0.5;
 
     /// <summary>+1 (right) or -1 (left).</summary>
     public int RandomFacing() => _rng.Next(2) == 0 ? -1 : 1;

@@ -14,7 +14,7 @@
 
     <!-- Bump this to cut a release. The updater compares it to the latest GitHub release tag,
          so the tag (v1.1.0) and this value (1.1.0) must stay in step. -->
-    <Version>0.5.0</Version>
+    <Version>1.0.0</Version>
     <Product>Neku</Product>
     <Company>Neku</Company>
     <Description>A mischievous cat-goblin desktop companion.</Description>
@@ -33,7 +33,7 @@
          only `dotnet publish` produces the self-contained artifact. -->
     <SelfContained Condition="'$(_IsPublishing)' != 'true'">false</SelfContained>
     <!-- WPF owns DPI awareness via app.manifest (PerMonitorV2); silence the WinForms manifest check. -->
-    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+    <NoWarn>$(NoWarn);WFAC010;WFO0003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

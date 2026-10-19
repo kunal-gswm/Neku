@@ -24,15 +24,15 @@ public sealed class HookWatchdog : IDisposable
     private const double ActiveWithinSeconds = 2.0;
 
     private readonly KeyboardMonitor? _keyboard;
-    private readonly MouseMonitor?    _mouse;
-    private readonly SystemMonitor?   _system;
-    private readonly DispatcherTimer  _timer;
+    private readonly MouseMonitor? _mouse;
+    private readonly SystemMonitor? _system;
+    private readonly DispatcherTimer _timer;
 
     public HookWatchdog(KeyboardMonitor? keyboard, MouseMonitor? mouse, SystemMonitor? system)
     {
         _keyboard = keyboard;
-        _mouse    = mouse;
-        _system   = system;
+        _mouse = mouse;
+        _system = system;
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _timer.Tick += OnTick;

@@ -284,7 +284,8 @@ public sealed class AppSettings
     [JsonPropertyName("enableHealthHud")] public bool EnableHealthHud { get; set; } = false;
 
     /// <summary>List of process names to monitor working set and counts for.</summary>
-    [JsonPropertyName("monitoredProcessNames")] public List<string> MonitoredProcessNames { get; set; } = new()
+    [JsonPropertyName("monitoredProcessNames")]
+    public List<string> MonitoredProcessNames { get; set; } = new()
     {
         "code", "devenv", "dotnet", "node", "cargo", "docker"
     };

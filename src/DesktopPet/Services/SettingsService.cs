@@ -146,16 +146,25 @@ public sealed class SettingsService
 
     public void Save()
     {
+        string? tempPath = null;
         try
         {
             if (!string.IsNullOrEmpty(_dir))
             {
                 Directory.CreateDirectory(_dir);
             }
-            File.WriteAllText(_filePath, JsonSerializer.Serialize(Current, Options));
+            string json = JsonSerializer.Serialize(Current, Options);
+            tempPath = _filePath + ".tmp." + Guid.NewGuid().ToString("N");
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _filePath, overwrite: true);
+            tempPath = null;
         }
         catch
         {
+            if (tempPath != null && File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); } catch { }
+            }
             // Non-fatal: settings just won't persist this session.
         }
     }

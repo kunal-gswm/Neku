@@ -192,8 +192,8 @@ public sealed class TrayService : IDisposable
     {
         _updateItem.Visible = true;
         _icon.BalloonTipTitle = "Neku update available";
-        _icon.BalloonTipText  = "A newer version is ready. Click here or the tray menu to install.";
-        _icon.BalloonTipIcon  = ToolTipIcon.Info;
+        _icon.BalloonTipText = "A newer version is ready. Click here or the tray menu to install.";
+        _icon.BalloonTipIcon = ToolTipIcon.Info;
         _icon.BalloonTipClicked -= OnBalloonClicked;
         _icon.BalloonTipClicked += OnBalloonClicked;
         _icon.ShowBalloonTip(8000);

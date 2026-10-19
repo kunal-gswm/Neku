@@ -26,24 +26,24 @@ public sealed class Personality
     }
 
     // ── Core drives (0..1) ──────────────────────────────────────────────────
-    private double _mood        = 0.6;   // 0 = grumpy, 1 = delighted
-    private double _energy      = 0.7;   // 0 = exhausted, 1 = wired
+    private double _mood = 0.6;   // 0 = grumpy, 1 = delighted
+    private double _energy = 0.7;   // 0 = exhausted, 1 = wired
     private double _familiarity = 0.1;   // 0 = stranger, 1 = best friend
-    private double _mischief    = 0.3;   // 0 = calm, 1 = chaotic goblin
+    private double _mischief = 0.3;   // 0 = calm, 1 = chaotic goblin
 
     // ── Interaction history ────────────────────────────────────────────────
-    private int    _totalPets;
-    private int    _totalBoops;
-    private int    _totalDrags;
-    private int    _sessionPets;
-    private int    _sessionBoops;
-    private int    _reactionsUnlocked;   // unlocked reaction count
+    private int _totalPets;
+    private int _totalBoops;
+    private int _totalDrags;
+    private int _sessionPets;
+    private int _sessionBoops;
+    private int _reactionsUnlocked;   // unlocked reaction count
     private DateTime _lastInteraction = DateTime.Now;
 
     // ── Drift rates (per second) ───────────────────────────────────────────
-    private const double MoodDrift      = 1.0 / 120.0;  // drifts toward 0.5 over ~2 min
-    private const double EnergyDrift    = 1.0 / 90.0;
-    private const double MischiefDrift  = 1.0 / 180.0;  // slowly calms down
+    private const double MoodDrift = 1.0 / 120.0;  // drifts toward 0.5 over ~2 min
+    private const double EnergyDrift = 1.0 / 90.0;
+    private const double MischiefDrift = 1.0 / 180.0;  // slowly calms down
     private const double FamiliarityGain = 0.001;         // per interaction
 
     // ── Dialogue lines (original, grouped by mood) ─────────────────────────
@@ -610,23 +610,23 @@ public sealed class Personality
     }
 
 
-    public double Mood        => _mood;
-    public double Energy      => _energy;
+    public double Mood => _mood;
+    public double Energy => _energy;
     public double Familiarity => _familiarity;
-    public double Mischief    => _mischief;
-    public int    TotalPets   => _totalPets;
-    public int    TotalBoops  => _totalBoops;
+    public double Mischief => _mischief;
+    public int TotalPets => _totalPets;
+    public int TotalBoops => _totalBoops;
 
     /// <summary>Load personality state from settings.</summary>
     public void LoadFrom(AppSettings settings)
     {
-        _mood        = Math.Clamp(settings.PersonalityMood, 0, 1);
-        _energy      = Math.Clamp(settings.PersonalityEnergy, 0, 1);
+        _mood = Math.Clamp(settings.PersonalityMood, 0, 1);
+        _energy = Math.Clamp(settings.PersonalityEnergy, 0, 1);
         _familiarity = Math.Clamp(settings.PersonalityFamiliarity, 0, 1);
-        _mischief    = Math.Clamp(settings.PersonalityMischief, 0, 1);
-        _totalPets   = Math.Max(0, settings.TotalPets);
-        _totalBoops  = Math.Max(0, settings.TotalBoops);
-        _totalDrags  = Math.Max(0, settings.TotalDrags);
+        _mischief = Math.Clamp(settings.PersonalityMischief, 0, 1);
+        _totalPets = Math.Max(0, settings.TotalPets);
+        _totalBoops = Math.Max(0, settings.TotalBoops);
+        _totalDrags = Math.Max(0, settings.TotalDrags);
         _reactionsUnlocked = Math.Max(0, settings.ReactionsUnlocked);
         if (!string.IsNullOrWhiteSpace(settings.ActivePet))
             _activePet = settings.ActivePet.Trim().ToLowerInvariant();
@@ -635,14 +635,14 @@ public sealed class Personality
     /// <summary>Save personality state into settings for persistence.</summary>
     public void SaveInto(AppSettings settings)
     {
-        settings.PersonalityMood        = _mood;
-        settings.PersonalityEnergy      = _energy;
+        settings.PersonalityMood = _mood;
+        settings.PersonalityEnergy = _energy;
         settings.PersonalityFamiliarity = _familiarity;
-        settings.PersonalityMischief    = _mischief;
-        settings.TotalPets              = _totalPets;
-        settings.TotalBoops             = _totalBoops;
-        settings.TotalDrags             = _totalDrags;
-        settings.ReactionsUnlocked      = _reactionsUnlocked;
+        settings.PersonalityMischief = _mischief;
+        settings.TotalPets = _totalPets;
+        settings.TotalBoops = _totalBoops;
+        settings.TotalDrags = _totalDrags;
+        settings.ReactionsUnlocked = _reactionsUnlocked;
     }
 
     /// <summary>
@@ -803,8 +803,8 @@ public sealed class Personality
         // Mischief slowly decays toward baseline
         _mischief += (0.3 - _mischief) * MischiefDrift * dt;
 
-        _mood     = Math.Clamp(_mood, 0, 1);
-        _energy   = Math.Clamp(_energy, 0, 1);
+        _mood = Math.Clamp(_mood, 0, 1);
+        _energy = Math.Clamp(_energy, 0, 1);
         _mischief = Math.Clamp(_mischief, 0, 1);
     }
 

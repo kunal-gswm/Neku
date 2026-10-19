@@ -14,10 +14,10 @@ namespace DesktopPet.Tests;
 public class QuietModeTests
 {
     [Theory]
-    [InlineData(UserNotificationState.PresentationMode,     QuietReason.Presenting)]
+    [InlineData(UserNotificationState.PresentationMode, QuietReason.Presenting)]
     [InlineData(UserNotificationState.RunningD3dFullScreen, QuietReason.FullScreenGame)]
-    [InlineData(UserNotificationState.Busy,                 QuietReason.FullScreenApp)]
-    [InlineData(UserNotificationState.QuietTime,            QuietReason.FocusAssist)]
+    [InlineData(UserNotificationState.Busy, QuietReason.FullScreenApp)]
+    [InlineData(UserNotificationState.QuietTime, QuietReason.FocusAssist)]
     public void States_that_mean_do_not_disturb_are_mapped(
         UserNotificationState state, QuietReason expected)
     {

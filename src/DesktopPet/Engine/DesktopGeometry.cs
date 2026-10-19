@@ -27,7 +27,7 @@ public readonly struct DesktopGeometry
         if (workAreas is null || workAreas.Count == 0)
             throw new ArgumentException("A desktop needs at least one work area.", nameof(workAreas));
 
-        Bounds    = bounds;
+        Bounds = bounds;
         WorkAreas = workAreas;
     }
 
@@ -48,9 +48,9 @@ public readonly struct DesktopGeometry
                 areas.Add(new Rect(work.Left / dpiScale, work.Top / dpiScale,
                                    work.Width / dpiScale, work.Height / dpiScale));
 
-                l = Math.Min(l, monitor.Left   / dpiScale);
-                t = Math.Min(t, monitor.Top    / dpiScale);
-                r = Math.Max(r, monitor.Right  / dpiScale);
+                l = Math.Min(l, monitor.Left / dpiScale);
+                t = Math.Min(t, monitor.Top / dpiScale);
+                r = Math.Max(r, monitor.Right / dpiScale);
                 b = Math.Max(b, monitor.Bottom / dpiScale);
             }
         }

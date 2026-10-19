@@ -52,8 +52,8 @@ public partial class StretchNotification : Window
 
         // Position at top-center of primary monitor work area
         var work = SystemParameters.WorkArea;
-        Left = work.Left + (work.Width  - Width)  / 2;
-        Top  = work.Top  + 24;
+        Left = work.Left + (work.Width - Width) / 2;
+        Top = work.Top + 24;
 
         _autoDismiss = new DispatcherTimer { Interval = TimeSpan.FromSeconds(7) };
         _autoDismiss.Tick += (_, _) => { _autoDismiss.Stop(); Close(); };

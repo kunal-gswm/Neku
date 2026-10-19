@@ -598,4 +598,195 @@ public class KeyboardIntegrationTests : IDisposable
         Assert.True(finished, "QuickNotesWindow F5 and Escape test timed out");
         Assert.Null(threadEx);
     }
+
+    [Fact]
+    public void DashboardWindow_Ctrl9_And_NumPad9_SwitchToHealthTab()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var settings = new AppSettings();
+                var taskService = new TaskService(_tasksFile);
+                var focusTimer = new FocusTimerService();
+                var historyService = new FocusHistoryService();
+                var healthService = new DesktopPet.Services.Health.SystemHealthService(settings);
+
+                var dashboard = new DashboardWindow(taskService, focusTimer, historyService, settings, initialTab: "Overview", healthService: healthService);
+                Assert.Equal("Overview", dashboard.CurrentTab);
+
+                // Ctrl + 9 -> Health
+                dashboard.HandleKeyDown(Key.D9, ModifierKeys.Control);
+                Assert.Equal("Health", dashboard.CurrentTab);
+
+                // Switch back to Tasks then test NumPad9
+                dashboard.HandleKeyDown(Key.D2, ModifierKeys.Control);
+                Assert.Equal("Tasks", dashboard.CurrentTab);
+
+                dashboard.HandleKeyDown(Key.NumPad9, ModifierKeys.Control);
+                Assert.Equal("Health", dashboard.CurrentTab);
+
+                dashboard.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "DashboardWindow Health tab shortcut test timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void DashboardWindow_TabCycling_IncludesAllNineTabs()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var settings = new AppSettings();
+                var taskService = new TaskService(_tasksFile);
+                var focusTimer = new FocusTimerService();
+                var historyService = new FocusHistoryService();
+
+                var dashboard = new DashboardWindow(taskService, focusTimer, historyService, settings, initialTab: "Overview");
+                Assert.Equal("Overview", dashboard.CurrentTab);
+
+                string[] expectedForward = ["Tasks", "Focus", "History", "Insights", "Goals", "Agent", "Radar", "Health", "Overview"];
+                foreach (var expectedTab in expectedForward)
+                {
+                    dashboard.HandleKeyDown(Key.Tab, ModifierKeys.Control);
+                    Assert.Equal(expectedTab, dashboard.CurrentTab);
+                }
+
+                // Reverse cycle from Overview -> Health -> Radar
+                dashboard.HandleKeyDown(Key.Tab, ModifierKeys.Control | ModifierKeys.Shift);
+                Assert.Equal("Health", dashboard.CurrentTab);
+
+                dashboard.HandleKeyDown(Key.Tab, ModifierKeys.Control | ModifierKeys.Shift);
+                Assert.Equal("Radar", dashboard.CurrentTab);
+
+                dashboard.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "DashboardWindow 9-tab cycling test timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void SettingsWindow_KeyboardShortcuts_DirectTabs_And_Cycling()
+    {
+        Exception? threadEx = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var settings = new AppSettings();
+                var settingsService = new SettingsService(Path.Combine(_testDir, "settings_test.json"));
+                var window = new SettingsWindow(settings, settingsService);
+
+                Assert.Equal(0, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+2 -> Behavior (index 1)
+                window.HandleKeyDown(Key.D2, ModifierKeys.Control);
+                Assert.Equal(1, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+3 -> Performance (index 2)
+                window.HandleKeyDown(Key.D3, ModifierKeys.Control);
+                Assert.Equal(2, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+4 -> Developer (index 3)
+                window.HandleKeyDown(Key.D4, ModifierKeys.Control);
+                Assert.Equal(3, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+5 -> DeskSense & Radar (index 4)
+                window.HandleKeyDown(Key.D5, ModifierKeys.Control);
+                Assert.Equal(4, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+6 -> System (index 5)
+                window.HandleKeyDown(Key.D6, ModifierKeys.Control);
+                Assert.Equal(5, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+1 -> Appearance (index 0)
+                window.HandleKeyDown(Key.D1, ModifierKeys.Control);
+                Assert.Equal(0, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+Tab forward -> index 1
+                window.HandleKeyDown(Key.Tab, ModifierKeys.Control);
+                Assert.Equal(1, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+Shift+Tab reverse -> index 0
+                window.HandleKeyDown(Key.Tab, ModifierKeys.Control | ModifierKeys.Shift);
+                Assert.Equal(0, window.SettingsTabControl.SelectedIndex);
+
+                // Ctrl+Shift+Tab reverse wrap -> index 5
+                window.HandleKeyDown(Key.Tab, ModifierKeys.Control | ModifierKeys.Shift);
+                Assert.Equal(5, window.SettingsTabControl.SelectedIndex);
+
+                window.Close();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        bool finished = thread.Join(10000);
+
+        Assert.True(finished, "SettingsWindow tab shortcuts test timed out");
+        Assert.Null(threadEx);
+    }
+
+    [Fact]
+    public void NotesService_AtomicSave_PreservesData_And_CleansTemp()
+    {
+        string filePath = Path.Combine(_testDir, "atomic_notes.json");
+        var service = new NotesService(filePath);
+        var note = service.Create("Atomic Title", "Atomic Content");
+
+        Assert.True(File.Exists(filePath));
+        var dirFiles = Directory.GetFiles(_testDir, "*.tmp.*");
+        Assert.Empty(dirFiles);
+
+        // Reload from disk to verify integrity
+        var reloaded = new NotesService(filePath);
+        Assert.Single(reloaded.Notes);
+        Assert.Equal("Atomic Title", reloaded.Notes[0].Title);
+        Assert.Equal("Atomic Content", reloaded.Notes[0].Content);
+    }
+
+    [Fact]
+    public void SettingsService_AtomicSave_PreservesData_And_CleansTemp()
+    {
+        string filePath = Path.Combine(_testDir, "atomic_settings.json");
+        var service = new SettingsService(filePath);
+        service.Current.Speed = 1.75;
+        service.Current.SizeScale = 1.30;
+        service.Save();
+
+        Assert.True(File.Exists(filePath));
+        var dirFiles = Directory.GetFiles(_testDir, "*.tmp.*");
+        Assert.Empty(dirFiles);
+
+        // Reload from disk
+        var reloaded = new SettingsService(filePath);
+        var loadedSettings = reloaded.Load();
+        Assert.Equal(1.75, loadedSettings.Speed);
+        Assert.Equal(1.30, loadedSettings.SizeScale);
+    }
 }

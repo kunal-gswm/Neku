@@ -35,7 +35,7 @@
             <Button x:Name="CloseButton" Content="Done" Style="{StaticResource SecondaryButton}" Width="80" Click="CloseButton_Click"/>
         </StackPanel>
 
-        <TabControl>
+        <TabControl x:Name="SettingsTabControl" SelectedIndex="0">
             <!-- ─────────────── Appearance ─────────────── -->
             <TabItem Header="Appearance">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

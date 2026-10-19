@@ -74,6 +74,7 @@ public sealed class NotesService
 
     public void Save()
     {
+        string? tempPath = null;
         try
         {
             string dir = Path.GetDirectoryName(_filePath)!;
@@ -83,9 +84,18 @@ public sealed class NotesService
             }
 
             string json = JsonSerializer.Serialize(_notes, JsonOpts);
-            File.WriteAllText(_filePath, json);
+            tempPath = _filePath + ".tmp." + Guid.NewGuid().ToString("N");
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, _filePath, overwrite: true);
+            tempPath = null;
         }
-        catch { }
+        catch
+        {
+            if (tempPath != null && File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); } catch { }
+            }
+        }
     }
 
     public NoteItem Create(string title = "Untitled", string content = "")

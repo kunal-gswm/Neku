@@ -58,7 +58,7 @@ public partial class PetWindow : Window, IPetView
     private int _physX = int.MinValue, _physY = int.MinValue;
 
     public double PetLeft => _left;
-    public double PetTop  => _top;
+    public double PetTop => _top;
 
     /// <summary>
     /// Keep the cat the same physical size on every monitor. WPF enlarges content by each
@@ -151,7 +151,7 @@ public partial class PetWindow : Window, IPetView
 
     public void SetPetSize(double w, double h)
     {
-        PetImage.Width  = w;
+        PetImage.Width = w;
         PetImage.Height = h;
         FlipTransform.CenterX = w / 2;
         HeatFlip.CenterX = w / 2;
@@ -216,13 +216,13 @@ public partial class PetWindow : Window, IPetView
     private void PlaceAt(double left, double top)
     {
         _left = left;
-        _top  = top;
+        _top = top;
 
         IntPtr hwnd = Handle;
         if (hwnd == IntPtr.Zero)
         {
             Left = left;
-            Top  = top;
+            Top = top;
             return;
         }
 
@@ -295,7 +295,7 @@ public partial class PetWindow : Window, IPetView
         base.OnMouseLeftButtonDown(e);
         PetInteracted?.Invoke();
         // Don't start a drag yet — wait to see if this is a tap (boop) or a drag.
-        _downPos  = PointToScreen(e.GetPosition(this));
+        _downPos = PointToScreen(e.GetPosition(this));
         _pressing = true;
         _dragging = false;
         CaptureMouse();

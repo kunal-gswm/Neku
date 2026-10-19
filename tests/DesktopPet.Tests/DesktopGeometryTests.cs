@@ -87,7 +87,7 @@ public class DesktopGeometryTests
         Assert.NotEmpty(d.WorkAreas);
         foreach (var a in d.WorkAreas)
         {
-            Assert.True(a.Left >= d.Bounds.Left,   $"{a} starts left of {d.Bounds}");
+            Assert.True(a.Left >= d.Bounds.Left, $"{a} starts left of {d.Bounds}");
             Assert.True(a.Right <= d.Bounds.Right, $"{a} ends right of {d.Bounds}");
         }
     }

@@ -38,100 +38,100 @@ public interface IPetView
 public sealed class PetEngine
 {
     // ── tunables ──────────────────────────────────────────────────────────────
-    private const double Gravity          = 2000;
-    private const double MaxFall          = 2600;
-    private const double BaseWalkSpeed    = 55;
-    private const double BaseChaseSpeed   = 115;
-    private const double JumpSpeed        = 800;   // initial upward velocity for a hop (~160px high, ~0.80s airtime)
+    private const double Gravity = 2000;
+    private const double MaxFall = 2600;
+    private const double BaseWalkSpeed = 55;
+    private const double BaseChaseSpeed = 115;
+    private const double JumpSpeed = 800;   // initial upward velocity for a hop (~160px high, ~0.80s airtime)
     private const double SupportTolerance = 3.0;
-    private const double SurfaceRefresh   = 0.25;
-    private const double HeartInterval    = 0.45;  // seconds between heart bursts while petted
-    private const double TypingCooldown   = 0.8;   // seconds after last key before leaving typing
+    private const double SurfaceRefresh = 0.25;
+    private const double HeartInterval = 0.45;  // seconds between heart bursts while petted
+    private const double TypingCooldown = 0.8;   // seconds after last key before leaving typing
 
     // ── injected ──────────────────────────────────────────────────────────────
-    private readonly IPetView          _view;
-    private SpriteAnimator             _anim;
-    private readonly SurfaceProvider   _surfaceProvider;
-    private readonly StateMachine      _sm;
-    private readonly AppSettings       _settings;
-    private readonly KeyboardMonitor?  _keyboard;
-    private readonly MouseMonitor?     _mouse;
-    private readonly SystemMonitor?    _system;
-    private ToyService?                _toyService;
+    private readonly IPetView _view;
+    private SpriteAnimator _anim;
+    private readonly SurfaceProvider _surfaceProvider;
+    private readonly StateMachine _sm;
+    private readonly AppSettings _settings;
+    private readonly KeyboardMonitor? _keyboard;
+    private readonly MouseMonitor? _mouse;
+    private readonly SystemMonitor? _system;
+    private ToyService? _toyService;
 
     // ── physics / position ────────────────────────────────────────────────────
     private double _w, _h;                 // current on-screen pet size (DIP); changes with SizeScale
     private double _x, _y;
     private double _vx, _vy;
-    private int    _facing = 1;
+    private int _facing = 1;
 
     // ── state ─────────────────────────────────────────────────────────────────
     private readonly Personality _personality;
     private PetState _state = PetState.Idle;
-    private double   _stateTimer;
-    private double   _surfaceTimer;
-    private double   _heartTimer;
-    private double   _typingCooldownLeft;
-    private bool     _stretchPending;
-    private bool     _isPetted;            // true while mouse hovers over the window
-    private bool     _wasAway;             // user was idle long enough that the cat napped
-    private double   _spinFlip;            // countdown to next facing flip during a spin
-    private double   _tpLength;            // current toilet-paper length (DIP)
-    private double   _tpIdle;              // seconds since last scroll
-    private double   _lastDragX, _lastDragY; // last cursor pos while dragging (DIP)
-    private double   _dragVx, _dragVy;       // cursor velocity during drag (DIP/sec)
-    private double   _prevCurX, _prevCurY; // cursor position last frame (DIP)
-    private double   _cursorSpeed;         // cursor speed (DIP/sec)
-    private double   _batCooldown;         // seconds until the cat may swat again
-    private double   _huntCooldown;        // seconds until the cat may hunt again
-    private double   _knockCooldown;       // seconds until the cat may knock a pebble again
-    private double   _targetX;             // generic target (pounce/gift) in DIP
+    private double _stateTimer;
+    private double _surfaceTimer;
+    private double _heartTimer;
+    private double _typingCooldownLeft;
+    private bool _stretchPending;
+    private bool _isPetted;            // true while mouse hovers over the window
+    private bool _wasAway;             // user was idle long enough that the cat napped
+    private double _spinFlip;            // countdown to next facing flip during a spin
+    private double _tpLength;            // current toilet-paper length (DIP)
+    private double _tpIdle;              // seconds since last scroll
+    private double _lastDragX, _lastDragY; // last cursor pos while dragging (DIP)
+    private double _dragVx, _dragVy;       // cursor velocity during drag (DIP/sec)
+    private double _prevCurX, _prevCurY; // cursor position last frame (DIP)
+    private double _cursorSpeed;         // cursor speed (DIP/sec)
+    private double _batCooldown;         // seconds until the cat may swat again
+    private double _huntCooldown;        // seconds until the cat may hunt again
+    private double _knockCooldown;       // seconds until the cat may knock a pebble again
+    private double _targetX;             // generic target (pounce/gift) in DIP
 
     // Every monitor, not just the primary one. Re-read on the surface tick so the pet copes
     // with a display being plugged in, unplugged or rearranged mid-session.
     private DesktopGeometry _desktop;
 
     // ── quiet mode ──
-    private bool   _quiet;              // currently keeping its head down
+    private bool _quiet;              // currently keeping its head down
     private double _calledToX;          // "come here" target in DIP; NaN = not called
     private double _calledTimeout;      // seconds before giving up on the walk over
 
     // ── Speech & Reactions ──────────────────────────────────────────────────
     private PetState? _pendingEmotion;     // emotion queued while the cat is mid-action
-    private double    _pendingEmotionTtl;  // seconds before a queued emotion is given up on
-    private string    _bubbleText = "";    // current speech-bubble text ("" = none)
-    private double    _bubbleTimeLeft;     // seconds the bubble stays up
-    private bool      _pausedDecorCleared; // decorations already torn down for this pause
+    private double _pendingEmotionTtl;  // seconds before a queued emotion is given up on
+    private string _bubbleText = "";    // current speech-bubble text ("" = none)
+    private double _bubbleTimeLeft;     // seconds the bubble stays up
+    private bool _pausedDecorCleared; // decorations already torn down for this pause
 
     /// <summary>A queued emotion is dropped if the cat never settles within this long, so it
     /// cannot surface minutes later attached to a conversation that has moved on.</summary>
     private const double PendingEmotionTtl = 8.0;
 
-    private const double ZoomSpeed   = 360;  // px/sec during zoomies
-    private const double BatRange    = 150;  // how close the cursor must rest to be swatted
-    private const double BatCalm     = 140;  // cursor must be slower than this to be swatted
+    private const double ZoomSpeed = 360;  // px/sec during zoomies
+    private const double BatRange = 150;  // how close the cursor must rest to be swatted
+    private const double BatCalm = 140;  // cursor must be slower than this to be swatted
     private const double HuntTrigger = 1500; // cursor speed (px/sec) that starts a hunt
-    private const double CreepSpeed  = 75;   // px/sec while stalking
+    private const double CreepSpeed = 75;   // px/sec while stalking
     private const double PounceSpeed = 540;  // px/sec while pouncing
     private const double PounceRange = 360;  // max horizontal distance to pounce from
     private List<Surface> _surfaces = new();
 
-    private const double TpPerNotch  = 26.0;   // paper added per scroll notch
-    private const double TpMax       = 170.0;  // max paper length (hangs to about the floor)
-    private const double TpRetract   = 200.0;  // px/sec retract speed once idle
+    private const double TpPerNotch = 26.0;   // paper added per scroll notch
+    private const double TpMax = 170.0;  // max paper length (hangs to about the floor)
+    private const double TpRetract = 200.0;  // px/sec retract speed once idle
     private const double TpIdleDelay = 1.2;    // seconds of no scroll before retracting
 
-    public bool   Paused         { get; set; }
-    public double X              => _x;
-    public double Y              => _y;
-    public double Width          => _w;
-    public double Height         => _h;
-    public PetState State        => _state;
+    public bool Paused { get; set; }
+    public double X => _x;
+    public double Y => _y;
+    public double Width => _w;
+    public double Height => _h;
+    public PetState State => _state;
     public PetState? PendingEmotion => _pendingEmotion;
-    public string SpeechText     => _bubbleText;
-    public void   SetQuiet(bool quiet) => _quiet = quiet;
+    public string SpeechText => _bubbleText;
+    public void SetQuiet(bool quiet) => _quiet = quiet;
     /// <summary>True while a speech bubble is currently showing.</summary>
-    public bool   IsSpeaking     => _bubbleTimeLeft > 0;
+    public bool IsSpeaking => _bubbleTimeLeft > 0;
 
     // Let the App/scheduler set this to trigger a stretch at the next opportunity.
     public void RequestStretch() => _stretchPending = true;
@@ -144,7 +144,7 @@ public sealed class PetEngine
     public void ComeTo(double screenX)
     {
         if (_state is PetState.Drag or PetState.Fall) return;
-        _calledToX     = screenX;
+        _calledToX = screenX;
         _calledTimeout = 12.0;
         if (_state != PetState.Walk) EnterState(PetState.Walk);
     }
@@ -155,7 +155,7 @@ public sealed class PetEngine
     {
         if (_state is PetState.Drag or PetState.Fall or PetState.Pounce or PetState.Hunt or PetState.Jump)
         {
-            _pendingEmotion    = state;
+            _pendingEmotion = state;
             _pendingEmotionTtl = PendingEmotionTtl;
             return;
         }
@@ -166,7 +166,7 @@ public sealed class PetEngine
     /// <summary>Show a speech bubble above the cat for `seconds`. It tracks the cat each frame.</summary>
     public void ShowSpeech(string text, double seconds)
     {
-        _bubbleText     = text ?? "";
+        _bubbleText = text ?? "";
         _bubbleTimeLeft = Math.Max(0, seconds);
     }
 
@@ -177,10 +177,10 @@ public sealed class PetEngine
     public void ClearDecorations()
     {
         _bubbleTimeLeft = 0;
-        _bubbleText     = "";
+        _bubbleText = "";
         _view.ClearSpeechBubble();
         _tpLength = 0;
-        _tpIdle   = 0;
+        _tpIdle = 0;
         _view.ClearToiletPaper();
         _view.SetHeatLevel(0);
     }
@@ -189,7 +189,7 @@ public sealed class PetEngine
     public void ClearSpeech()
     {
         _bubbleTimeLeft = 0;
-        _bubbleText     = "";
+        _bubbleText = "";
         _view.ClearSpeechBubble();
     }
 
@@ -205,29 +205,29 @@ public sealed class PetEngine
                      MouseMonitor? mouse = null, SystemMonitor? system = null,
                      ToyService? toyService = null)
     {
-        _view            = view;
-        _anim            = anim;
+        _view = view;
+        _anim = anim;
         _surfaceProvider = surfaceProvider;
-        _sm              = sm;
-        _settings        = settings;
-        _keyboard        = keyboard;
-        _mouse           = mouse;
-        _system          = system;
-        _toyService      = toyService;
+        _sm = sm;
+        _settings = settings;
+        _keyboard = keyboard;
+        _mouse = mouse;
+        _system = system;
+        _toyService = toyService;
 
         _personality = new Personality();
         _personality.LoadFrom(settings);
         _personality.SetActivePet(anim.Manifest.Name);
 
         _sizeScale = Math.Clamp(settings.SizeScale, 0.5, 2.0);
-        _w = anim.Manifest.CellWidth  * anim.Manifest.Scale * _sizeScale;
+        _w = anim.Manifest.CellWidth * anim.Manifest.Scale * _sizeScale;
         _h = anim.Manifest.CellHeight * anim.Manifest.Scale * _sizeScale;
 
         _desktop = DesktopGeometry.Capture(view.DpiScale);
         _calledToX = double.NaN;
 
         var primary = SystemParameters.WorkArea;
-        var work    = _desktop.WorkAreaAt(primary.Left + primary.Width / 2);
+        var work = _desktop.WorkAreaAt(primary.Left + primary.Width / 2);
         _x = work.Left + (work.Width - _w) / 2;
         SetFeet(work.Bottom);
 
@@ -377,7 +377,7 @@ public sealed class PetEngine
 
         double feet = FeetY, cx = CenterX;
         _sizeScale = sizeScale;
-        _w = _anim.Manifest.CellWidth  * _anim.Manifest.Scale * _sizeScale;
+        _w = _anim.Manifest.CellWidth * _anim.Manifest.Scale * _sizeScale;
         _h = _anim.Manifest.CellHeight * _anim.Manifest.Scale * _sizeScale;
         SetCenterX(cx);
         SetFeet(feet);
@@ -396,7 +396,7 @@ public sealed class PetEngine
         double feet = FeetY, cx = CenterX;
         _anim = newAnim;
         _personality.SetActivePet(_anim.Manifest.Name);
-        _w = _anim.Manifest.CellWidth  * _anim.Manifest.Scale * _sizeScale;
+        _w = _anim.Manifest.CellWidth * _anim.Manifest.Scale * _sizeScale;
         _h = _anim.Manifest.CellHeight * _anim.Manifest.Scale * _sizeScale;
         SetCenterX(cx);
         SetFeet(feet);
@@ -406,11 +406,11 @@ public sealed class PetEngine
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
-    private double CenterX      => _x + _w / 2;
-    private double FeetY        => _y + _h;
-    private void   SetFeet(double fy)   => _y = fy - _h;
-    private void   SetCenterX(double cx) => _x = cx - _w / 2;
-    private double Speed        => Math.Max(0.2, _settings.Speed);
+    private double CenterX => _x + _w / 2;
+    private double FeetY => _y + _h;
+    private void SetFeet(double fy) => _y = fy - _h;
+    private void SetCenterX(double cx) => _x = cx - _w / 2;
+    private double Speed => Math.Max(0.2, _settings.Speed);
 
     // ── external input ────────────────────────────────────────────────────────
 
@@ -547,8 +547,8 @@ public sealed class PetEngine
             _pendingEmotionTtl -= dt;
             if (_pendingEmotionTtl <= 0) _pendingEmotion = null;
         }
-        if (_batCooldown > 0)   _batCooldown   -= dt;
-        if (_huntCooldown > 0)  _huntCooldown  -= dt;
+        if (_batCooldown > 0) _batCooldown -= dt;
+        if (_huntCooldown > 0) _huntCooldown -= dt;
         if (_knockCooldown > 0) _knockCooldown -= dt;
 
         // ── scroll → toilet-paper play ──────────────────────────────────────────
@@ -556,13 +556,13 @@ public sealed class PetEngine
 
         // ── typing detection (overrides normal states, but not drag/fall/pet/stretch/play) ──
         if (_state != PetState.Drag && _state != PetState.Fall &&
-            _state != PetState.Pet  && _state != PetState.Stretch &&
+            _state != PetState.Pet && _state != PetState.Stretch &&
             _state != PetState.Play)
         {
             float kps = _keyboard?.KeysPerSecond ?? 0;
 
             if (kps > 0.5f) _typingCooldownLeft = TypingCooldown;
-            else            _typingCooldownLeft -= dt;
+            else _typingCooldownLeft -= dt;
 
             bool inTypingWindow = _typingCooldownLeft > 0;
 
@@ -596,42 +596,42 @@ public sealed class PetEngine
         // ── per-state update ──────────────────────────────────────────────────
         switch (_state)
         {
-            case PetState.Idle:       UpdateIdle(dt);       break;
-            case PetState.Walk:       UpdateWalk(dt);       break;
-            case PetState.Chase:      UpdateChase(dt);      break;
-            case PetState.Sleep:      UpdateSleep(dt);      break;
-            case PetState.Eat:        UpdateEat(dt);        break;
-            case PetState.Pet:        UpdatePet(dt);        break;
-            case PetState.Stretch:    UpdateStretch(dt);    break;
+            case PetState.Idle: UpdateIdle(dt); break;
+            case PetState.Walk: UpdateWalk(dt); break;
+            case PetState.Chase: UpdateChase(dt); break;
+            case PetState.Sleep: UpdateSleep(dt); break;
+            case PetState.Eat: UpdateEat(dt); break;
+            case PetState.Pet: UpdatePet(dt); break;
+            case PetState.Stretch: UpdateStretch(dt); break;
             case PetState.Typing:
-            case PetState.TypingFast: UpdateTyping(dt);     break;
-            case PetState.Play:       UpdateStationary(dt); break;
-            case PetState.Zoomies:    UpdateZoomies(dt);    break;
-            case PetState.Bat:        UpdateBat(dt);        break;
-            case PetState.Hunt:       UpdateHunt(dt);       break;
-            case PetState.Pounce:     UpdatePounce(dt);     break;
-            case PetState.Proud:      UpdateProud(dt);      break;
-            case PetState.Groom:      UpdateStationary(dt); break;
-            case PetState.Yawn:       UpdateYawn(dt);       break;
-            case PetState.Loaf:       UpdateStationary(dt); break;
-            case PetState.Gift:       UpdateGift(dt);       break;
-            case PetState.Knockoff:   UpdateStationary(dt); break;
-            case PetState.SideRest:   UpdateStationary(dt); break;
-            case PetState.Wakeup:     UpdateWakeup(dt);     break;
-            case PetState.Spin:       UpdateSpin(dt);       break;
-            case PetState.Jump:       UpdateJump(dt);       break;
-            case PetState.Talk:       UpdateStationary(dt); break;
-            case PetState.Blink:      UpdateBlink(dt);      break;
+            case PetState.TypingFast: UpdateTyping(dt); break;
+            case PetState.Play: UpdateStationary(dt); break;
+            case PetState.Zoomies: UpdateZoomies(dt); break;
+            case PetState.Bat: UpdateBat(dt); break;
+            case PetState.Hunt: UpdateHunt(dt); break;
+            case PetState.Pounce: UpdatePounce(dt); break;
+            case PetState.Proud: UpdateProud(dt); break;
+            case PetState.Groom: UpdateStationary(dt); break;
+            case PetState.Yawn: UpdateYawn(dt); break;
+            case PetState.Loaf: UpdateStationary(dt); break;
+            case PetState.Gift: UpdateGift(dt); break;
+            case PetState.Knockoff: UpdateStationary(dt); break;
+            case PetState.SideRest: UpdateStationary(dt); break;
+            case PetState.Wakeup: UpdateWakeup(dt); break;
+            case PetState.Spin: UpdateSpin(dt); break;
+            case PetState.Jump: UpdateJump(dt); break;
+            case PetState.Talk: UpdateStationary(dt); break;
+            case PetState.Blink: UpdateBlink(dt); break;
             case PetState.LookAround: UpdateLookAround(dt); break;
-            case PetState.Sit:        UpdateStationary(dt); break;
-            case PetState.Happy:      UpdateStationary(dt); break;
-            case PetState.Annoyed:    UpdateStationary(dt); break;
-            case PetState.Surprised:  UpdateStationary(dt); break;
-            case PetState.Wave:       UpdateStationary(dt); break;
-            case PetState.Celebrate:  UpdateStationary(dt); break;
-            case PetState.Confused:   UpdateStationary(dt); break;
-            case PetState.Fall:       UpdateFall(dt);       break;
-            case PetState.Drag:       UpdateDrag(dt);       break;
+            case PetState.Sit: UpdateStationary(dt); break;
+            case PetState.Happy: UpdateStationary(dt); break;
+            case PetState.Annoyed: UpdateStationary(dt); break;
+            case PetState.Surprised: UpdateStationary(dt); break;
+            case PetState.Wave: UpdateStationary(dt); break;
+            case PetState.Celebrate: UpdateStationary(dt); break;
+            case PetState.Confused: UpdateStationary(dt); break;
+            case PetState.Fall: UpdateFall(dt); break;
+            case PetState.Drag: UpdateDrag(dt); break;
         }
 
         // ── speech bubble — redraw each frame so it follows the cat ──
@@ -639,7 +639,7 @@ public sealed class PetEngine
         {
             _bubbleTimeLeft -= dt;
             if (_bubbleTimeLeft > 0) _view.DrawSpeechBubble(_x, _y, _w, _h, _bubbleText);
-            else                     { _bubbleText = ""; _view.ClearSpeechBubble(); }
+            else { _bubbleText = ""; _view.ClearSpeechBubble(); }
         }
 
         _view.Render(_anim.Tick(dt), _x, _y, _facing);
@@ -1476,7 +1476,7 @@ public sealed class PetEngine
     private bool ClampHorizontally()
     {
         var bounds = _desktop.Bounds;
-        if (_x < bounds.Left)       { _x = bounds.Left;       return true; }
+        if (_x < bounds.Left) { _x = bounds.Left; return true; }
         if (_x + _w > bounds.Right) { _x = bounds.Right - _w; return true; }
         return false;
     }

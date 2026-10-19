@@ -34,7 +34,7 @@ public sealed class SpriteAnimator
         using (var ms = new MemoryStream(sheetBytes))
         {
             sheet.BeginInit();
-            sheet.CacheOption  = BitmapCacheOption.OnLoad;   // decode now; the stream closes below
+            sheet.CacheOption = BitmapCacheOption.OnLoad;   // decode now; the stream closes below
             sheet.StreamSource = ms;
             sheet.EndInit();
         }
@@ -68,37 +68,37 @@ public sealed class SpriteAnimator
 
     public static readonly IReadOnlyDictionary<string, string[]> FallbackChain = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
-        ["wave"]        = ["talk", "happy", "pet", "idle"],
-        ["celebrate"]   = ["happy", "jump", "proud", "idle"],
-        ["confused"]    = ["lookaround", "blink", "surprised", "idle"],
-        ["pout"]        = ["annoyed", "idle"],
-        ["laugh"]       = ["happy", "celebrate", "idle"],
-        ["facepalm"]    = ["annoyed", "lookaround", "idle"],
-        ["yawn"]        = ["sleep", "siderest", "idle"],
-        ["stretch"]     = ["wakeup", "idle"],
-        ["focus"]       = ["typing", "idle"],
-        ["work"]        = ["typing", "idle"],
-        ["typingfast"]  = ["typing", "idle"],
-        ["crouch"]      = ["sit", "loaf", "idle"],
-        ["pounce"]      = ["jump", "walk", "idle"],
-        ["proud"]       = ["happy", "sit", "idle"],
-        ["groom"]       = ["pet", "sit", "idle"],
-        ["loaf"]        = ["sit", "siderest", "idle"],
-        ["siderest"]    = ["sleep", "sit", "idle"],
-        ["wakeup"]      = ["stretch", "idle"],
-        ["talk"]        = ["idle"],
-        ["blink"]       = ["idle"],
-        ["lookaround"]  = ["idle"],
-        ["sit"]         = ["idle"],
-        ["happy"]       = ["pet", "idle"],
-        ["annoyed"]     = ["idle"],
-        ["surprised"]   = ["idle"],
-        ["sideeye"]       = ["annoyed", "lookaround", "idle"],
-        ["stare"]         = ["lookaround", "blink", "idle"],
+        ["wave"] = ["talk", "happy", "pet", "idle"],
+        ["celebrate"] = ["happy", "jump", "proud", "idle"],
+        ["confused"] = ["lookaround", "blink", "surprised", "idle"],
+        ["pout"] = ["annoyed", "idle"],
+        ["laugh"] = ["happy", "celebrate", "idle"],
+        ["facepalm"] = ["annoyed", "lookaround", "idle"],
+        ["yawn"] = ["sleep", "siderest", "idle"],
+        ["stretch"] = ["wakeup", "idle"],
+        ["focus"] = ["typing", "idle"],
+        ["work"] = ["typing", "idle"],
+        ["typingfast"] = ["typing", "idle"],
+        ["crouch"] = ["sit", "loaf", "idle"],
+        ["pounce"] = ["jump", "walk", "idle"],
+        ["proud"] = ["happy", "sit", "idle"],
+        ["groom"] = ["pet", "sit", "idle"],
+        ["loaf"] = ["sit", "siderest", "idle"],
+        ["siderest"] = ["sleep", "sit", "idle"],
+        ["wakeup"] = ["stretch", "idle"],
+        ["talk"] = ["idle"],
+        ["blink"] = ["idle"],
+        ["lookaround"] = ["idle"],
+        ["sit"] = ["idle"],
+        ["happy"] = ["pet", "idle"],
+        ["annoyed"] = ["idle"],
+        ["surprised"] = ["idle"],
+        ["sideeye"] = ["annoyed", "lookaround", "idle"],
+        ["stare"] = ["lookaround", "blink", "idle"],
         ["dramaticblink"] = ["blink", "idle"],
-        ["facepaw"]       = ["facepalm", "confused", "annoyed", "idle"],
-        ["flop"]          = ["siderest", "loaf", "sleep", "idle"],
-        ["zoomies"]       = ["walk", "idle"],
+        ["facepaw"] = ["facepalm", "confused", "annoyed", "idle"],
+        ["flop"] = ["siderest", "loaf", "sleep", "idle"],
+        ["zoomies"] = ["walk", "idle"],
     };
 
     /// <summary>
