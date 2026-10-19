@@ -10,7 +10,7 @@
         ResizeMode="NoResize"
         Focusable="False"
         ShowActivated="False"
-        Width="350" Height="42"
+        Width="410" Height="42"
         WindowStartupLocation="Manual"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         KeyDown="Window_KeyDown">
@@ -26,6 +26,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -57,8 +58,13 @@
             <!-- 5. Focus Timer mini pill -->
             <TextBlock x:Name="FocusTimerText" Grid.Column="4" Text="⏱ 25m" FontSize="11" Foreground="#FFFB923C" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="Collapsed"/>
 
-            <!-- 6. Close button -->
-            <Button x:Name="CloseButton" Grid.Column="5" Content="✕" Width="20" Height="20"
+            <!-- 6. System Health mini pill -->
+            <Border x:Name="HealthBadge" Grid.Column="5" Background="#FF1E293B" CornerRadius="10" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock x:Name="HealthBadgeText" Text="💻 12% | 🧠 45%" FontSize="10" FontWeight="SemiBold" Foreground="#FF38BDF8"/>
+            </Border>
+
+            <!-- 7. Close button -->
+            <Button x:Name="CloseButton" Grid.Column="6" Content="✕" Width="20" Height="20"
                     FontSize="10" Background="Transparent" Foreground="#FFA78BFA" BorderThickness="0"
                     Cursor="Hand" VerticalAlignment="Center" Click="CloseButton_Click"/>
         </Grid>

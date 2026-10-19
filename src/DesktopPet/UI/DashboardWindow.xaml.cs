@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using DesktopPet.Services;
 using DesktopPet.Services.Agent;
 using DesktopPet.Services.DeskSense;
+using DesktopPet.Services.Health;
 using DesktopPet.Services.Radar;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
@@ -37,6 +38,7 @@ public partial class DashboardWindow : Window
     private readonly ClaudeCodeIntegrationService _claudeCodeService;
     private readonly DeveloperRadarService? _radarService;
     private readonly Action? _onToggleHud;
+    private readonly SystemHealthService? _healthService;
 
     private string _currentTab = "Overview";
     private string _currentTaskFilterTab = "All";
@@ -59,7 +61,8 @@ public partial class DashboardWindow : Window
         AgentActivityService? agentActivityService = null,
         ClaudeCodeIntegrationService? claudeCodeService = null,
         DeveloperRadarService? radarService = null,
-        Action? onToggleHud = null)
+        Action? onToggleHud = null,
+        SystemHealthService? healthService = null)
     {
         _taskService = taskService;
         _focusTimer = focusTimer;
@@ -69,6 +72,7 @@ public partial class DashboardWindow : Window
         _claudeCodeService = claudeCodeService ?? new ClaudeCodeIntegrationService();
         _radarService = radarService;
         _onToggleHud = onToggleHud;
+        _healthService = healthService;
 
         InitializeComponent();
         _isInitialized = true;
@@ -89,6 +93,11 @@ public partial class DashboardWindow : Window
             _radarService.RadarStateChanged += OnRadarStateChanged;
         }
 
+        if (_healthService != null)
+        {
+            _healthService.HealthUpdated += OnHealthUpdated;
+        }
+
         // Ticking timer for smooth clock countdowns
         _uiRefreshTimer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher)
         {
@@ -99,6 +108,17 @@ public partial class DashboardWindow : Window
 
         SelectTab(initialTab ?? "Overview");
         UpdateTimerDisplays();
+    }
+
+    private void OnHealthUpdated(SystemHealthSnapshot snapshot)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab == "Health")
+            {
+                RefreshHealth();
+            }
+        });
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -124,6 +144,11 @@ public partial class DashboardWindow : Window
         if (_radarService != null)
         {
             _radarService.RadarStateChanged -= OnRadarStateChanged;
+        }
+
+        if (_healthService != null)
+        {
+            _healthService.HealthUpdated -= OnHealthUpdated;
         }
 
         _uiRefreshTimer?.Stop();
@@ -180,6 +205,7 @@ public partial class DashboardWindow : Window
         GoalsView.Visibility = tabName == "Goals" ? Visibility.Visible : Visibility.Collapsed;
         AgentView.Visibility = (tabName is "Agent" or "AgentActivity") ? Visibility.Visible : Visibility.Collapsed;
         RadarView.Visibility = tabName == "Radar" ? Visibility.Visible : Visibility.Collapsed;
+        HealthView.Visibility = tabName == "Health" ? Visibility.Visible : Visibility.Collapsed;
 
         // Update nav button styles
         UpdateNavButton(NavOverviewBtn, tabName == "Overview");
@@ -190,6 +216,7 @@ public partial class DashboardWindow : Window
         UpdateNavButton(NavGoalsBtn, tabName == "Goals");
         UpdateNavButton(NavAgentBtn, tabName is "Agent" or "AgentActivity");
         UpdateNavButton(NavRadarBtn, tabName == "Radar");
+        UpdateNavButton(NavHealthBtn, tabName == "Health");
 
         // Refresh selected tab contents
         switch (tabName)
@@ -218,6 +245,9 @@ public partial class DashboardWindow : Window
                 break;
             case "Radar":
                 RefreshRadar();
+                break;
+            case "Health":
+                RefreshHealth();
                 break;
         }
     }
@@ -2283,5 +2313,77 @@ public partial class DashboardWindow : Window
             RadarBranchText.Foreground = repo.StatusBrush;
             RadarRepoSubtext.Text = repo.Path;
         }
+    }
+
+    // =========================================================================
+    // 9. SYSTEM HEALTH VIEW
+    // =========================================================================
+
+    private void RefreshHealth()
+    {
+        if (_healthService == null) return;
+        var snap = _healthService.CurrentSnapshot;
+
+        // CPU
+        HealthCpuPercentText.Text = $"{snap.CpuPercent}%";
+        HealthCpuProgressBar.Value = snap.CpuPercent;
+        HealthCpuStatusText.Text = snap.IsCpuCritical ? "High Load" : "Normal";
+        HealthCpuStatusText.Foreground = snap.IsCpuCritical
+            ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF87171"))
+            : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF22C55E"));
+        HealthCpuThresholdText.Text = $"Alert threshold: {_settings.SystemHealthCpuThreshold}%";
+
+        // RAM
+        HealthRamPercentText.Text = $"{snap.MemoryPercent}%";
+        HealthRamProgressBar.Value = snap.MemoryPercent;
+        HealthRamDetailText.Text = $"{snap.UsedMemoryGb} / {snap.TotalMemoryGb} GB used";
+        HealthRamStatusText.Text = snap.IsMemoryCritical ? "Pressure" : "Normal";
+        HealthRamStatusText.Foreground = snap.IsMemoryCritical
+            ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF87171"))
+            : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF22C55E"));
+
+        // Storage
+        var primaryDrive = snap.Drives.FirstOrDefault();
+        if (primaryDrive != null)
+        {
+            HealthDiskFreeText.Text = $"{primaryDrive.FreeGb} GB";
+            HealthDiskProgressBar.Value = primaryDrive.UsedPercent;
+            HealthDiskDetailText.Text = $"{primaryDrive.Name} ({primaryDrive.UsedPercent}% used)";
+            HealthDiskStatusText.Text = snap.IsDiskCritical ? "Low Space" : "Healthy";
+            HealthDiskStatusText.Foreground = snap.IsDiskCritical
+                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF87171"))
+                : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF22C55E"));
+        }
+        else
+        {
+            HealthDiskFreeText.Text = "N/A";
+            HealthDiskProgressBar.Value = 0;
+            HealthDiskDetailText.Text = "No drives detected";
+            HealthDiskStatusText.Text = "Normal";
+        }
+
+        // Battery / Power
+        HealthBatteryPercentText.Text = snap.HasBattery ? $"{snap.BatteryPercent}%" : "AC";
+        HealthBatteryProgressBar.Value = snap.HasBattery ? Math.Max(0, snap.BatteryPercent) : 100;
+        HealthBatteryDetailText.Text = snap.HasBattery
+            ? (snap.IsCharging ? "Charging" : "On Battery")
+            : "Connected to Power";
+        HealthPowerStatusText.Text = snap.IsBatteryCritical ? "Low Battery" : (snap.IsCharging ? "Charging" : "AC");
+        HealthPowerStatusText.Foreground = snap.IsBatteryCritical
+            ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF87171"))
+            : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF22C55E"));
+
+        // Drives list
+        HealthDrivesList.ItemsSource = snap.Drives;
+
+        // Processes list
+        HealthProcessesList.ItemsSource = snap.Processes;
+        HealthProcessCountText.Text = $"{snap.Processes.Count} active";
+    }
+
+    private void HealthRefreshBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _healthService?.Poll();
+        RefreshHealth();
     }
 }

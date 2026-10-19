@@ -15,6 +15,10 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using DesktopPet.Engine;
 using DesktopPet.Native;
+using DesktopPet.Services;
+using DragEventArgs = System.Windows.DragEventArgs;
+using DragDropEffects = System.Windows.DragDropEffects;
+using DataFormats = System.Windows.DataFormats;
 
 namespace DesktopPet.UI;
 
@@ -25,6 +29,13 @@ public partial class PetWindow : Window, IPetView
     private readonly Stopwatch _clock = new();
     private double _lastSeconds;
     private readonly Random _rng = new();
+
+    public NotesService? NotesService { get; set; }
+    public TaskService? TaskService { get; set; }
+    public AppSettings? Settings { get; set; }
+    public ToyService? ToyService { get; set; }
+    public Action<ToyType>? OnSpawnToy { get; set; }
+    public Action? OnClearToys { get; set; }
 
     public PetWindow()
     {
@@ -329,6 +340,80 @@ public partial class PetWindow : Window, IPetView
         e.Handled = true;
     }
 
+    // ── Dropzone Drag & Drop ──────────────────────────────────────────────────
+
+    private void Window_DragEnter(object sender, DragEventArgs e)
+    {
+        if (Settings?.EnableDropzone == false)
+        {
+            e.Effects = DragDropEffects.None;
+            return;
+        }
+
+        if (e.Data.GetDataPresent(DataFormats.FileDrop) ||
+            e.Data.GetDataPresent(DataFormats.UnicodeText) ||
+            e.Data.GetDataPresent(DataFormats.Text))
+        {
+            e.Effects = DragDropEffects.Copy;
+            DropzoneBorder.Visibility = Visibility.Visible;
+            e.Handled = true;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+    }
+
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        if (Settings?.EnableDropzone == false)
+        {
+            e.Effects = DragDropEffects.None;
+            return;
+        }
+
+        if (e.Data.GetDataPresent(DataFormats.FileDrop) ||
+            e.Data.GetDataPresent(DataFormats.UnicodeText) ||
+            e.Data.GetDataPresent(DataFormats.Text))
+        {
+            e.Effects = DragDropEffects.Copy;
+            DropzoneBorder.Visibility = Visibility.Visible;
+            e.Handled = true;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+    }
+
+    private void Window_DragLeave(object sender, DragEventArgs e)
+    {
+        DropzoneBorder.Visibility = Visibility.Collapsed;
+    }
+
+    private void Window_Drop(object sender, DragEventArgs e)
+    {
+        DropzoneBorder.Visibility = Visibility.Collapsed;
+        if (Settings?.EnableDropzone == false) return;
+
+        var payload = DropzonePayload.FromDataObject(e.Data);
+        if (payload == null) return;
+
+        string action = Settings?.DropzoneDefaultAction ?? "Prompt";
+        var popover = new DropzoneActionWindow(
+            payload,
+            Left, Top, ActualWidth > 0 ? ActualWidth : Width, ActualHeight > 0 ? ActualHeight : Height,
+            NotesService, TaskService,
+            feedback =>
+            {
+                _engine?.TriggerReaction(PetState.Happy, feedback, cooldownSeconds: 1.5);
+            },
+            action);
+        popover.Show();
+
+        e.Handled = true;
+    }
+
     /// <summary>Toggle click-through mode using Win32 extended window styles.</summary>
     public void SetClickThrough(bool enabled)
     {
@@ -360,7 +445,9 @@ public partial class PetWindow : Window, IPetView
         Action onResetPosition,
         Action onExit,
         Action? onDeveloperRadar = null,
-        Action? onToggleDeveloperHud = null)
+        Action? onToggleDeveloperHud = null,
+        Action<ToyType>? onSpawnToy = null,
+        Action? onClearToys = null)
     {
         var menu = new ContextMenu();
 
@@ -460,7 +547,24 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(devEventsItem);
         if (radarItem != null) menu.Items.Add(radarItem);
         if (hudItem != null) menu.Items.Add(hudItem);
+        var toysSubmenu = new MenuItem { Header = "🎾 Desktop Toys" };
+        var ballItem = new MenuItem { Header = "🎾 Bouncy Ball" };
+        ballItem.Click += (_, _) => (onSpawnToy ?? OnSpawnToy)?.Invoke(ToyType.Ball);
+        var featherItem = new MenuItem { Header = "🪶 Feather Wand" };
+        featherItem.Click += (_, _) => (onSpawnToy ?? OnSpawnToy)?.Invoke(ToyType.Feather);
+        var cushionItem = new MenuItem { Header = "🛋️ Plush Cushion" };
+        cushionItem.Click += (_, _) => (onSpawnToy ?? OnSpawnToy)?.Invoke(ToyType.Cushion);
+        var clearToysItem = new MenuItem { Header = "Clear All Toys" };
+        clearToysItem.Click += (_, _) => (onClearToys ?? OnClearToys)?.Invoke();
+
+        toysSubmenu.Items.Add(ballItem);
+        toysSubmenu.Items.Add(featherItem);
+        toysSubmenu.Items.Add(cushionItem);
+        toysSubmenu.Items.Add(new Separator());
+        toysSubmenu.Items.Add(clearToysItem);
+
         menu.Items.Add(studioItem);
+        menu.Items.Add(toysSubmenu);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(pauseItem);

@@ -57,6 +57,7 @@ public sealed class PetEngine
     private readonly KeyboardMonitor?  _keyboard;
     private readonly MouseMonitor?     _mouse;
     private readonly SystemMonitor?    _system;
+    private ToyService?                _toyService;
 
     // ── physics / position ────────────────────────────────────────────────────
     private double _w, _h;                 // current on-screen pet size (DIP); changes with SizeScale
@@ -121,6 +122,8 @@ public sealed class PetEngine
     private const double TpIdleDelay = 1.2;    // seconds of no scroll before retracting
 
     public bool   Paused         { get; set; }
+    public double X              => _x;
+    public double Y              => _y;
     public double Width          => _w;
     public double Height         => _h;
     public PetState State        => _state;
@@ -190,9 +193,17 @@ public sealed class PetEngine
         _view.ClearSpeechBubble();
     }
 
+    /// <summary>Optional toy service managing interactive desktop toys.</summary>
+    public ToyService? ToyService
+    {
+        get => _toyService;
+        set => _toyService = value;
+    }
+
     public PetEngine(IPetView view, SpriteAnimator anim, SurfaceProvider surfaceProvider,
                      StateMachine sm, AppSettings settings, KeyboardMonitor? keyboard = null,
-                     MouseMonitor? mouse = null, SystemMonitor? system = null)
+                     MouseMonitor? mouse = null, SystemMonitor? system = null,
+                     ToyService? toyService = null)
     {
         _view            = view;
         _anim            = anim;
@@ -202,6 +213,7 @@ public sealed class PetEngine
         _keyboard        = keyboard;
         _mouse           = mouse;
         _system          = system;
+        _toyService      = toyService;
 
         _personality = new Personality();
         _personality.LoadFrom(settings);
@@ -318,6 +330,14 @@ public sealed class PetEngine
         SetFeet(work.Bottom);
         _vx = 0; _vy = 0;
         EnterState(PetState.Idle);
+    }
+
+    public void TeleportTo(double x, double y)
+    {
+        _x = x;
+        _y = y;
+        _vx = 0;
+        _vy = 0;
     }
 
     /// <summary>Checks whether the companion is currently outside the bounds of all connected displays.</summary>
@@ -627,6 +647,71 @@ public sealed class PetEngine
 
     // ── state updates ─────────────────────────────────────────────────────────
 
+    public bool TryInteractWithToys(double dt)
+    {
+        if (!_settings.EnableToyInteractions || _toyService == null || _quiet) return false;
+
+        var toy = _toyService.GetNearestToy(CenterX, FeetY, maxDistance: 1200);
+        if (toy == null) return false;
+
+        double dx = toy.CenterX - CenterX;
+        double dy = Math.Abs(toy.CenterY - FeetY);
+
+        if (Math.Abs(dx) < 42 && dy < 160)
+        {
+            _toyService.RecordInteraction(toy.Id);
+            _facing = dx >= 0 ? 1 : -1;
+
+            if (_personality.IsBillu)
+            {
+                if (toy.Type == ToyType.Cushion)
+                {
+                    TriggerReaction(PetState.Loaf, _personality.GetToyLine(ToyType.Cushion), cooldownSeconds: 6.0);
+                }
+                else
+                {
+                    if (_sm.Chance(0.5))
+                        TriggerReaction(PetState.Bat, _personality.GetToyLine(toy.Type), cooldownSeconds: 4.0);
+                    else
+                        TriggerReaction(PetState.Annoyed, _personality.GetToyLine(toy.Type), cooldownSeconds: 5.0);
+                }
+            }
+            else
+            {
+                switch (toy.Type)
+                {
+                    case ToyType.Ball:
+                        if (_sm.Chance(0.5))
+                            TriggerReaction(PetState.Bat, _personality.GetToyLine(ToyType.Ball), cooldownSeconds: 3.0);
+                        else
+                            TriggerReaction(PetState.Pounce, _personality.GetToyLine(ToyType.Ball), cooldownSeconds: 3.0);
+                        break;
+
+                    case ToyType.Feather:
+                        if (_sm.Chance(0.5))
+                            TriggerReaction(PetState.Jump, _personality.GetToyLine(ToyType.Feather), cooldownSeconds: 3.0);
+                        else
+                            TriggerReaction(PetState.Play, _personality.GetToyLine(ToyType.Feather), cooldownSeconds: 3.0);
+                        break;
+
+                    case ToyType.Cushion:
+                        TriggerReaction(PetState.Sleep, _personality.GetToyLine(ToyType.Cushion), cooldownSeconds: 6.0);
+                        break;
+                }
+            }
+            return true;
+        }
+        else if (_state == PetState.Idle && _sm.Chance(0.35))
+        {
+            _calledToX = toy.CenterX;
+            _calledTimeout = 7.0;
+            EnterState(PetState.Walk);
+            return true;
+        }
+
+        return false;
+    }
+
     private void UpdateIdle(double dt)
     {
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
@@ -635,6 +720,7 @@ public sealed class PetEngine
         if (TryApplyPendingEmotion()) return;
 
         if (TryStartHunt()) return;
+        if (TryInteractWithToys(dt)) return;
 
         // Always watch the cursor — face toward it even while idle
         var cursor = CursorDip();
@@ -749,15 +835,34 @@ public sealed class PetEngine
 
     private void UpdateWalk(double dt)
     {
+        if (double.IsNaN(_calledToX) && !_settings.EnableAutonomousWandering)
+        {
+            _vx = 0;
+            EnterState(PetState.Idle);
+            return;
+        }
+
         if (TryStartHunt()) return;
+        if (TryInteractWithToys(dt)) return;
 
         // Answering a "come here": steer toward the caller instead of wandering.
         if (!double.IsNaN(_calledToX))
         {
             int want = Math.Sign(_calledToX - CenterX);
-            if (want != 0) { _facing = want; _vx = want * BaseWalkSpeed; }
+            if (want != 0) { _facing = want; }
 
-            _x += _vx * dt * Speed * 1.35;   // a touch eager
+            double targetVx = _facing * BaseWalkSpeed * Speed * 1.35;   // a touch eager
+            if (_settings.EnableSmoothMovement)
+            {
+                _vx = MoveTowards(_vx, targetVx, 260.0 * dt);
+                _x += _vx * dt;
+            }
+            else
+            {
+                _vx = targetVx;
+                _x += _vx * dt;
+            }
+
             ClampHorizontally();
 
             if (!IsSupported()) { EnterState(PetState.Fall); return; }
@@ -770,8 +875,29 @@ public sealed class PetEngine
             return;
         }
 
-        _x += _vx * dt * Speed;
-        if (ClampHorizontally()) FlipDirection();
+        if (_settings.EnableSmoothMovement)
+        {
+            double targetVx = _facing * BaseWalkSpeed * Speed;
+            _vx = MoveTowards(_vx, targetVx, 180.0 * dt);
+            _x += _vx * dt;
+        }
+        else
+        {
+            _x += _vx * dt * Speed;
+        }
+
+        if (ClampHorizontally())
+        {
+            if (_settings.EnableEdgeResting && !_quiet && _sm.Chance(0.35))
+            {
+                var bounds = _desktop.Bounds;
+                _facing = (_x <= bounds.Left + 5) ? 1 : -1;
+                _vx = 0;
+                EnterState(_personality.IsBillu ? PetState.Loaf : (_sm.Chance(0.5) ? PetState.Sit : PetState.LookAround));
+                return;
+            }
+            FlipDirection();
+        }
 
         if (!IsSupported())
         {
@@ -786,6 +912,13 @@ public sealed class PetEngine
 
     private void UpdateChase(double dt)
     {
+        if (!_settings.EnableCursorChase || !_settings.EnableAutonomousWandering || _settings.ReducedMotion)
+        {
+            _vx = 0;
+            EnterState(PetState.Idle);
+            return;
+        }
+
         double cursorX = CursorDip().X;
         int dir = Math.Sign(cursorX - CenterX);
         if (dir != 0) _facing = dir;
@@ -863,6 +996,13 @@ public sealed class PetEngine
 
     private void UpdateZoomies(double dt)
     {
+        if (_settings.ReducedMotion || !_settings.EnableAutonomousWandering)
+        {
+            _vx = 0;
+            EnterState(PetState.Idle);
+            return;
+        }
+
         _x += _vx * dt;
         if (ClampHorizontally()) { _facing = -_facing; _vx = -_vx; }   // bounce off screen edges
 
@@ -1098,7 +1238,7 @@ public sealed class PetEngine
 
     // ── state entry ───────────────────────────────────────────────────────────
 
-    private void EnterState(PetState state)
+    internal void EnterState(PetState state)
     {
         _state = state;
         switch (state)
@@ -1306,6 +1446,7 @@ public sealed class PetEngine
         // Re-reading the layout here is what lets the pet survive a monitor change: bounds,
         // floors and ledge tests all follow from it.
         _desktop = DesktopGeometry.Capture(_view.DpiScale);
+        EnsureVisibleWorkArea();
 
         if (_settings.EnableWindowWalking)
             _surfaces = _surfaceProvider.GetSurfaces(_view.DpiScale, _desktop);
@@ -1318,6 +1459,12 @@ public sealed class PetEngine
                 _surfaces.Add(new Surface(area.Left, area.Right, area.Bottom));
             }
         }
+    }
+
+    public static double MoveTowards(double current, double target, double maxDelta)
+    {
+        if (Math.Abs(target - current) <= maxDelta) return target;
+        return current + Math.Sign(target - current) * maxDelta;
     }
 
     private bool IsSupported() =>

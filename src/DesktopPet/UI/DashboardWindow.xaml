@@ -61,6 +61,7 @@
                     <Button x:Name="NavGoalsBtn" Content="🎯  Goals" Style="{StaticResource NavRailButton}" Tag="Goals" Click="NavBtn_Click"/>
                     <Button x:Name="NavAgentBtn" Content="🤖  Agent Activity" Style="{StaticResource NavRailButton}" Tag="Agent" Click="NavBtn_Click"/>
                     <Button x:Name="NavRadarBtn" Content="📡  Developer Radar" Style="{StaticResource NavRailButton}" Tag="Radar" Click="NavBtn_Click"/>
+                    <Button x:Name="NavHealthBtn" Content="💻  System Health" Style="{StaticResource NavRailButton}" Tag="Health" Click="NavBtn_Click"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -1358,6 +1359,177 @@
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- 9. SYSTEM HEALTH VIEW -->
+            <Grid x:Name="HealthView" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header Title & Controls -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="💻  System Health" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        <Border Background="#FF2D253F" CornerRadius="8" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Local-First Diagnostics" FontSize="11" Foreground="#FFA78BFA"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button x:Name="HealthRefreshBtn" Content="🔄 Refresh" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Margin="0,0,8,0" Click="HealthRefreshBtn_Click"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Key Metrics Cards Row -->
+                <Grid Grid.Row="1" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- CPU Card -->
+                    <Border Grid.Column="0" Style="{StaticResource MetricCardBorder}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False">
+                                <TextBlock Text="💻 CPU Load" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <Border x:Name="HealthCpuStatusBadge" DockPanel.Dock="Right" Background="#FF161320" CornerRadius="4" Padding="4,1">
+                                    <TextBlock x:Name="HealthCpuStatusText" Text="Normal" FontSize="9" FontWeight="Bold" Foreground="#FF22C55E"/>
+                                </Border>
+                            </DockPanel>
+                            <TextBlock x:Name="HealthCpuPercentText" Text="0%" FontSize="22" FontWeight="Bold" Foreground="#FF38BDF8" Margin="0,4,0,2"/>
+                            <ProgressBar x:Name="HealthCpuProgressBar" Height="6" Value="0" Maximum="100" Background="#FF1E1A29" Foreground="#FF38BDF8" Margin="0,4,0,2"/>
+                            <TextBlock x:Name="HealthCpuThresholdText" Text="Alert at 85%" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Memory Card -->
+                    <Border Grid.Column="1" Style="{StaticResource MetricCardBorder}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False">
+                                <TextBlock Text="🧠 RAM Usage" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <Border x:Name="HealthRamStatusBadge" DockPanel.Dock="Right" Background="#FF161320" CornerRadius="4" Padding="4,1">
+                                    <TextBlock x:Name="HealthRamStatusText" Text="Normal" FontSize="9" FontWeight="Bold" Foreground="#FF22C55E"/>
+                                </Border>
+                            </DockPanel>
+                            <TextBlock x:Name="HealthRamPercentText" Text="0%" FontSize="22" FontWeight="Bold" Foreground="#FFA78BFA" Margin="0,4,0,2"/>
+                            <ProgressBar x:Name="HealthRamProgressBar" Height="6" Value="0" Maximum="100" Background="#FF1E1A29" Foreground="#FFA78BFA" Margin="0,4,0,2"/>
+                            <TextBlock x:Name="HealthRamDetailText" Text="0 / 0 GB" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Primary Storage Card -->
+                    <Border Grid.Column="2" Style="{StaticResource MetricCardBorder}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False">
+                                <TextBlock Text="💾 Disk Free" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <Border x:Name="HealthDiskStatusBadge" DockPanel.Dock="Right" Background="#FF161320" CornerRadius="4" Padding="4,1">
+                                    <TextBlock x:Name="HealthDiskStatusText" Text="Healthy" FontSize="9" FontWeight="Bold" Foreground="#FF22C55E"/>
+                                </Border>
+                            </DockPanel>
+                            <TextBlock x:Name="HealthDiskFreeText" Text="0 GB" FontSize="22" FontWeight="Bold" Foreground="#FFFBBF24" Margin="0,4,0,2"/>
+                            <ProgressBar x:Name="HealthDiskProgressBar" Height="6" Value="0" Maximum="100" Background="#FF1E1A29" Foreground="#FFFBBF24" Margin="0,4,0,2"/>
+                            <TextBlock x:Name="HealthDiskDetailText" Text="Drive C: 0% used" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Battery Card -->
+                    <Border Grid.Column="3" Style="{StaticResource MetricCardBorder}">
+                        <StackPanel>
+                            <DockPanel LastChildFill="False">
+                                <TextBlock Text="🔋 Power State" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                <Border x:Name="HealthPowerStatusBadge" DockPanel.Dock="Right" Background="#FF161320" CornerRadius="4" Padding="4,1">
+                                    <TextBlock x:Name="HealthPowerStatusText" Text="AC" FontSize="9" FontWeight="Bold" Foreground="#FF22C55E"/>
+                                </Border>
+                            </DockPanel>
+                            <TextBlock x:Name="HealthBatteryPercentText" Text="100%" FontSize="22" FontWeight="Bold" Foreground="#FF34D399" Margin="0,4,0,2"/>
+                            <ProgressBar x:Name="HealthBatteryProgressBar" Height="6" Value="100" Maximum="100" Background="#FF1E1A29" Foreground="#FF34D399" Margin="0,4,0,2"/>
+                            <TextBlock x:Name="HealthBatteryDetailText" Text="Connected to Power" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Detailed Split Grid: Left = Disks & Thresholds, Right = Monitored Processes -->
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: All Drives and Alert Settings -->
+                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,8,0">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="All Storage Drives &amp; Alerts" FontSize="13" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <ItemsControl x:Name="HealthDrivesList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#FF161320" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <DockPanel Grid.Row="0">
+                                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" FontSize="11"/>
+                                                            <TextBlock Text="{Binding VolumeLabel}" Foreground="{StaticResource TextDimBrush}" FontSize="10" Margin="6,0,0,0"/>
+                                                            <TextBlock Text="{Binding FreeGb, StringFormat='{}{0} GB free'}" Foreground="#FFA78BFA" FontSize="10" HorizontalAlignment="Right"/>
+                                                        </DockPanel>
+                                                        <ProgressBar Grid.Row="1" Height="4" Margin="0,4,0,0" Value="{Binding UsedPercent}" Maximum="100" Background="#FF1E1A29" Foreground="#FF8B5CF6"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Alert Thresholds info box -->
+                                    <Border Background="#FF161320" BorderBrush="#FF2E263E" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,6,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="🛡️ Sustained Companion Alerts" FontSize="11" FontWeight="Bold" Foreground="#FFF3E8FF" Margin="0,0,0,4"/>
+                                            <TextBlock Text="• Alerts trigger after 8s of sustained load with 5% hysteresis." FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                            <TextBlock Text="• Non-intrusive companion remarks with anti-spam cooldowns." FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                            <TextBlock Text="• Completely local monitoring: 0 bytes transmitted externally." FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Right: Monitored Processes List -->
+                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <TextBlock Text="Monitored Dev Processes" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="HealthProcessCountText" Text="0 active" FontSize="11" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="HealthProcessesList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#FF161320" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,6">
+                                                <DockPanel>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="⚙️" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding ProcessName}" FontSize="12" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                        <Border Background="#FF2D253F" CornerRadius="4" Padding="4,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding InstanceCount, StringFormat='{}{0} inst'}" FontSize="9" Foreground="#FFA78BFA"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding WorkingSetMb, StringFormat='{}{0} MB'}" FontSize="11" FontWeight="SemiBold" Foreground="#FF38BDF8" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </DockPanel>
                     </Border>
                 </Grid>

@@ -244,6 +244,51 @@ public sealed class AppSettings
     /// <summary>Whether background repository polling/watching is paused.</summary>
     [JsonPropertyName("pauseRepositoryMonitoring")] public bool PauseRepositoryMonitoring { get; set; } = false;
 
+    // ── Desktop Pet Physics 2.0 & Toys ────────────────────────────────────────
+    /// <summary>Smooth acceleration and deceleration for companion movement.</summary>
+    [JsonPropertyName("enableSmoothMovement")] public bool EnableSmoothMovement { get; set; } = true;
+
+    /// <summary>Screen-edge and corner resting behaviors (loafing/sitting at desk boundaries).</summary>
+    [JsonPropertyName("enableEdgeResting")] public bool EnableEdgeResting { get; set; } = true;
+
+    /// <summary>Allow companion to notice and interact with virtual toys on the desktop.</summary>
+    [JsonPropertyName("enableToyInteractions")] public bool EnableToyInteractions { get; set; } = true;
+
+    // ── Neku Dropzone ─────────────────────────────────────────────────────────
+    /// <summary>Master toggle to accept dragged text, files, and links onto the pet.</summary>
+    [JsonPropertyName("enableDropzone")] public bool EnableDropzone { get; set; } = true;
+
+    /// <summary>Default action on drop: "Prompt", "Note", or "Task". Default "Prompt".</summary>
+    [JsonPropertyName("dropzoneDefaultAction")] public string DropzoneDefaultAction { get; set; } = "Prompt";
+
+    // ── System Health Companion ───────────────────────────────────────────────
+    /// <summary>Master toggle for local system health monitoring (CPU, RAM, Disk, Battery).</summary>
+    [JsonPropertyName("enableSystemHealthMonitoring")] public bool EnableSystemHealthMonitoring { get; set; } = true;
+
+    /// <summary>Sustained CPU usage threshold percentage before alert triggers (default 85%).</summary>
+    [JsonPropertyName("systemHealthCpuThreshold")] public int SystemHealthCpuThreshold { get; set; } = 85;
+
+    /// <summary>Sustained RAM usage threshold percentage before alert triggers (default 90%).</summary>
+    [JsonPropertyName("systemHealthRamThreshold")] public int SystemHealthRamThreshold { get; set; } = 90;
+
+    /// <summary>Low disk space threshold percentage before alert triggers (default 10%).</summary>
+    [JsonPropertyName("systemHealthLowDiskThreshold")] public int SystemHealthLowDiskThreshold { get; set; } = 10;
+
+    /// <summary>Low battery threshold percentage before alert triggers (default 20%).</summary>
+    [JsonPropertyName("systemHealthLowBatteryThreshold")] public int SystemHealthLowBatteryThreshold { get; set; } = 20;
+
+    /// <summary>Whether sustained system health alerts trigger companion reactions.</summary>
+    [JsonPropertyName("enableHealthCompanionAlerts")] public bool EnableHealthCompanionAlerts { get; set; } = true;
+
+    /// <summary>Show compact system health pill (CPU & RAM) on the floating Developer HUD.</summary>
+    [JsonPropertyName("enableHealthHud")] public bool EnableHealthHud { get; set; } = false;
+
+    /// <summary>List of process names to monitor working set and counts for.</summary>
+    [JsonPropertyName("monitoredProcessNames")] public List<string> MonitoredProcessNames { get; set; } = new()
+    {
+        "code", "devenv", "dotnet", "node", "cargo", "docker"
+    };
+
     /// <summary>
     /// Validates all configuration values, clamping numbers within safe limits and falling back
     /// to sensible defaults for corrupt or missing values.
@@ -276,5 +321,11 @@ public sealed class AppSettings
         if (AgentMaxEventsPerSession < 10 || AgentMaxEventsPerSession > 1000) AgentMaxEventsPerSession = 100;
         IdleThresholdSeconds = Math.Clamp(IdleThresholdSeconds, 30, 3600);
         MonitoredRepositoryPaths ??= new();
+        if (DropzoneDefaultAction is not ("Prompt" or "Note" or "Task")) DropzoneDefaultAction = "Prompt";
+        SystemHealthCpuThreshold = Math.Clamp(SystemHealthCpuThreshold, 50, 99);
+        SystemHealthRamThreshold = Math.Clamp(SystemHealthRamThreshold, 50, 99);
+        SystemHealthLowDiskThreshold = Math.Clamp(SystemHealthLowDiskThreshold, 1, 50);
+        SystemHealthLowBatteryThreshold = Math.Clamp(SystemHealthLowBatteryThreshold, 5, 50);
+        MonitoredProcessNames ??= new() { "code", "devenv", "dotnet", "node", "cargo", "docker" };
     }
 }

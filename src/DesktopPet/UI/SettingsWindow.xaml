@@ -98,6 +98,26 @@
                         <CheckBox x:Name="MoodsBox"            Content="Lifelike moods (energetic / sleepy) 🌙"/>
                         <CheckBox x:Name="SystemReactionsBox"  Content="React to system load &amp; focus apps 💻"/>
                         <CheckBox x:Name="TaskReactionsBox"    Content="Celebrate completed tasks ✅"/>
+                        <CheckBox x:Name="SmoothMovementBox"   Content="Smooth acceleration &amp; deceleration 🐾"/>
+                        <CheckBox x:Name="EdgeRestingBox"      Content="Screen-edge walking &amp; corner resting 🪟"/>
+                        <CheckBox x:Name="ToyInteractionsBox"  Content="Interact with virtual desktop toys (🎾, 🪶, 🛋️)"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="📥 Neku Dropzone" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="DropzoneBox" Content="Enable Neku Dropzone (drop text, files &amp; links)"/>
+                        <StackPanel x:Name="DropzonePanel" Margin="22,4,0,0">
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                                <TextBlock Text="Default action:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="DropzoneActionBox" Width="140" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Ask each time" Tag="Ask"/>
+                                    <ComboBoxItem Content="Save as Note" Tag="Note"/>
+                                    <ComboBoxItem Content="Create Task" Tag="Task"/>
+                                    <ComboBoxItem Content="Copy to Clipboard" Tag="Clipboard"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <TextBlock Text="Safely captures snippets or file paths without opening or executing them." Style="{StaticResource Hint}"/>
+                        </StackPanel>
 
                         <Separator Margin="0,12"/>
 
@@ -289,6 +309,37 @@
                                 <Button x:Name="RadarSettingsAddRepoBtn" Content="+ Add Folder" Padding="8,3" FontSize="11" Click="RadarSettingsAddRepoBtn_Click"/>
                                 <Button x:Name="RadarSettingsRemoveRepoBtn" Content="Remove" Style="{StaticResource DangerButton}" Padding="8,3" FontSize="11" Margin="6,0,0,0" Click="RadarSettingsRemoveRepoBtn_Click"/>
                             </StackPanel>
+                        </StackPanel>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="💻 System Health Companion" Style="{StaticResource Head}"/>
+                        <CheckBox x:Name="HealthMonitoringBox" Content="Enable System Health monitoring"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,8"
+                                   Text="Lightweight monitoring of CPU, RAM, disk storage, battery, and process status."/>
+
+                        <StackPanel x:Name="HealthPanel" Margin="22,0,0,0">
+                            <CheckBox x:Name="HealthCompanionAlertsBox" Content="Companion caution reactions for high sustained load"/>
+                            <CheckBox x:Name="HealthHudBox" Content="Show health metrics in Developer HUD (💻 CPU% | 🧠 RAM%)"/>
+
+                            <StackPanel Margin="0,6,0,6">
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock Text="CPU Alert Threshold:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HealthCpuValText" Text="85%" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </DockPanel>
+                                <Slider x:Name="HealthCpuSlider" Minimum="50" Maximum="95" TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,6,0,6">
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock Text="RAM Alert Threshold:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HealthRamValText" Text="85%" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </DockPanel>
+                                <Slider x:Name="HealthRamSlider" Minimum="50" Maximum="95" TickFrequency="5"
+                                        IsSnapToTickEnabled="True" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text="Alerts only trigger after 8s of sustained load with anti-spam cooldowns." Style="{StaticResource Hint}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

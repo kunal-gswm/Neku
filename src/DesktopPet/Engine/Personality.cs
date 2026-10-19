@@ -20,6 +20,11 @@ public sealed class Personality
         _activePet = string.IsNullOrWhiteSpace(pet) ? "neku" : pet.Trim().ToLowerInvariant();
     }
 
+    public Personality(string? activePet = "neku")
+    {
+        SetActivePet(activePet);
+    }
+
     // ── Core drives (0..1) ──────────────────────────────────────────────────
     private double _mood        = 0.6;   // 0 = grumpy, 1 = delighted
     private double _energy      = 0.7;   // 0 = exhausted, 1 = wired
@@ -487,6 +492,101 @@ public sealed class Personality
         "My orange ears picked up an unregistered frequency.",
     ];
 
+    // ── Virtual Toy lines ───────────────────────────────────────────────────
+    private static readonly string[] ToyBallLines =
+    [
+        "Look, a ball! Chase time! 🎾",
+        "Pounce mode engaged! 🐾",
+        "I got it, I got it!",
+        "*bats the ball enthusiastically*",
+    ];
+
+    private static readonly string[] ToyFeatherLines =
+    [
+        "A feather wand! Jump jump jump! 🪶",
+        "Watch my acrobatic leap! ✨",
+        "Flutter flutter... POUNCE!",
+    ];
+
+    private static readonly string[] ToyCushionLines =
+    [
+        "A cozy cushion! So soft... 🛋️",
+        "*curls up purring peacefully*",
+        "Best seat in the house 💕",
+    ];
+
+    private static readonly string[] BilluToyBallLines =
+    [
+        "You really threw a ball at me. Bro, I am not a golden retriever.",
+        "A ball? L + ratio + I'm not moving.",
+        "*gives ball a single lazy side-eye tap*",
+    ];
+
+    private static readonly string[] BilluToyFeatherLines =
+    [
+        "Waving feathers at an apex predator. How disrespectful.",
+        "My pride prevents me from chasing that. Mostly.",
+        "*swats once with minimal effort*",
+    ];
+
+    private static readonly string[] BilluToyCushionLines =
+    [
+        "Cushion acquired. Eviction is not an option.",
+        "My kingdom. My loaf. My throne. 🛋️",
+        "Certified 10/10 loaf real estate. Do not perceive me.",
+    ];
+
+    // ── System Health lines ─────────────────────────────────────────────────
+    private static readonly string[] HighCpuLines =
+    [
+        "Phew, CPU is running hot! Fans are spinning! 🌪️",
+        "High CPU alert! Are we running a quantum simulation? 🚀",
+        "CPU load is peaking! Hold on to your tabs! ⚡",
+    ];
+
+    private static readonly string[] HighRamLines =
+    [
+        "RAM is getting cozy! Time to give memory some breathing room! 💾",
+        "Memory pressure alert! Look at all those allocations! 📦",
+        "Memory running high! Squeezing into tight cache lines 🐾",
+    ];
+
+    private static readonly string[] LowDiskLines =
+    [
+        "Disk space is running thin! Time for a quick cleanup! ✨",
+        "Low disk alert! Paws need room to stretch! 🧹",
+    ];
+
+    private static readonly string[] LowBatteryLines =
+    [
+        "Battery is getting low! Please plug us in soon! 🔌",
+        "Low battery warning! Don't let the screen go dark! ⚡",
+    ];
+
+    private static readonly string[] BilluHighCpuLines =
+    [
+        "CPU cooking. Bro is baking bread on the motherboard.",
+        "CPU maxed out. Even my brain cells don't work this hard.",
+    ];
+
+    private static readonly string[] BilluHighRamLines =
+    [
+        "RAM at capacity. Chrome ate your entire computer again.",
+        "Memory leak detected. Have you tried closing 50 tabs?",
+    ];
+
+    private static readonly string[] BilluLowDiskLines =
+    [
+        "Disk full. Delete node_modules or I'm deleting your saves.",
+        "Zero storage left. Unbelievable scenes on the SSD.",
+    ];
+
+    private static readonly string[] BilluLowBatteryLines =
+    [
+        "Battery critical. Entering emergency desk loaf mode.",
+        "Unplugged and dying. The drama is real.",
+    ];
+
     private readonly Random _rng = new();
     private readonly Queue<string> _recentLines = new();
     private const int MaxRecentHistory = 6;
@@ -848,6 +948,24 @@ public sealed class Personality
     /// <summary>Reaction line when the pet is dragged.</summary>
     public string GetDragLine() => PickNonRepeating(IsBillu ? BilluDragLines : DragLines);
 
+    /// <summary>Reaction line when interacting with a desktop toy.</summary>
+    public string GetToyLine(ToyType type) => type switch
+    {
+        ToyType.Ball => PickNonRepeating(IsBillu ? BilluToyBallLines : ToyBallLines),
+        ToyType.Feather => PickNonRepeating(IsBillu ? BilluToyFeatherLines : ToyFeatherLines),
+        ToyType.Cushion => PickNonRepeating(IsBillu ? BilluToyCushionLines : ToyCushionLines),
+        _ => PickNonRepeating(IsBillu ? BilluHappyLines : HappyLines)
+    };
+
+    /// <summary>Reaction line when a sustained system resource alert occurs.</summary>
+    public string GetHealthAlertLine(DesktopPet.Services.Health.SystemHealthMetric metric) => metric switch
+    {
+        DesktopPet.Services.Health.SystemHealthMetric.Cpu => PickNonRepeating(IsBillu ? BilluHighCpuLines : HighCpuLines),
+        DesktopPet.Services.Health.SystemHealthMetric.Memory => PickNonRepeating(IsBillu ? BilluHighRamLines : HighRamLines),
+        DesktopPet.Services.Health.SystemHealthMetric.Disk => PickNonRepeating(IsBillu ? BilluLowDiskLines : LowDiskLines),
+        DesktopPet.Services.Health.SystemHealthMetric.Battery => PickNonRepeating(IsBillu ? BilluLowBatteryLines : LowBatteryLines),
+        _ => "System status updated."
+    };
 
     /// <summary>Determine the dominant emotional state for animation selection.</summary>
     public PetState SuggestEmotionalState()

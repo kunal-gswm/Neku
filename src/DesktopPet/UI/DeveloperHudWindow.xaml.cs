@@ -14,15 +14,21 @@ public partial class DeveloperHudWindow : Window
     private readonly AppSettings _settings;
     private readonly DeveloperRadarService _radar;
     private readonly Action? _onOpenRadar;
+    private readonly DesktopPet.Services.Health.SystemHealthService? _health;
 
-    public DeveloperHudWindow(AppSettings settings, DeveloperRadarService radar, Action? onOpenRadar = null)
+    public DeveloperHudWindow(AppSettings settings, DeveloperRadarService radar, Action? onOpenRadar = null, DesktopPet.Services.Health.SystemHealthService? health = null)
     {
         InitializeComponent();
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _radar = radar ?? throw new ArgumentNullException(nameof(radar));
         _onOpenRadar = onOpenRadar;
+        _health = health;
 
         _radar.RadarStateChanged += OnRadarStateChanged;
+        if (_health != null)
+        {
+            _health.HealthUpdated += OnHealthUpdated;
+        }
 
         Loaded += (_, _) =>
         {
@@ -36,7 +42,35 @@ public partial class DeveloperHudWindow : Window
         Closed += (_, _) =>
         {
             _radar.RadarStateChanged -= OnRadarStateChanged;
+            if (_health != null)
+            {
+                _health.HealthUpdated -= OnHealthUpdated;
+            }
         };
+    }
+
+    private void OnHealthUpdated(DesktopPet.Services.Health.SystemHealthSnapshot snapshot)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            UpdateDisplay();
+        }
+        else
+        {
+            Dispatcher.InvokeAsync(UpdateDisplay);
+        }
+    }
+
+    public void RefreshDisplay()
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            UpdateDisplay();
+        }
+        else
+        {
+            Dispatcher.InvokeAsync(UpdateDisplay);
+        }
     }
 
     private const int WM_MOUSEACTIVATE = 0x0021;
@@ -205,6 +239,19 @@ public partial class DeveloperHudWindow : Window
         else
         {
             FocusTimerText.Visibility = Visibility.Collapsed;
+        }
+
+        // 6. System Health Pill
+        if (_settings.EnableHealthHud && _health != null)
+        {
+            var snap = _health.CurrentSnapshot;
+            HealthBadge.Visibility = Visibility.Visible;
+            HealthBadgeText.Text = $"💻 {snap.CpuPercent}% | 🧠 {snap.MemoryPercent}%";
+            HealthBadge.ToolTip = $"System Health:\nCPU Load: {snap.CpuPercent}%\nRAM Usage: {snap.MemoryPercent}% ({snap.UsedMemoryGb} / {snap.TotalMemoryGb} GB)";
+        }
+        else
+        {
+            HealthBadge.Visibility = Visibility.Collapsed;
         }
     }
 

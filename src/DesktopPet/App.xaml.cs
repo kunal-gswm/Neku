@@ -57,6 +57,9 @@ public partial class App : Application
     private RepositoryMonitorService? _repoMonitor;
     private DeveloperRadarService? _radarService;
     private DeveloperHudWindow? _developerHudWindow;
+    private ToyService _toyService = new();
+    private readonly List<ToyWindow> _activeToyWindows = new();
+    private DesktopPet.Services.Health.SystemHealthService? _healthService;
 
     private HttpClient?      _http;
     private HotkeyService?   _hotkey;
@@ -209,7 +212,7 @@ public partial class App : Application
 
         var surfaceProvider = new SurfaceProvider(() => _petWindow!.Handle);
         var stateMachine    = new StateMachine(_settings, _system);
-        _engine = new PetEngine(_petWindow, animator, surfaceProvider, stateMachine, _settings, _keyboard, _mouse, _system);
+        _engine = new PetEngine(_petWindow, animator, surfaceProvider, stateMachine, _settings, _keyboard, _mouse, _system, _toyService);
         _petWindow.TargetFps = _settings.TargetFps;
         _petWindow.Attach(_engine, _engine.Width, _engine.Height);
         _engine.TriggerGreeting();
@@ -238,6 +241,45 @@ public partial class App : Application
         _taskService.TaskCompleted += OnTaskCompleted;
         _taskService.TaskDeleted += OnTaskDeleted;
 
+        // Initialize local System Health Service
+        if (_settings.EnableSystemHealthMonitoring)
+        {
+            _healthService = new DesktopPet.Services.Health.SystemHealthService(_settings);
+            _healthService.AlertTriggered += alert =>
+            {
+                if (_settings.EnableHealthCompanionAlerts)
+                {
+                    Dispatcher.InvokeAsync(() =>
+                    {
+                        if (_settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true) return;
+                        string line = _engine?.Personality.GetHealthAlertLine(alert.Metric) ?? alert.Message;
+                        PetState reaction = alert.Metric switch
+                        {
+                            DesktopPet.Services.Health.SystemHealthMetric.Cpu => PetState.Surprised,
+                            DesktopPet.Services.Health.SystemHealthMetric.Memory => PetState.Confused,
+                            DesktopPet.Services.Health.SystemHealthMetric.Disk => PetState.LookAround,
+                            DesktopPet.Services.Health.SystemHealthMetric.Battery => PetState.Sleep,
+                            _ => PetState.Idle
+                        };
+                        _engine?.TriggerReaction(reaction, line, cooldownSeconds: 30.0);
+                    });
+                }
+            };
+        }
+
+        // Virtual toy lifecycle cleanup
+        _toyService.AllToysCleared += () =>
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                foreach (var win in _activeToyWindows.ToList())
+                {
+                    try { win.Close(); } catch { }
+                }
+                _activeToyWindows.Clear();
+            });
+        };
+
         _reminderService = new ProductivityReminderService(_taskService, _focusTimer, _settings, Dispatcher);
         _reminderService.IsQuietOrPresenting = () => _hiddenForQuiet || (_settings.EnableQuietMode && _engine?.IsQuiet == true);
         _reminderService.TaskDeadlineReminder += (task, msg) =>
@@ -263,6 +305,12 @@ public partial class App : Application
 
         _petWindow.SetClickThrough(_settings.ClickThrough);
         _petWindow.Opacity = _settings.Opacity;
+        _petWindow.NotesService = _notesService;
+        _petWindow.TaskService = _taskService;
+        _petWindow.Settings = _settings;
+        _petWindow.ToyService = _toyService;
+        _petWindow.OnSpawnToy = type => SpawnToyOnDesktop(type);
+        _petWindow.OnClearToys = ClearAllToys;
 
         _petWindow.SetupContextMenu(
             onFocusToggle: OnFocusToggle,
@@ -289,7 +337,9 @@ public partial class App : Application
             onResetPosition: OnResetPosition,
             onExit: QuitApp,
             onDeveloperRadar: () => OpenProductivityHub("Radar"),
-            onToggleDeveloperHud: ToggleDeveloperHud);
+            onToggleDeveloperHud: ToggleDeveloperHud,
+            onSpawnToy: type => SpawnToyOnDesktop(type),
+            onClearToys: ClearAllToys);
 
         _tray = new TrayService(
             onFocusToggle: OnFocusToggle,
@@ -723,7 +773,8 @@ public partial class App : Application
             _developerHudWindow = new DeveloperHudWindow(
                 _settings,
                 _radarService,
-                onOpenRadar: () => OpenProductivityHub("Radar"));
+                onOpenRadar: () => OpenProductivityHub("Radar"),
+                health: _healthService);
             _developerHudWindow.Closed += (_, _) => _developerHudWindow = null;
         }
 
@@ -908,7 +959,8 @@ public partial class App : Application
         {
             _dashboardWindow = new DashboardWindow(
                 _taskService, _focusTimer, _focusHistoryService, _settings, initialTab,
-                _agentActivityService, _claudeCodeService, _radarService, ToggleDeveloperHud);
+                _agentActivityService, _claudeCodeService, _radarService, ToggleDeveloperHud,
+                _healthService);
             _dashboardWindow.TaskFocusRequested += task =>
             {
                 StartFocusForTask(task);
@@ -1116,6 +1168,39 @@ public partial class App : Application
             DebugLog.Write("[Summon] Companion visible; triggering acknowledgement wave.");
             _engine.TriggerReaction(PetState.Wave, "👋 Here I am!", cooldownSeconds: 1.0);
         }
+    }
+
+    public void SpawnToyOnDesktop(ToyType type)
+    {
+        double spawnX = 300;
+        double spawnY = 300;
+
+        if (_engine != null)
+        {
+            spawnX = Math.Max(50, _engine.X + 80);
+            spawnY = Math.Max(50, _engine.Y + 20);
+        }
+
+        var toy = _toyService.SpawnToy(type, spawnX, spawnY);
+        var win = new ToyWindow(toy, _toyService);
+        _activeToyWindows.Add(win);
+        win.Closed += (_, _) => _activeToyWindows.Remove(win);
+        win.Show();
+
+        string name = type switch
+        {
+            ToyType.Ball => "Tennis Ball 🎾",
+            ToyType.Feather => "Feather Toy 🪶",
+            ToyType.Cushion => "Comfy Cushion 🛋️",
+            _ => "Toy"
+        };
+        _engine?.ShowSpeech($"Spawned {name}!", 2.0);
+    }
+
+    public void ClearAllToys()
+    {
+        _toyService.ClearAll();
+        _engine?.ShowSpeech("Cleared all toys! 🧹", 2.0);
     }
 
     private void ApplyPaletteHotkey()
@@ -1565,6 +1650,95 @@ public partial class App : Application
             },
             icon: "📋",
             keywords: new[] { "copy repo path", "copy folder path" }));
+
+        // 7. System Health Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "hub.health",
+            title: "Open System Health",
+            description: "View CPU, memory, disk, and process status in the Productivity Hub",
+            category: "Health",
+            action: () =>
+            {
+                OpenProductivityHub("Health");
+                _dashboardWindow?.SelectTab("Health");
+            },
+            icon: "💻",
+            keywords: new[] { "health", "system health", "cpu", "ram", "memory", "specs", "disk", "hardware" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "health.hud.toggle",
+            title: "Toggle System Health HUD",
+            description: "Toggle system health stats in the floating Developer HUD",
+            category: "Health",
+            action: () =>
+            {
+                _settings.EnableHealthHud = !_settings.EnableHealthHud;
+                _settingsService.Save();
+                if (_settings.EnableHealthHud && !_settings.EnableDeveloperHud)
+                {
+                    _settings.EnableDeveloperHud = true;
+                    ShowDeveloperHud();
+                }
+                else if (_developerHudWindow != null)
+                {
+                    _developerHudWindow.RefreshDisplay();
+                }
+                _engine?.ShowSpeech(_settings.EnableHealthHud ? "Health HUD enabled! 💻" : "Health HUD hidden", 2.0);
+            },
+            icon: "📊",
+            keywords: new[] { "health hud", "cpu hud", "ram hud", "hardware hud" }));
+
+        // 8. Desktop Toys & Dropzone Commands
+        _paletteService.Register(new PaletteCommand(
+            id: "pet.toy.ball",
+            title: "Spawn Toy: Ball",
+            description: "Spawn a bouncy tennis ball for your companion on the desktop",
+            category: "Toys",
+            action: () => SpawnToyOnDesktop(ToyType.Ball),
+            icon: "🎾",
+            keywords: new[] { "toy", "ball", "tennis ball", "fetch", "play" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "pet.toy.feather",
+            title: "Spawn Toy: Feather",
+            description: "Spawn a fluttering feather toy for your companion on the desktop",
+            category: "Toys",
+            action: () => SpawnToyOnDesktop(ToyType.Feather),
+            icon: "🪶",
+            keywords: new[] { "toy", "feather", "wand", "chase", "play" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "pet.toy.cushion",
+            title: "Spawn Toy: Cushion",
+            description: "Spawn a soft cushion for your companion to lounge on",
+            category: "Toys",
+            action: () => SpawnToyOnDesktop(ToyType.Cushion),
+            icon: "🛋️",
+            keywords: new[] { "toy", "cushion", "pillow", "nap", "loaf", "rest" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "pet.toy.clear",
+            title: "Clear All Toys",
+            description: "Remove all virtual toys from the desktop",
+            category: "Toys",
+            action: ClearAllToys,
+            icon: "🧹",
+            keywords: new[] { "clear toys", "remove toys", "clean toys", "pack away" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "dropzone.toggle",
+            title: "Toggle Neku Dropzone",
+            description: "Enable or disable dragging files, links, and text onto your pet",
+            category: "Companions",
+            action: () =>
+            {
+                _settings.EnableDropzone = !_settings.EnableDropzone;
+                _settingsService.Save();
+                if (_petWindow != null) _petWindow.AllowDrop = _settings.EnableDropzone;
+                _engine?.ShowSpeech(_settings.EnableDropzone ? "Dropzone active! Drop items on me! 📥" : "Dropzone disabled 🚫", 2.0);
+            },
+            icon: "📥",
+            keywords: new[] { "dropzone", "drag and drop", "file drop", "quick capture" }));
     }
 
     private void OnAgentEventReceived(AgentEvent evt)
@@ -1706,6 +1880,8 @@ public partial class App : Application
             _petWindow.TargetFps = _settings.TargetFps;
             _petWindow.SetClickThrough(_settings.ClickThrough);
             _petWindow.Opacity = _settings.Opacity;
+            _petWindow.AllowDrop = _settings.EnableDropzone;
+            _petWindow.Settings = _settings;
         }
         _tray?.SetClickThrough(_settings.ClickThrough);
         _tray?.SetReducedMotion(_settings.ReducedMotion);
@@ -1721,10 +1897,48 @@ public partial class App : Application
         else
             _deskSense?.Stop();
 
+        if (_settings.EnableSystemHealthMonitoring)
+        {
+            if (_healthService == null)
+            {
+                _healthService = new DesktopPet.Services.Health.SystemHealthService(_settings);
+                _healthService.AlertTriggered += alert =>
+                {
+                    if (_settings.EnableHealthCompanionAlerts)
+                    {
+                        Dispatcher.InvokeAsync(() =>
+                        {
+                            if (_settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true) return;
+                            string line = _engine?.Personality.GetHealthAlertLine(alert.Metric) ?? alert.Message;
+                            PetState reaction = alert.Metric switch
+                            {
+                                DesktopPet.Services.Health.SystemHealthMetric.Cpu => PetState.Surprised,
+                                DesktopPet.Services.Health.SystemHealthMetric.Memory => PetState.Confused,
+                                DesktopPet.Services.Health.SystemHealthMetric.Disk => PetState.LookAround,
+                                DesktopPet.Services.Health.SystemHealthMetric.Battery => PetState.Sleep,
+                                _ => PetState.Idle
+                            };
+                            _engine?.TriggerReaction(reaction, line, cooldownSeconds: 30.0);
+                        });
+                    }
+                };
+            }
+        }
+        else
+        {
+            _healthService?.Dispose();
+            _healthService = null;
+        }
+
         if (_settings.EnableDeveloperHud)
             ShowDeveloperHud();
         else
             HideDeveloperHud();
+
+        if (_developerHudWindow != null)
+        {
+            _developerHudWindow.RefreshDisplay();
+        }
 
         if (_settings.DisableOptionalMonitoring)
         {
@@ -1832,6 +2046,13 @@ public partial class App : Application
         _focusHudWindow?.Close();
         _developerHudWindow?.Close();
         _developerHudWindow = null;
+        foreach (var win in _activeToyWindows.ToList())
+        {
+            try { win.Close(); } catch { }
+        }
+        _activeToyWindows.Clear();
+        _healthService?.Dispose();
+        _healthService = null;
         _notesWindow?.Close();
         _tasksWindow?.Close();
         _dashboardWindow?.Close();
@@ -1859,6 +2080,13 @@ public partial class App : Application
         _focusHudWindow?.Close();
         _developerHudWindow?.Close();
         _developerHudWindow = null;
+        foreach (var win in _activeToyWindows.ToList())
+        {
+            try { win.Close(); } catch { }
+        }
+        _activeToyWindows.Clear();
+        _healthService?.Dispose();
+        _healthService = null;
         _notesWindow?.Close();
         _tasksWindow?.Close();
         _dashboardWindow?.Close();

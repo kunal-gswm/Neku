@@ -53,6 +53,14 @@ public partial class SettingsWindow : Window
         MoodsBox.IsChecked           = settings.EnableMoods;
         SystemReactionsBox.IsChecked = settings.EnableSystemReactions;
         TaskReactionsBox.IsChecked   = settings.EnableTaskReactions;
+        SmoothMovementBox.IsChecked  = settings.EnableSmoothMovement;
+        EdgeRestingBox.IsChecked     = settings.EnableEdgeResting;
+        ToyInteractionsBox.IsChecked = settings.EnableToyInteractions;
+
+        // Dropzone
+        DropzoneBox.IsChecked        = settings.EnableDropzone;
+        DropzonePanel.Visibility     = settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
+        SelectByTag(DropzoneActionBox, settings.DropzoneDefaultAction, fallbackIndex: 0);
 
         // Productivity Alerts
         UpcomingTaskRemindersBox.IsChecked = settings.EnableUpcomingTaskReminders;
@@ -103,6 +111,16 @@ public partial class SettingsWindow : Window
         RadarPauseBox.IsChecked = settings.PauseRepositoryMonitoring;
         RadarPanel.Visibility = settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
         PopulateRadarSettingsRepos();
+
+        // System Health
+        HealthMonitoringBox.IsChecked = settings.EnableSystemHealthMonitoring;
+        HealthCompanionAlertsBox.IsChecked = settings.EnableHealthCompanionAlerts;
+        HealthHudBox.IsChecked = settings.EnableHealthHud;
+        HealthCpuSlider.Value = settings.SystemHealthCpuThreshold;
+        HealthCpuValText.Text = $"{settings.SystemHealthCpuThreshold}%";
+        HealthRamSlider.Value = settings.SystemHealthRamThreshold;
+        HealthRamValText.Text = $"{settings.SystemHealthRamThreshold}%";
+        HealthPanel.Visibility = settings.EnableSystemHealthMonitoring ? Visibility.Visible : Visibility.Collapsed;
 
         // System
         AutostartBox.IsChecked     = AutostartService.IsEnabled();
@@ -174,6 +192,9 @@ public partial class SettingsWindow : Window
                      DeskSenseReactionsBox, DeskSenseCodingBox, DeskSenseTerminalBox,
                      DeskSenseIdleReactionBox, DeskSenseReturnedBox, DeskSensePresentationBox,
                      RadarEnabledBox, RadarHudBox, RadarPauseBox,
+                     SmoothMovementBox, EdgeRestingBox, ToyInteractionsBox,
+                     DropzoneBox,
+                     HealthMonitoringBox, HealthCompanionAlertsBox, HealthHudBox,
                  })
         {
             box.Checked   += (_, _) => Apply();
@@ -194,7 +215,23 @@ public partial class SettingsWindow : Window
         RadarEnabledBox.Checked += (_, _) => { RadarPanel.Visibility = Visibility.Visible; Apply(); };
         RadarEnabledBox.Unchecked += (_, _) => { RadarPanel.Visibility = Visibility.Collapsed; Apply(); };
 
-        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, FocusDurationBox, BreakDurationBox })
+        DropzoneBox.Checked += (_, _) => { DropzonePanel.Visibility = Visibility.Visible; Apply(); };
+        DropzoneBox.Unchecked += (_, _) => { DropzonePanel.Visibility = Visibility.Collapsed; Apply(); };
+
+        HealthMonitoringBox.Checked += (_, _) => { HealthPanel.Visibility = Visibility.Visible; Apply(); };
+        HealthMonitoringBox.Unchecked += (_, _) => { HealthPanel.Visibility = Visibility.Collapsed; Apply(); };
+        HealthCpuSlider.ValueChanged += (_, _) =>
+        {
+            HealthCpuValText.Text = $"{(int)HealthCpuSlider.Value}%";
+            Apply();
+        };
+        HealthRamSlider.ValueChanged += (_, _) =>
+        {
+            HealthRamValText.Text = $"{(int)HealthRamSlider.Value}%";
+            Apply();
+        };
+
+        foreach (var combo in new[] { SizeBox, CatColorBox, StretchIntervalBox, FocusDurationBox, BreakDurationBox, DropzoneActionBox })
             combo.SelectionChanged += (_, _) => Apply();
 
         DevPortBox.TextChanged    += (_, _) => Apply();
@@ -292,6 +329,19 @@ public partial class SettingsWindow : Window
         _settings.EnableMoods                = MoodsBox.IsChecked            == true;
         _settings.EnableSystemReactions      = SystemReactionsBox.IsChecked  == true;
         _settings.EnableTaskReactions        = TaskReactionsBox.IsChecked    == true;
+        _settings.EnableSmoothMovement       = SmoothMovementBox.IsChecked   == true;
+        _settings.EnableEdgeResting          = EdgeRestingBox.IsChecked      == true;
+        _settings.EnableToyInteractions      = ToyInteractionsBox.IsChecked  == true;
+
+        // Dropzone
+        _settings.EnableDropzone             = DropzoneBox.IsChecked         == true;
+        string dropAction = TagOf(DropzoneActionBox);
+        if (!string.IsNullOrEmpty(dropAction))
+        {
+            _settings.DropzoneDefaultAction = dropAction;
+        }
+        DropzonePanel.Visibility = _settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
+
         _settings.EnableUpcomingTaskReminders   = UpcomingTaskRemindersBox.IsChecked   == true;
         _settings.EnableOverdueTaskReminders    = OverdueTaskRemindersBox.IsChecked    == true;
         _settings.EnableFocusCompletedReminders = FocusCompletedRemindersBox.IsChecked == true;
@@ -335,6 +385,14 @@ public partial class SettingsWindow : Window
         _settings.EnableDeveloperHud          = RadarHudBox.IsChecked == true;
         _settings.PauseRepositoryMonitoring   = RadarPauseBox.IsChecked == true;
         RadarPanel.Visibility = _settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
+
+        // System Health
+        _settings.EnableSystemHealthMonitoring = HealthMonitoringBox.IsChecked == true;
+        _settings.EnableHealthCompanionAlerts  = HealthCompanionAlertsBox.IsChecked == true;
+        _settings.EnableHealthHud              = HealthHudBox.IsChecked == true;
+        _settings.SystemHealthCpuThreshold     = (int)HealthCpuSlider.Value;
+        _settings.SystemHealthRamThreshold     = (int)HealthRamSlider.Value;
+        HealthPanel.Visibility = _settings.EnableSystemHealthMonitoring ? Visibility.Visible : Visibility.Collapsed;
 
         _settings.ClickThrough               = ClickThroughBox.IsChecked     == true;
         _settings.EnableAutoUpdate           = AutoUpdateBox.IsChecked       == true;
@@ -529,6 +587,16 @@ public partial class SettingsWindow : Window
             _settings.EnableCommandPaletteHotkey    = def.EnableCommandPaletteHotkey;
             _settings.CommandPaletteHotkeyModifiers = def.CommandPaletteHotkeyModifiers;
             _settings.CommandPaletteHotkeyKey       = def.CommandPaletteHotkeyKey;
+            _settings.EnableSmoothMovement          = def.EnableSmoothMovement;
+            _settings.EnableEdgeResting             = def.EnableEdgeResting;
+            _settings.EnableToyInteractions         = def.EnableToyInteractions;
+            _settings.EnableDropzone                = def.EnableDropzone;
+            _settings.DropzoneDefaultAction         = def.DropzoneDefaultAction;
+            _settings.EnableSystemHealthMonitoring  = def.EnableSystemHealthMonitoring;
+            _settings.EnableHealthCompanionAlerts   = def.EnableHealthCompanionAlerts;
+            _settings.EnableHealthHud               = def.EnableHealthHud;
+            _settings.SystemHealthCpuThreshold      = def.SystemHealthCpuThreshold;
+            _settings.SystemHealthRamThreshold      = def.SystemHealthRamThreshold;
 
             SpeedSlider.Value            = _settings.Speed;
             OpacitySlider.Value          = _settings.Opacity;
@@ -538,6 +606,20 @@ public partial class SettingsWindow : Window
             RandomReactionsBox.IsChecked = _settings.EnableRandomReactions;
             SleepBox.IsChecked           = _settings.EnableSleep;
             ScrollPlayBox.IsChecked      = _settings.EnableScrollPlay;
+            SmoothMovementBox.IsChecked  = _settings.EnableSmoothMovement;
+            EdgeRestingBox.IsChecked     = _settings.EnableEdgeResting;
+            ToyInteractionsBox.IsChecked = _settings.EnableToyInteractions;
+            DropzoneBox.IsChecked        = _settings.EnableDropzone;
+            SelectByTag(DropzoneActionBox, _settings.DropzoneDefaultAction, 0);
+
+            HealthMonitoringBox.IsChecked      = _settings.EnableSystemHealthMonitoring;
+            HealthCompanionAlertsBox.IsChecked = _settings.EnableHealthCompanionAlerts;
+            HealthHudBox.IsChecked             = _settings.EnableHealthHud;
+            HealthCpuSlider.Value              = _settings.SystemHealthCpuThreshold;
+            HealthCpuValText.Text              = $"{_settings.SystemHealthCpuThreshold}%";
+            HealthRamSlider.Value              = _settings.SystemHealthRamThreshold;
+            HealthRamValText.Text              = $"{_settings.SystemHealthRamThreshold}%";
+
             ReducedMotionBox.IsChecked   = _settings.ReducedMotion;
             BatteryConsciousBox.IsChecked= _settings.BatteryConscious;
             DisableMonitoringBox.IsChecked = _settings.DisableOptionalMonitoring;
