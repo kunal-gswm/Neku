@@ -17,9 +17,11 @@ $setupSrc = Join-Path $artifacts "Neku-Setup-1.0.0.exe"
 $setupDst = Join-Path $artifacts "Neku-Setup-v1.0.0.exe"
 if (Test-Path $setupSrc) {
     Copy-Item $setupSrc -Destination $setupDst -Force
-    Write-Host "Created $setupDst" -ForegroundColor Green
+    Write-Host "Created $setupDst from $setupSrc" -ForegroundColor Green
+} elseif (Test-Path $setupDst) {
+    Write-Host "Standardized installer already exists at $setupDst" -ForegroundColor Green
 } else {
-    throw "Source installer not found at $setupSrc"
+    throw "Neither source installer ($setupSrc) nor target installer ($setupDst) found."
 }
 
 # 2. Package portable zip

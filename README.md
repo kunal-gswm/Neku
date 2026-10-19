@@ -125,10 +125,10 @@ Right-click Neku and select **Companion Studio...** to access the customization 
 3. Choose whether to add a desktop shortcut or start Neku automatically with Windows.
 4. Manage or uninstall cleanly at any time through Windows **Installed apps** or **Settings**.
 
-#### Option B: Portable Package / Executable
-1. Download `Neku-v1.0.0-win-x64.zip` (or `Neku.exe`) from [Releases](https://github.com/kunal-gswm/Neku/releases), or build via `.\scripts\publish.ps1`.
-2. Extract or place `Neku.exe` in any folder of your choice (e.g., `C:\Tools\Neku\`).
-3. Double-click to run. All assets are self-contained within the executable.
+#### Option B: Portable Archive (ZIP)
+1. Download `Neku-v1.0.0-win-x64.zip` from the [Releases](https://github.com/kunal-gswm/Neku/releases) page.
+2. Extract the archive into any folder of your choice (e.g., `C:\Tools\Neku\`). The ZIP package contains `Neku.exe`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, and `README.md`.
+3. Double-click `Neku.exe` to run. All companion assets and runtimes are fully self-contained.
 
 ### System Requirements
 

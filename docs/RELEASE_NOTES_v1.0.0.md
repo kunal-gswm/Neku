@@ -58,7 +58,7 @@ Welcome to **Neku 1.0.0**, the first major production release of Neku, your misc
 | Asset | Description | Size | SHA-256 Checksum |
 |---|---|---|---|
 | **`Neku-Setup-v1.0.0.exe`** | Windows Setup Installer (Recommended, per-user, non-admin) | 57.9 MB | `49cc84f55b9b0e8da57b5e04d912037822489a23ed1f8410e00747bcb1defd33` |
-| **`Neku-v1.0.0-win-x64.zip`** | Portable Release Archive (includes `Neku.exe`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md`) | 73.5 MB | `bd02345234909beb3e813be058fa6b13496b1660db7e664e7aed43a89769b54c` |
+| **`Neku-v1.0.0-win-x64.zip`** | Portable Release Archive (includes `Neku.exe`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md`) | 73.5 MB | `c650ef0cad125365de901d5e3c3624cd0f287c472b62adec9d0f3e435deeff8a` |
 | **`SHA256SUMS.txt`** | Checksum manifest for automated verification | 180 B | — |
 
 ### Checksum Verification
