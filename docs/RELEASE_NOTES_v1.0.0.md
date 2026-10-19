@@ -25,7 +25,7 @@ Welcome to **Neku 1.0.0**, the first major production release of Neku, your misc
 - **Break & Stretch Reminders:** Configurable cadence to keep developers moving during marathon coding sessions.
 
 ### 🎯 Productivity Hub & Command Palette
-- **Command Palette (`Ctrl+Shift+K`):** Fast, keyboard-driven navigation to trigger focus sessions, change companions, open notes, or toggle features.
+- **Command Palette (`Ctrl+Alt+P`):** Fast, keyboard-driven navigation to trigger focus sessions, change companions, open notes, or toggle features. If `Ctrl+Alt+P` is occupied by another application, Neku automatically attempts fallback to `Ctrl+Alt+Space`. The palette is also always accessible via the companion's right-click context menu and system tray.
 - **Focus Timer (Pomodoro):** Configurable work and rest intervals with companion synchronization (focused work state vs. celebratory break state).
 - **Local Tasks & Quick Notes:** Instant task tracker and scratchpad with atomic persistence to safeguard your data against application crashes.
 
@@ -35,21 +35,38 @@ Welcome to **Neku 1.0.0**, the first major production release of Neku, your misc
 
 ---
 
+## ⌨️ Global Keyboard Shortcuts
+
+| Shortcut | Action | Description |
+|---|---|---|
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> | **Summon / Launch** | Launches Neku if stopped, or restores and unhides the running instance without stealing focus. |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd> | **Command Palette** | Opens the global quick launcher (fallback: <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> if combo is occupied; also in context menu). |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd> | **Graceful Exit** | Flushes unsaved state, cleans up global hooks, and cleanly exits the application. |
+
+---
+
 ## 🔒 Privacy & Architecture Principles
 
 - **100% Local-First & Zero AI:** Neku runs entirely on your device. There are zero LLM calls, zero AI APIs, zero telemetry, and zero remote logging.
-- **Localhost Boundary:** Inter-process communication is locked strictly to loopback (`127.0.0.1`).
+- **Localhost Boundary:** Inter-process communication and coding-agent monitoring are locked strictly to loopback (`127.0.0.1`).
 - **Transparent Update Checking:** Optional GitHub release checks query the official public repository (`https://api.github.com/repos/kunal-gswm/Neku/releases/latest`) without sending user IDs, tokens, or telemetry.
 
 ---
 
 ## 📦 Downloads & Verification
 
-| Asset | Description | SHA-256 Checksum |
-|---|---|---|
-| **`Neku-Setup-v1.0.0.exe`** | Windows Setup Installer (Recommended, per-user, non-admin) | `49cc84f55b9b0e8da57b5e04d912037822489a23ed1f8410e00747bcb1defd33` |
-| **`Neku-v1.0.0-win-x64.zip`** | Portable Release Archive (includes `Neku.exe`, `LICENSE`, `README.md`) | `bd02345234909beb3e813be058fa6b13496b1660db7e664e7aed43a89769b54c` |
-| **`SHA256SUMS.txt`** | Checksum manifest for automated verification | — |
+| Asset | Description | Size | SHA-256 Checksum |
+|---|---|---|---|
+| **`Neku-Setup-v1.0.0.exe`** | Windows Setup Installer (Recommended, per-user, non-admin) | 57.9 MB | `49cc84f55b9b0e8da57b5e04d912037822489a23ed1f8410e00747bcb1defd33` |
+| **`Neku-v1.0.0-win-x64.zip`** | Portable Release Archive (includes `Neku.exe`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md`) | 73.5 MB | `bd02345234909beb3e813be058fa6b13496b1660db7e664e7aed43a89769b54c` |
+| **`SHA256SUMS.txt`** | Checksum manifest for automated verification | 180 B | — |
+
+### Checksum Verification
+You can verify your download integrity in PowerShell:
+```powershell
+Get-FileHash .\Neku-Setup-v1.0.0.exe -Algorithm SHA256
+Get-FileHash .\Neku-v1.0.0-win-x64.zip -Algorithm SHA256
+```
 
 ### System Requirements
 - Windows 10 (version 1809 or higher) or Windows 11 (64-bit x64).

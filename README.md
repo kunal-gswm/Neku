@@ -141,6 +141,7 @@ Right-click Neku and select **Companion Studio...** to access the customization 
 | Shortcut | Action | Description |
 |:---|:---|:---|
 | <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> | **Summon / Launch** | Launches Neku if stopped, or restores and unhides the running instance without stealing focus. |
+| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd> | **Command Palette** | Opens the global quick launcher (falls back to <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> if occupied; also accessible via right-click menu). |
 | <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd> | **Graceful Exit** | Flushes unsaved state, cleans up global hotkeys, and cleanly exits the application. |
 
 ---
@@ -162,7 +163,7 @@ When Neku starts, your companion will appear atop your primary monitor's taskbar
 - **Left-Click & Drag:** Pick up and position the pet anywhere on your screen or drop them onto top window borders.
 - **Right-Click:** Open the context menu to toggle the **Focus Timer**, **Quick Notes**, **Companion Studio**, or **Settings**.
 - **System Tray:** Access quick controls, toggle visibility, or exit via the Neku tray icon.
-- **Global Hotkeys:** Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> anytime to summon or restore Neku, or <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd> to exit gracefully.
+- **Global Hotkeys:** Press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd> anytime to summon or restore Neku, <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>P</kbd> for the Command Palette, or <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>Q</kbd> to exit gracefully.
 
 ---
 
