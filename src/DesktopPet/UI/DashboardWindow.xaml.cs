@@ -53,6 +53,7 @@ public partial class DashboardWindow : Window
     private string _currentAgentFilter = "all";
     private AgentSession? _selectedAgentSession;
     private TaskItem? _selectedTask;
+    private DailyRoutine? _selectedRoutine;
     private bool _suppressTaskEvents = false;
     private bool _isInitialized = false;
     private DispatcherTimer? _uiRefreshTimer;
@@ -89,6 +90,7 @@ public partial class DashboardWindow : Window
 
         // Wire event listeners
         _taskService.TasksChanged += OnTasksChanged;
+        _taskService.RoutinesChanged += OnRoutinesChanged;
         _focusTimer.StateChanged += OnTimerStateChanged;
         _historyService.HistoryChanged += OnHistoryChanged;
         if (_notesService != null)
@@ -155,6 +157,17 @@ public partial class DashboardWindow : Window
         });
     }
 
+    private void OnRoutinesChanged()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab == "Routines")
+            {
+                RefreshRoutinesList();
+            }
+        });
+    }
+
     private void UpdateNavRailVisibility()
     {
         NavAgentBtn.Visibility = (_settings.EnableAgentCompanion || _settings.EnableDeveloperEvents) ? Visibility.Visible : Visibility.Collapsed;
@@ -170,6 +183,7 @@ public partial class DashboardWindow : Window
     {
         base.OnClosed(e);
         _taskService.TasksChanged -= OnTasksChanged;
+        _taskService.RoutinesChanged -= OnRoutinesChanged;
         _focusTimer.StateChanged -= OnTimerStateChanged;
         _historyService.HistoryChanged -= OnHistoryChanged;
         if (_notesService != null)
@@ -248,6 +262,7 @@ public partial class DashboardWindow : Window
         AgentView.Visibility = (tabName is "Agent" or "AgentActivity") ? Visibility.Visible : Visibility.Collapsed;
         RadarView.Visibility = tabName == "Radar" ? Visibility.Visible : Visibility.Collapsed;
         HealthView.Visibility = tabName == "Health" ? Visibility.Visible : Visibility.Collapsed;
+        RoutinesView.Visibility = tabName == "Routines" ? Visibility.Visible : Visibility.Collapsed;
 
         // Update nav button styles
         UpdateNavButton(NavOverviewBtn, tabName == "Overview");
@@ -259,6 +274,7 @@ public partial class DashboardWindow : Window
         UpdateNavButton(NavAgentBtn, tabName is "Agent" or "AgentActivity");
         UpdateNavButton(NavRadarBtn, tabName == "Radar");
         UpdateNavButton(NavHealthBtn, tabName == "Health");
+        UpdateNavButton(NavRoutinesBtn, tabName == "Routines");
 
         // Refresh selected tab contents
         switch (tabName)
@@ -290,6 +306,9 @@ public partial class DashboardWindow : Window
                 break;
             case "Health":
                 RefreshHealth();
+                break;
+            case "Routines":
+                RefreshRoutinesList();
                 break;
         }
     }
@@ -960,11 +979,18 @@ public partial class DashboardWindow : Window
         DetailTagsBox.Text = string.Join(", ", task.Tags);
         DetailDueDatePicker.SelectedDate = task.DueDate;
 
+        // Skip Button Visibility
+        DetailSkipBtn.Visibility = (!task.IsCompleted && (task.RecurringScheduleId != null || task.RecurrenceRule != TaskRecurrenceRule.None))
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
         // Recurrence Combo
         DetailRecurrenceCombo.SelectedIndex = task.RecurrenceRule switch
         {
             TaskRecurrenceRule.Daily => 1,
-            TaskRecurrenceRule.Weekly => 2,
+            TaskRecurrenceRule.Weekdays => 2,
+            TaskRecurrenceRule.Weekly => 3,
+            TaskRecurrenceRule.Monthly => 4,
             _ => 0
         };
 
@@ -1079,6 +1105,12 @@ public partial class DashboardWindow : Window
         _taskService.Update(_selectedTask.Id, t => t.DueDate = DetailDueDatePicker.SelectedDate);
     }
 
+    private void DetailSkipBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedTask == null) return;
+        _taskService.Skip(_selectedTask.Id);
+    }
+
     private void DetailRecurrence_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressTaskEvents || _selectedTask == null) return;
@@ -1086,11 +1118,53 @@ public partial class DashboardWindow : Window
         var rule = DetailRecurrenceCombo.SelectedIndex switch
         {
             1 => TaskRecurrenceRule.Daily,
-            2 => TaskRecurrenceRule.Weekly,
+            2 => TaskRecurrenceRule.Weekdays,
+            3 => TaskRecurrenceRule.Weekly,
+            4 => TaskRecurrenceRule.Monthly,
             _ => TaskRecurrenceRule.None
         };
 
-        _taskService.Update(_selectedTask.Id, t => t.RecurrenceRule = rule);
+        if (rule == _selectedTask.RecurrenceRule) return;
+
+        if (_selectedTask.RecurringScheduleId != null)
+        {
+            var result = MessageBox.Show(
+                $"This task is part of a recurring schedule.\n\nDo you want to update all future occurrences to {rule}?\n\n• Yes: Update entire recurring schedule\n• No: Apply to this task only (detach from schedule)\n• Cancel: Keep current recurrence",
+                "Update Recurring Task",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _taskService.UpdateOccurrenceRecurrence(_selectedTask.Id, rule, updateEntireSchedule: true);
+            }
+            else if (result == MessageBoxResult.No)
+            {
+                _taskService.UpdateOccurrenceRecurrence(_selectedTask.Id, rule, updateEntireSchedule: false);
+            }
+            else
+            {
+                _suppressTaskEvents = true;
+                DetailRecurrenceCombo.SelectedIndex = _selectedTask.RecurrenceRule switch
+                {
+                    TaskRecurrenceRule.Daily => 1,
+                    TaskRecurrenceRule.Weekdays => 2,
+                    TaskRecurrenceRule.Weekly => 3,
+                    TaskRecurrenceRule.Monthly => 4,
+                    _ => 0
+                };
+                _suppressTaskEvents = false;
+                return;
+            }
+        }
+        else
+        {
+            _taskService.Update(_selectedTask.Id, t => t.RecurrenceRule = rule);
+        }
+
+        DetailSkipBtn.Visibility = (!_selectedTask.IsCompleted && (_selectedTask.RecurringScheduleId != null || _selectedTask.RecurrenceRule != TaskRecurrenceRule.None))
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void DetailEstMinutes_Changed(object sender, SelectionChangedEventArgs e)
@@ -2507,6 +2581,300 @@ public partial class DashboardWindow : Window
     {
         _healthService?.Poll();
         RefreshHealth();
+    }
+
+    // =========================================================================
+    // DAILY ROUTINES VIEW LOGIC
+    // =========================================================================
+
+    public void RefreshRoutinesList()
+    {
+        var routines = _taskService.Routines.ToList();
+        RoutinesListBox.ItemsSource = routines;
+        RoutinesEmptyPanel.Visibility = routines.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        if (routines.Count == 0)
+        {
+            _selectedRoutine = null;
+            SelectRoutine(null);
+        }
+        else
+        {
+            var match = _selectedRoutine != null
+                ? routines.FirstOrDefault(r => r.Id == _selectedRoutine.Id)
+                : routines.FirstOrDefault(r => r.IsActive) ?? routines[0];
+
+            SelectRoutine(match ?? routines[0]);
+        }
+    }
+
+    private void SelectRoutine(DailyRoutine? routine)
+    {
+        _selectedRoutine = routine;
+
+        if (routine == null)
+        {
+            RoutineNoSelectionPanel.Visibility = Visibility.Visible;
+            RoutineDetailPanel.Visibility = Visibility.Collapsed;
+            RoutinesListBox.SelectedItem = null;
+            return;
+        }
+
+        RoutineNoSelectionPanel.Visibility = Visibility.Collapsed;
+        RoutineDetailPanel.Visibility = Visibility.Visible;
+        RoutinesListBox.SelectedItem = routine;
+
+        RoutineDetailIconBox.Text = string.IsNullOrWhiteSpace(routine.Icon) ? "⚡" : routine.Icon;
+        RoutineDetailNameBox.Text = routine.Name;
+        RoutineDetailDescBox.Text = routine.Description;
+
+        // Start / Resume button label
+        if (routine.IsActive)
+        {
+            RoutineStartBtn.Content = "▶️ In Progress";
+            RoutineStartBtn.IsEnabled = false;
+        }
+        else
+        {
+            RoutineStartBtn.IsEnabled = true;
+            RoutineStartBtn.Content = (routine.CompletedStepsCount > 0 && !routine.IsFinished) ? "▶️ Resume" : "▶️ Start Routine";
+        }
+
+        // Active Step Banner
+        if (routine.IsActive && !routine.IsFinished && routine.CurrentStep != null)
+        {
+            RoutineActiveBanner.Visibility = Visibility.Visible;
+            RoutineActiveStepHeader.Text = $"👉 Current Step: {routine.CurrentStep.Title}";
+            int pct = routine.TotalStepsCount > 0 ? (routine.CompletedStepsCount * 100 / routine.TotalStepsCount) : 0;
+            RoutineActiveProgressText.Text = $"Progress: {routine.ProgressSummary} ({pct}%)";
+        }
+        else
+        {
+            RoutineActiveBanner.Visibility = Visibility.Collapsed;
+        }
+
+        // Finished Banner
+        RoutineFinishedBanner.Visibility = routine.IsFinished ? Visibility.Visible : Visibility.Collapsed;
+
+        // Steps list
+        RoutineStepsListBox.ItemsSource = routine.Steps.ToList();
+    }
+
+    private void RoutinesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (RoutinesListBox.SelectedItem is DailyRoutine routine)
+        {
+            SelectRoutine(routine);
+        }
+    }
+
+    private void NewRoutineBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var routine = _taskService.CreateRoutine(
+            name: "New Routine",
+            icon: "⚡",
+            steps: new[]
+            {
+                new RoutineStep { Title = "First Step", EstimatedMinutes = 5 }
+            });
+
+        RefreshRoutinesList();
+        SelectRoutine(routine);
+        RoutineDetailNameBox.Focus();
+        RoutineDetailNameBox.SelectAll();
+    }
+
+    private void RoutineDetail_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+
+        string newIcon = string.IsNullOrWhiteSpace(RoutineDetailIconBox.Text) ? "⚡" : RoutineDetailIconBox.Text.Trim();
+        string newName = string.IsNullOrWhiteSpace(RoutineDetailNameBox.Text) ? "New Routine" : RoutineDetailNameBox.Text.Trim();
+        string newDesc = RoutineDetailDescBox.Text.Trim();
+
+        _taskService.UpdateRoutine(_selectedRoutine.Id, r =>
+        {
+            r.Icon = newIcon;
+            r.Name = newName;
+            r.Description = newDesc;
+        });
+
+        RoutinesListBox.Items.Refresh();
+    }
+
+    private void RoutineDetailNameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            RoutineDetail_LostFocus(sender, e);
+            Keyboard.ClearFocus();
+        }
+    }
+
+    private void RoutineDeleteBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+
+        var result = MessageBox.Show(
+            $"Are you sure you want to delete routine '{_selectedRoutine.Name}'?",
+            "Delete Routine",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            _taskService.DeleteRoutine(_selectedRoutine.Id);
+            _selectedRoutine = null;
+            RefreshRoutinesList();
+        }
+    }
+
+    private void RoutineStartBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+
+        if (_selectedRoutine.IsFinished)
+        {
+            _taskService.ResetRoutine(_selectedRoutine.Id);
+        }
+
+        _taskService.StartRoutine(_selectedRoutine.Id);
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void RoutineResetBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+
+        _taskService.ResetRoutine(_selectedRoutine.Id);
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void RoutineCompleteCurrentStep_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine?.CurrentStep == null) return;
+
+        _taskService.CompleteRoutineStep(_selectedRoutine.Id, _selectedRoutine.CurrentStep.Id);
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void RoutineSkipCurrentStep_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine?.CurrentStep == null) return;
+
+        _taskService.SkipRoutineStep(_selectedRoutine.Id, _selectedRoutine.CurrentStep.Id);
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void AddStepBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+
+        string title = NewStepTitleBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(title)) return;
+
+        int mins = int.TryParse(NewStepMinutesBox.Text.Trim(), out var m) ? Math.Max(0, m) : 5;
+
+        _taskService.UpdateRoutine(_selectedRoutine.Id, r =>
+        {
+            r.Steps.Add(new RoutineStep
+            {
+                Title = title,
+                EstimatedMinutes = mins
+            });
+        });
+
+        NewStepTitleBox.Text = "";
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void NewStepTitleBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            AddStepBtn_Click(sender, e);
+        }
+    }
+
+    private void StepToggleComplete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+        string? stepId = (sender as Button)?.Tag?.ToString();
+        if (string.IsNullOrEmpty(stepId)) return;
+
+        var step = _selectedRoutine.Steps.FirstOrDefault(s => s.Id == stepId);
+        if (step == null) return;
+
+        if (step.IsCompleted)
+        {
+            _taskService.UpdateRoutine(_selectedRoutine.Id, r =>
+            {
+                var s = r.Steps.FirstOrDefault(x => x.Id == stepId);
+                if (s != null)
+                {
+                    s.IsCompleted = false;
+                    s.CompletedAt = null;
+                }
+            });
+        }
+        else
+        {
+            _taskService.CompleteRoutineStep(_selectedRoutine.Id, stepId);
+        }
+
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void StepSkip_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+        string? stepId = (sender as Button)?.Tag?.ToString();
+        if (string.IsNullOrEmpty(stepId)) return;
+
+        _taskService.SkipRoutineStep(_selectedRoutine.Id, stepId);
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+    }
+
+    private void StepMoveUp_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+        string? stepId = (sender as Button)?.Tag?.ToString();
+        if (string.IsNullOrEmpty(stepId)) return;
+
+        int idx = _selectedRoutine.Steps.FindIndex(s => s.Id == stepId);
+        if (idx > 0)
+        {
+            _taskService.ReorderRoutineSteps(_selectedRoutine.Id, idx, idx - 1);
+            SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+        }
+    }
+
+    private void StepMoveDown_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+        string? stepId = (sender as Button)?.Tag?.ToString();
+        if (string.IsNullOrEmpty(stepId)) return;
+
+        int idx = _selectedRoutine.Steps.FindIndex(s => s.Id == stepId);
+        if (idx >= 0 && idx < _selectedRoutine.Steps.Count - 1)
+        {
+            _taskService.ReorderRoutineSteps(_selectedRoutine.Id, idx, idx + 1);
+            SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
+        }
+    }
+
+    private void StepDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedRoutine == null) return;
+        string? stepId = (sender as Button)?.Tag?.ToString();
+        if (string.IsNullOrEmpty(stepId)) return;
+
+        _taskService.UpdateRoutine(_selectedRoutine.Id, r =>
+        {
+            r.Steps.RemoveAll(s => s.Id == stepId);
+        });
+
+        SelectRoutine(_taskService.GetRoutine(_selectedRoutine.Id));
     }
 }
 

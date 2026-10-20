@@ -10,7 +10,7 @@
     <AssemblyName>neku</AssemblyName>
     <RootNamespace>Neku.Cli</RootNamespace>
 
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Product>Neku CLI</Product>
     <Company>Neku</Company>
     <Description>Command-line interface for the Neku desktop companion.</Description>

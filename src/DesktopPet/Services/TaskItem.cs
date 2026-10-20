@@ -24,7 +24,9 @@ public enum TaskRecurrenceRule
 {
     None = 0,
     Daily = 1,
-    Weekly = 2
+    Weekly = 2,
+    Weekdays = 3,
+    Monthly = 4
 }
 
 public sealed class SubtaskItem : INotifyPropertyChanged
@@ -79,6 +81,9 @@ public sealed class TaskItem : INotifyPropertyChanged
     private List<string> _tags = new();
     private List<SubtaskItem> _subtasks = new();
     private TaskRecurrenceRule _recurrenceRule = TaskRecurrenceRule.None;
+    private string? _recurringScheduleId;
+    private bool _isSkipped = false;
+    private DateTime? _occurrenceDate;
     private DateTime _createdAt = DateTime.UtcNow;
     private DateTime? _completedAt;
     private DateTime _updatedAt = DateTime.UtcNow;
@@ -292,7 +297,7 @@ public sealed class TaskItem : INotifyPropertyChanged
         }
     }
 
-    /// <summary>Recurrence rule (None, Daily, Weekly).</summary>
+    /// <summary>Recurrence rule (None, Daily, Weekly, Weekdays, Monthly).</summary>
     [JsonPropertyName("recurrenceRule")]
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public TaskRecurrenceRule RecurrenceRule
@@ -307,6 +312,38 @@ public sealed class TaskItem : INotifyPropertyChanged
                 OnPropertyChanged(nameof(RecurrenceDisplay));
             }
         }
+    }
+
+    /// <summary>Optional identifier linking this occurrence to its originating RecurringSchedule.</summary>
+    [JsonPropertyName("recurringScheduleId")]
+    public string? RecurringScheduleId
+    {
+        get => _recurringScheduleId;
+        set { if (_recurringScheduleId != value) { _recurringScheduleId = value; OnPropertyChanged(); } }
+    }
+
+    /// <summary>Whether this individual recurring occurrence was skipped rather than completed.</summary>
+    [JsonPropertyName("isSkipped")]
+    public bool IsSkipped
+    {
+        get => _isSkipped;
+        set
+        {
+            if (_isSkipped != value)
+            {
+                _isSkipped = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(StatusDisplay));
+            }
+        }
+    }
+
+    /// <summary>Local calendar date this occurrence was scheduled for.</summary>
+    [JsonPropertyName("occurrenceDate")]
+    public DateTime? OccurrenceDate
+    {
+        get => _occurrenceDate;
+        set { if (_occurrenceDate != value) { _occurrenceDate = value; OnPropertyChanged(); } }
     }
 
     [JsonPropertyName("createdAt")]
@@ -342,7 +379,9 @@ public sealed class TaskItem : INotifyPropertyChanged
         return rule switch
         {
             TaskRecurrenceRule.Daily => baseDate.AddDays(1),
+            TaskRecurrenceRule.Weekdays => RecurrenceEngine.CalculateNextOccurrenceDate(new RecurringSchedule { RecurrenceRule = TaskRecurrenceRule.Weekdays }, baseDate),
             TaskRecurrenceRule.Weekly => baseDate.AddDays(7),
+            TaskRecurrenceRule.Monthly => RecurrenceEngine.CalculateNextOccurrenceDate(new RecurringSchedule { RecurrenceRule = TaskRecurrenceRule.Monthly, DayOfMonth = baseDate.Day }, baseDate),
             _ => baseDate
         };
     }
@@ -396,7 +435,7 @@ public sealed class TaskItem : INotifyPropertyChanged
     public string PomodoroDisplay => CompletedPomodoros > 0 ? $"🍅 {CompletedPomodoros}" : "";
 
     [JsonIgnore]
-    public string StatusDisplay => IsCompleted ? "Completed" : (IsOverdue ? "Overdue" : (IsDueToday ? "Due Today" : _status.ToString()));
+    public string StatusDisplay => IsSkipped ? "Skipped ⏭️" : (IsCompleted ? "Completed" : (IsOverdue ? "Overdue" : (IsDueToday ? "Due Today" : _status.ToString())));
 
     [JsonIgnore]
     public string SubtasksSummary => Subtasks.Count > 0 ? $"{Subtasks.Count(s => s.IsCompleted)}/{Subtasks.Count} subtasks" : "";
@@ -408,7 +447,9 @@ public sealed class TaskItem : INotifyPropertyChanged
     public string RecurrenceDisplay => RecurrenceRule switch
     {
         TaskRecurrenceRule.Daily => "🔁 Daily",
+        TaskRecurrenceRule.Weekdays => "🔁 Weekdays",
         TaskRecurrenceRule.Weekly => "🔁 Weekly",
+        TaskRecurrenceRule.Monthly => "🔁 Monthly",
         _ => ""
     };
 
@@ -419,8 +460,14 @@ public sealed class TaskItem : INotifyPropertyChanged
 public sealed class TaskDocument
 {
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 2;
+    public int Version { get; set; } = 3;
 
     [JsonPropertyName("tasks")]
     public List<TaskItem> Tasks { get; set; } = new();
+
+    [JsonPropertyName("schedules")]
+    public List<RecurringSchedule> Schedules { get; set; } = new();
+
+    [JsonPropertyName("routines")]
+    public List<DailyRoutine> Routines { get; set; } = new();
 }

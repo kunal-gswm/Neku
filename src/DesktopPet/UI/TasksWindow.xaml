@@ -173,6 +173,7 @@
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
@@ -181,11 +182,16 @@
                     <CheckBox x:Name="DetailCompleteCheck" AutomationProperties.Name="Mark Task Completed" Grid.Column="0" Content="Mark Completed"
                               VerticalAlignment="Center" Click="DetailCompleteCheck_Click"/>
 
-                    <Button x:Name="StartFocusBtn" AutomationProperties.Name="Start Focus Session" Grid.Column="2" Content="🎯 Start Focus (25m)"
+                    <Button x:Name="SkipTaskBtn" AutomationProperties.Name="Skip Task Occurrence" Grid.Column="1" Content="⏭️ Skip"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="6,2" FontSize="11"
+                            Click="SkipTaskBtn_Click" ToolTip="Skip this recurring occurrence and move to the next cycle"
+                            Visibility="Collapsed"/>
+
+                    <Button x:Name="StartFocusBtn" AutomationProperties.Name="Start Focus Session" Grid.Column="3" Content="🎯 Start Focus (25m)"
                             Margin="0,0,6,0" Click="StartFocusBtn_Click"
                             ToolTip="Start a Pomodoro focus session on this task"/>
 
-                    <Button x:Name="DeleteTaskBtn" Grid.Column="3" Content="🗑" Width="30"
+                    <Button x:Name="DeleteTaskBtn" Grid.Column="4" Content="🗑" Width="30"
                             Style="{StaticResource DangerButton}"
                             Click="DeleteTaskBtn_Click" ToolTip="Delete Task"
                             AutomationProperties.Name="Delete Task"/>
@@ -240,6 +246,26 @@
                         </ComboBox>
                     </StackPanel>
                 </Grid>
+
+                <!-- Recurrence Row -->
+                <Border DockPanel.Dock="Top" Background="#FF231E30" BorderBrush="#FF483C66" BorderThickness="1"
+                        CornerRadius="6" Padding="8,4" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="🔁 Recurrence:" FontSize="11" FontWeight="SemiBold" Foreground="#FFF3E8FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="RecurrenceCombo" AutomationProperties.Name="Task Recurrence Rule" Grid.Column="1" Height="26"
+                                  SelectionChanged="RecurrenceCombo_SelectionChanged" ToolTip="Select repeating schedule for this task">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="Daily 🔁"/>
+                            <ComboBoxItem Content="Weekdays (Mon–Fri) 🔁"/>
+                            <ComboBoxItem Content="Weekly 🔁"/>
+                            <ComboBoxItem Content="Monthly 🔁"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
 
                 <!-- Reminder Row -->
                 <Border DockPanel.Dock="Top" Background="#FF231E30" BorderBrush="#FF483C66" BorderThickness="1"

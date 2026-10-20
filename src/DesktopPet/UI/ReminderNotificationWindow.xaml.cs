@@ -49,7 +49,7 @@ public partial class ReminderNotificationWindow : Window
         if (e.Key == Key.Escape || (e.Key == Key.W && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control))
         {
             _autoCloseTimer.Stop();
-            Close();
+            DismissButton_Click(this, new RoutedEventArgs());
             e.Handled = true;
         }
     }
@@ -78,6 +78,10 @@ public partial class ReminderNotificationWindow : Window
         {
             _autoCloseTimer.Stop();
             Close();
+            if (_task != null && _reminderService != null)
+            {
+                _reminderService.SnoozeReminder(_task.Id, defaultSnoozeMinutes);
+            }
         };
         _autoCloseTimer.Start();
         Closed += (_, _) => _autoCloseTimer.Stop();
@@ -120,6 +124,13 @@ public partial class ReminderNotificationWindow : Window
         {
             _autoCloseTimer.Stop();
             Close();
+            if (_consolidatedTasks != null && _reminderService != null)
+            {
+                foreach (var t in _consolidatedTasks)
+                {
+                    _reminderService.SnoozeReminder(t.Id, 15);
+                }
+            }
         };
         _autoCloseTimer.Start();
         Closed += (_, _) => _autoCloseTimer.Stop();
@@ -146,6 +157,13 @@ public partial class ReminderNotificationWindow : Window
         {
             _autoCloseTimer.Stop();
             Close();
+            if (_consolidatedTasks != null && _reminderService != null)
+            {
+                foreach (var t in _consolidatedTasks)
+                {
+                    _reminderService.SnoozeReminder(t.Id, 15);
+                }
+            }
         };
         _autoCloseTimer.Start();
         Closed += (_, _) => _autoCloseTimer.Stop();

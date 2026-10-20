@@ -187,6 +187,13 @@ public sealed class TaskReminderService : IDisposable
         return true;
     }
 
+    public bool SkipTask(string taskId)
+    {
+        _activeAlertTaskIds.Remove(taskId);
+        CloseActiveNotification(taskId);
+        return _taskService.Skip(taskId);
+    }
+
     public void RegisterActiveNotification(string taskId, System.Windows.Window window)
     {
         if (string.IsNullOrEmpty(taskId) || window == null) return;
@@ -196,6 +203,7 @@ public sealed class TaskReminderService : IDisposable
             if (_activeNotifications.TryGetValue(taskId, out var w) && w == window)
             {
                 _activeNotifications.Remove(taskId);
+                _activeAlertTaskIds.Remove(taskId);
             }
         };
     }

@@ -321,6 +321,10 @@ public partial class App : Application
                     tasks,
                     _taskReminderService,
                     onOpenTasks: () => OpenTasksWindow());
+                foreach (var t in tasks)
+                {
+                    _taskReminderService.RegisterActiveNotification(t.Id, win);
+                }
                 win.Show();
 
                 if (!_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
@@ -456,6 +460,7 @@ public partial class App : Application
         }
 
         Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        Microsoft.Win32.SystemEvents.TimeChanged += OnTimeChanged;
 
         // Global hotkey (registered on the pet window's HWND, which now exists).
         _hotkey = new HotkeyService();
@@ -1444,6 +1449,15 @@ public partial class App : Application
             keywords: new[] { "quick capture", "capture", "quick add", "task", "note", "thought" }));
 
         _paletteService.Register(new PaletteCommand(
+            id: "routines.open",
+            title: "Daily Routines",
+            description: "View, start, and track step-by-step daily routines and rituals",
+            category: "Productivity",
+            action: () => OpenProductivityHub("Routines"),
+            icon: "⚡",
+            keywords: new[] { "routines", "daily routines", "habits", "ritual", "morning", "evening", "steps" }));
+
+        _paletteService.Register(new PaletteCommand(
             id: "focus.start",
             title: "Start Focus Session",
             description: $"Begin a {_settings.FocusDurationMinutes}-minute Pomodoro focus block",
@@ -2021,7 +2035,17 @@ public partial class App : Application
             {
                 _developerEvents?.Start();
             }
+
+            _taskService.ReconcileRecurringSchedules();
+            _taskReminderService?.CheckReminders();
         }
+    }
+
+    private void OnTimeChanged(object? sender, EventArgs e)
+    {
+        DebugLog.Write("[Time] System clock or timezone changed - reconciling recurring schedules and reminders.");
+        _taskService.ReconcileRecurringSchedules();
+        _taskReminderService?.CheckReminders();
     }
 
     // ── AI companion ────────────────────────────────────────────────────────────
@@ -2189,6 +2213,7 @@ public partial class App : Application
     {
         DebugLog.Write($"[Lifecycle] QuitApp called. Stack: {Environment.StackTrace}");
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        Microsoft.Win32.SystemEvents.TimeChanged -= OnTimeChanged;
         SavePetState();
         try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();
@@ -2232,6 +2257,7 @@ public partial class App : Application
     {
         DebugLog.Write($"[Lifecycle] OnExit called with exitCode={e.ApplicationExitCode}. Stack: {Environment.StackTrace}");
         Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        Microsoft.Win32.SystemEvents.TimeChanged -= OnTimeChanged;
         SavePetState();
         try { _notesService?.Save(); } catch { }
         _stateSaveTimer?.Stop();

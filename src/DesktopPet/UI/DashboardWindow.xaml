@@ -55,6 +55,7 @@
                 <StackPanel Margin="6,0,6,0">
                     <Button x:Name="NavOverviewBtn" AutomationProperties.Name="Overview Navigation" Content="📊  Overview" Style="{StaticResource NavRailButton}" Tag="Overview" Click="NavBtn_Click"/>
                     <Button x:Name="NavTasksBtn" AutomationProperties.Name="Tasks Navigation" Content="📋  Tasks" Style="{StaticResource NavRailButton}" Tag="Tasks" Click="NavBtn_Click"/>
+                    <Button x:Name="NavRoutinesBtn" AutomationProperties.Name="Daily Routines Navigation" Content="⚡  Routines" Style="{StaticResource NavRailButton}" Tag="Routines" Click="NavBtn_Click"/>
                     <Button x:Name="NavNotesBtn" AutomationProperties.Name="Quick Notes Navigation" Content="📝  Quick Notes" Style="{StaticResource NavRailButton}" Tag="Notes" Click="NavNotesBtn_Click"/>
                     <Button x:Name="NavFocusBtn" AutomationProperties.Name="Focus Timer Navigation" Content="⏱️  Focus Timer" Style="{StaticResource NavRailButton}" Tag="Focus" Click="NavBtn_Click"/>
                     <Button x:Name="NavHistoryBtn" AutomationProperties.Name="Focus History Navigation" Content="📜  Focus History" Style="{StaticResource NavRailButton}" Tag="History" Click="NavBtn_Click"/>
@@ -373,6 +374,7 @@
                                 <Border Background="#FF1E1A29" BorderBrush="#FF352C4A" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
                                     <DockPanel LastChildFill="False">
                                         <CheckBox DockPanel.Dock="Left" x:Name="DetailCompleteCheck" Content="Mark Completed" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Click="DetailCompleteCheck_Click"/>
+                                        <Button DockPanel.Dock="Left" x:Name="DetailSkipBtn" AutomationProperties.Name="Skip Task Occurrence" Content="⏭️ Skip" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="8,0,0,0" Click="DetailSkipBtn_Click" Visibility="Collapsed" ToolTip="Skip this recurring occurrence and advance to the next cycle"/>
                                         <Button DockPanel.Dock="Right" x:Name="DetailStartFocusBtn" Content="🎯 Start Focus" Style="{StaticResource OrangeButton}" Padding="14,6" Click="DetailStartFocusBtn_Click"/>
                                     </DockPanel>
                                 </Border>
@@ -445,8 +447,10 @@
                                                 <TextBlock Text="Recurrence" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
                                                 <ComboBox x:Name="DetailRecurrenceCombo" Height="28" SelectionChanged="DetailRecurrence_Changed">
                                                     <ComboBoxItem Content="None"/>
-                                                    <ComboBoxItem Content="Daily"/>
-                                                    <ComboBoxItem Content="Weekly"/>
+                                                    <ComboBoxItem Content="Daily 🔁"/>
+                                                    <ComboBoxItem Content="Weekdays (Mon–Fri) 🔁"/>
+                                                    <ComboBoxItem Content="Weekly 🔁"/>
+                                                    <ComboBoxItem Content="Monthly 🔁"/>
                                                 </ComboBox>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Margin="3,0,0,0">
@@ -1431,7 +1435,6 @@
                 </Grid>
             </Grid>
 
-            <!-- 9. SYSTEM HEALTH VIEW -->
             <Grid x:Name="HealthView" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1600,6 +1603,207 @@
                         </DockPanel>
                     </Border>
                 </Grid>
+            </Grid>
+
+            <!-- ========================================== -->
+            <!-- 10. ROUTINES VIEW                          -->
+            <!-- ========================================== -->
+            <Grid x:Name="RoutinesView" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="340" MinWidth="260" MaxWidth="440"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Routine List & Quick Creation -->
+                <DockPanel Grid.Column="0">
+                    <!-- Header & Add Button -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock Text="Daily Routines" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        <Button x:Name="NewRoutineBtn" AutomationProperties.Name="Create Routine" Content="➕ New Routine"
+                                Style="{StaticResource PrimaryButton}" Height="28" Padding="10,4" HorizontalAlignment="Right" Click="NewRoutineBtn_Click"/>
+                    </DockPanel>
+
+                    <!-- Routines ListBox Border -->
+                    <Border Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                        <Grid>
+                            <!-- Empty State -->
+                            <StackPanel x:Name="RoutinesEmptyPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20" Visibility="Collapsed">
+                                <TextBlock Text="⚡" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="No Routines Created" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                <TextBlock Text="Create reusable step-by-step rituals for your morning, focus, or evening reset."
+                                           FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="220" Margin="0,0,0,12"/>
+                                <Button Content="➕ Create First Routine" Style="{StaticResource SecondaryButton}" Height="28" Click="NewRoutineBtn_Click"/>
+                            </StackPanel>
+
+                            <!-- List of routines -->
+                            <ListBox x:Name="RoutinesListBox" Background="Transparent" BorderThickness="0"
+                                     SelectionChanged="RoutinesListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="10,8" Margin="0,2" CornerRadius="6" Background="#FF282236">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="White" FontSize="13"/>
+                                                    <TextBlock Text="{Binding StatusDisplay}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                                <Border Grid.Column="2" Background="#FF382F4D" CornerRadius="10" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding TotalEstimatedMinutes, StringFormat='{}{0}m'}" FontSize="10" Foreground="#FFA78BFA"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+                </DockPanel>
+
+                <!-- Splitter -->
+                <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="Transparent"/>
+
+                <!-- Right Column: Selected Routine Details & Step Management -->
+                <Border Grid.Column="2" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                    <Grid>
+                        <!-- No Routine Selected State -->
+                        <StackPanel x:Name="RoutineNoSelectionPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Visible">
+                            <TextBlock Text="⚡" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <TextBlock Text="Select a Routine" FontSize="16" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBlock Text="Select a routine on the left or create a new one to view and run its steps." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Routine Detail Panel -->
+                        <DockPanel x:Name="RoutineDetailPanel" Visibility="Collapsed">
+                            <!-- Action / Run Bar at Top -->
+                            <Border DockPanel.Dock="Top" Background="#FF282236" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBox x:Name="RoutineDetailIconBox" Width="32" Height="28" FontSize="14" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,8,0" LostFocus="RoutineDetail_LostFocus"/>
+                                            <TextBox x:Name="RoutineDetailNameBox" FontSize="16" FontWeight="Bold" Width="240" Height="28" VerticalContentAlignment="Center" LostFocus="RoutineDetail_LostFocus" KeyDown="RoutineDetailNameBox_KeyDown"/>
+                                        </StackPanel>
+                                        <TextBox x:Name="RoutineDetailDescBox" FontSize="12" Foreground="{StaticResource TextMutedBrush}" Background="Transparent" BorderThickness="0" Margin="40,4,0,0" LostFocus="RoutineDetail_LostFocus"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="RoutineStartBtn" Content="▶️ Start Routine" Style="{StaticResource PrimaryButton}" Height="30" Padding="10,4" Margin="0,0,6,0" Click="RoutineStartBtn_Click"/>
+                                        <Button x:Name="RoutineResetBtn" Content="🔄 Reset Session" Style="{StaticResource SecondaryButton}" Height="30" Padding="8,4" Margin="0,0,6,0" Click="RoutineResetBtn_Click" ToolTip="Reset step progress for next session"/>
+                                        <Button x:Name="RoutineDeleteBtn" Content="🗑️" Style="{StaticResource SecondaryButton}" Height="30" Width="32" Click="RoutineDeleteBtn_Click" ToolTip="Delete this routine"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Active Progress & Next Step Banner (visible if Active) -->
+                            <Border x:Name="RoutineActiveBanner" DockPanel.Dock="Top" Background="#FF312445" BorderBrush="#FF8B5CF6" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock x:Name="RoutineActiveStepHeader" Text="👉 Current Step: Review inbox" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                                        <TextBlock x:Name="RoutineActiveProgressText" Text="Progress: 1/3 completed (33%)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="RoutineCompleteStepBtn" Content="✅ Complete Step" Style="{StaticResource PrimaryButton}" Height="28" Padding="8,4" Margin="0,0,6,0" Click="RoutineCompleteCurrentStep_Click"/>
+                                        <Button x:Name="RoutineSkipStepBtn" Content="⏭️ Skip" Style="{StaticResource SecondaryButton}" Height="28" Padding="8,4" Click="RoutineSkipCurrentStep_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Finished Banner (visible if IsFinished) -->
+                            <Border x:Name="RoutineFinishedBanner" DockPanel.Dock="Top" Background="#FF1E3A2F" BorderBrush="{StaticResource AccentGreenBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="🔄 Restart Session" Style="{StaticResource SecondaryButton}" Height="26" Padding="8,2" Click="RoutineResetBtn_Click"/>
+                                    <TextBlock Text="🎉 Routine Completed! All steps finished." FontWeight="SemiBold" Foreground="{StaticResource AccentGreenBrush}" VerticalAlignment="Center"/>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Add Step Bar -->
+                            <Border DockPanel.Dock="Top" Background="#FF231E30" CornerRadius="6" Padding="8,6" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewStepTitleBox" Grid.Column="0" Height="26" Margin="0,0,6,0" KeyDown="NewStepTitleBox_KeyDown"/>
+                                    <TextBox x:Name="NewStepMinutesBox" Grid.Column="1" Height="26" Text="5" HorizontalContentAlignment="Center" Margin="0,0,6,0" ToolTip="Estimated minutes"/>
+                                    <Button x:Name="AddStepBtn" Grid.Column="2" Content="➕ Add Step" Style="{StaticResource SecondaryButton}" Height="26" Padding="8,2" Click="AddStepBtn_Click"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Steps ListBox -->
+                            <ListBox x:Name="RoutineStepsListBox" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Padding="10,8" Margin="0,2" CornerRadius="6" Background="#FF282236">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Status / Checkbox -->
+                                                <Button Grid.Column="0" Width="26" Height="26" Margin="0,0,8,0" Tag="{Binding Id}" Click="StepToggleComplete_Click"
+                                                        Background="Transparent" BorderThickness="1" BorderBrush="#FF524669" Cursor="Hand" ToolTip="Toggle Step Complete">
+                                                    <TextBlock Text="{Binding ActionIcon}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Button>
+
+                                                <!-- Title & Notes -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="Medium" Foreground="White" FontSize="13">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                        <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                                        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsSkipped}" Value="True">
+                                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                                        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Notes}" FontSize="11" Foreground="{StaticResource TextDimBrush}"/>
+                                                </StackPanel>
+
+                                                <!-- Estimated Minutes Badge -->
+                                                <Border Grid.Column="2" Background="#FF382F4D" CornerRadius="8" Padding="6,2" Margin="6,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding EstimatedMinutes, StringFormat='{}{0}m'}" FontSize="10" Foreground="#FFA78BFA"/>
+                                                </Border>
+
+                                                <!-- Action Buttons: Reorder Up, Reorder Down, Skip, Delete -->
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="▲" Width="22" Height="22" Margin="2,0" Style="{StaticResource SecondaryButton}" Tag="{Binding Id}" Click="StepMoveUp_Click" ToolTip="Move Up"/>
+                                                    <Button Content="▼" Width="22" Height="22" Margin="2,0" Style="{StaticResource SecondaryButton}" Tag="{Binding Id}" Click="StepMoveDown_Click" ToolTip="Move Down"/>
+                                                    <Button Content="⏭️" Width="24" Height="22" Margin="2,0" Style="{StaticResource SecondaryButton}" Tag="{Binding Id}" Click="StepSkip_Click" ToolTip="Skip Step"/>
+                                                    <Button Content="🗑️" Width="22" Height="22" Margin="2,0" Style="{StaticResource SecondaryButton}" Tag="{Binding Id}" Click="StepDelete_Click" ToolTip="Delete Step"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Grid>
+                </Border>
             </Grid>
 
         </Grid>

@@ -323,6 +323,19 @@ public partial class TasksWindow : Window
 
         StartFocusBtn.Content = $"🎯 Start Focus ({_settings.FocusDurationMinutes}m)";
 
+        SkipTaskBtn.Visibility = (!task.IsCompleted && (task.RecurringScheduleId != null || task.RecurrenceRule != TaskRecurrenceRule.None))
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        RecurrenceCombo.SelectedIndex = task.RecurrenceRule switch
+        {
+            TaskRecurrenceRule.Daily => 1,
+            TaskRecurrenceRule.Weekdays => 2,
+            TaskRecurrenceRule.Weekly => 3,
+            TaskRecurrenceRule.Monthly => 4,
+            _ => 0
+        };
+
         UpdateReminderDetailUi(task);
 
         _suppressEditEvents = false;
@@ -346,6 +359,68 @@ public partial class TasksWindow : Window
             ReminderStatusText.Foreground = (Brush)FindResource("ThemeAccentPurpleHoverBrush");
             ClearReminderBtn.Visibility = Visibility.Visible;
         }
+    }
+
+    private void SkipTaskBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedTask == null) return;
+        _taskService.Skip(_selectedTask.Id);
+    }
+
+    private void RecurrenceCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressEditEvents || _selectedTask == null) return;
+
+        var rule = RecurrenceCombo.SelectedIndex switch
+        {
+            1 => TaskRecurrenceRule.Daily,
+            2 => TaskRecurrenceRule.Weekdays,
+            3 => TaskRecurrenceRule.Weekly,
+            4 => TaskRecurrenceRule.Monthly,
+            _ => TaskRecurrenceRule.None
+        };
+
+        if (rule == _selectedTask.RecurrenceRule) return;
+
+        if (_selectedTask.RecurringScheduleId != null)
+        {
+            var result = MessageBox.Show(
+                $"This task is part of a recurring schedule.\n\nDo you want to update all future occurrences to {rule}?\n\n• Yes: Update entire recurring schedule\n• No: Apply to this task only (detach from schedule)\n• Cancel: Keep current recurrence",
+                "Update Recurring Task",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _taskService.UpdateOccurrenceRecurrence(_selectedTask.Id, rule, updateEntireSchedule: true);
+            }
+            else if (result == MessageBoxResult.No)
+            {
+                _taskService.UpdateOccurrenceRecurrence(_selectedTask.Id, rule, updateEntireSchedule: false);
+            }
+            else
+            {
+                _suppressEditEvents = true;
+                RecurrenceCombo.SelectedIndex = _selectedTask.RecurrenceRule switch
+                {
+                    TaskRecurrenceRule.Daily => 1,
+                    TaskRecurrenceRule.Weekdays => 2,
+                    TaskRecurrenceRule.Weekly => 3,
+                    TaskRecurrenceRule.Monthly => 4,
+                    _ => 0
+                };
+                _suppressEditEvents = false;
+                return;
+            }
+        }
+        else
+        {
+            _taskService.Update(_selectedTask.Id, t => t.RecurrenceRule = rule);
+        }
+
+        SkipTaskBtn.Visibility = (!_selectedTask.IsCompleted && (_selectedTask.RecurringScheduleId != null || _selectedTask.RecurrenceRule != TaskRecurrenceRule.None))
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void RemindPreset_Click(object sender, RoutedEventArgs e)

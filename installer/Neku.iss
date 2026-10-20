@@ -6,7 +6,7 @@
 ; ─────────────────────────────────────────────────────────────────────────────
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.3"
+  #define MyAppVersion "1.0.4"
 #endif
 
 #define MyAppName "Neku"
