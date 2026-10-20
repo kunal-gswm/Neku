@@ -22,6 +22,15 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem _quietModeItem;
     private readonly ToolStripMenuItem _updateItem;
     private readonly Action _onUpdate;
+    private readonly AppSettings _settings;
+    private readonly ToolStripMenuItem _devSubmenu;
+    private readonly ToolStripMenuItem? _radarItem;
+    private readonly ToolStripMenuItem? _hudItem;
+
+    public bool IsDevSubmenuVisible => _devSubmenu.Available;
+    public bool IsDevEventsVisible => _devEventsItem.Available;
+    public bool IsRadarVisible => _radarItem?.Available ?? false;
+    public bool IsHudVisible => _hudItem?.Available ?? false;
 
     public TrayService(
         Action onFocusToggle, Func<string> getFocusLabel,
@@ -40,6 +49,7 @@ public sealed class TrayService : IDisposable
         Action? onDeveloperRadar = null, Action? onToggleDeveloperHud = null)
     {
         _onUpdate = onUpdate;
+        _settings = settings;
         var menu = new ContextMenuStrip();
 
         _paletteItem = new ToolStripMenuItem("⚡ Command Palette… (Ctrl+Alt+P)");
@@ -63,24 +73,27 @@ public sealed class TrayService : IDisposable
         _devEventsItem = new ToolStripMenuItem("Developer Events…");
         _devEventsItem.Click += (_, _) => onDeveloperEvents();
 
-        ToolStripMenuItem? radarItem = null;
         if (onDeveloperRadar != null)
         {
-            radarItem = new ToolStripMenuItem("📡 Developer Radar…");
-            radarItem.Click += (_, _) => onDeveloperRadar();
+            _radarItem = new ToolStripMenuItem("📡 Developer Radar…");
+            _radarItem.Click += (_, _) => onDeveloperRadar();
         }
 
-        ToolStripMenuItem? hudItem = null;
         if (onToggleDeveloperHud != null)
         {
-            hudItem = new ToolStripMenuItem("🪟 Toggle Developer HUD");
-            hudItem.Click += (_, _) => onToggleDeveloperHud();
+            _hudItem = new ToolStripMenuItem("🪟 Toggle Developer HUD");
+            _hudItem.Click += (_, _) => onToggleDeveloperHud();
         }
+
+        _devSubmenu = new ToolStripMenuItem("🛠️ Developer Tools");
+        _devSubmenu.DropDownItems.Add(_devEventsItem);
+        if (_radarItem != null) _devSubmenu.DropDownItems.Add(_radarItem);
+        if (_hudItem != null) _devSubmenu.DropDownItems.Add(_hudItem);
 
         var studioItem = new ToolStripMenuItem("🎨 Companion Studio…");
         studioItem.Click += (_, _) => onCompanionStudio();
 
-        var settingsItem = new ToolStripMenuItem("Character and Behavior Settings…");
+        var settingsItem = new ToolStripMenuItem("Settings…");
         settingsItem.Click += (_, _) => onSettings();
 
         _pauseItem = new ToolStripMenuItem("Pause") { CheckOnClick = true };
@@ -112,7 +125,10 @@ public sealed class TrayService : IDisposable
             _focusItem.Text = getFocusLabel();
             _focusCancelItem.Visible = isFocusActive();
             _pauseItem.Text = _pauseItem.Checked ? "Resume" : "Pause";
+            RefreshDeveloperMenuVisibility();
         };
+
+        RefreshDeveloperMenuVisibility();
 
         // 1. Productivity Hub, Focus Session & Tasks
         menu.Items.Add(_paletteItem);
@@ -122,11 +138,9 @@ public sealed class TrayService : IDisposable
         menu.Items.Add(_tasksItem);
         menu.Items.Add(new ToolStripSeparator());
 
-        // 2. Quick Note, Developer Events & Companion Studio
+        // 2. Quick Note, Developer Tools & Companion Studio
         menu.Items.Add(_quickNoteItem);
-        menu.Items.Add(_devEventsItem);
-        if (radarItem != null) menu.Items.Add(radarItem);
-        if (hudItem != null) menu.Items.Add(hudItem);
+        menu.Items.Add(_devSubmenu);
         menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -217,5 +231,17 @@ public sealed class TrayService : IDisposable
     {
         _icon.Visible = false;
         _icon.Dispose();
+    }
+    public void RefreshDeveloperMenuVisibility()
+    {
+        bool showEvents = _settings.EnableDeveloperEvents;
+        bool showRadar = _radarItem != null && _settings.EnableDeveloperRadar;
+        bool showHud = _hudItem != null && (_settings.EnableDeveloperHud || _settings.EnableDeveloperRadar);
+
+        _devEventsItem.Visible = showEvents;
+        if (_radarItem != null) _radarItem.Visible = showRadar;
+        if (_hudItem != null) _hudItem.Visible = showHud;
+
+        _devSubmenu.Visible = showEvents || showRadar || showHud;
     }
 }

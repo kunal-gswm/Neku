@@ -341,7 +341,10 @@ public partial class App : Application
             onDeveloperRadar: () => OpenProductivityHub("Radar"),
             onToggleDeveloperHud: ToggleDeveloperHud,
             onSpawnToy: type => SpawnToyOnDesktop(type),
-            onClearToys: ClearAllToys);
+            onClearToys: ClearAllToys,
+            isDeveloperEventsEnabled: () => _settings.EnableDeveloperEvents,
+            isDeveloperRadarEnabled: () => _settings.EnableDeveloperRadar,
+            isDeveloperHudEnabled: () => _settings.EnableDeveloperHud || _settings.EnableDeveloperRadar);
 
         _tray = new TrayService(
             onFocusToggle: OnFocusToggle,
@@ -974,9 +977,9 @@ public partial class App : Application
         }
         else
         {
-            _dashboardWindow.Activate();
             if (_dashboardWindow.WindowState == WindowState.Minimized)
                 _dashboardWindow.WindowState = WindowState.Normal;
+            _dashboardWindow.Activate();
             if (!string.IsNullOrEmpty(initialTab))
             {
                 _dashboardWindow.SelectTab(initialTab);
@@ -1843,6 +1846,7 @@ public partial class App : Application
     {
         _settings.ReducedMotion = enabled;
         _tray?.SetReducedMotion(enabled);
+        _engine?.HandleReducedMotionToggled(enabled);
         _settingsService.Save();
     }
 
@@ -1900,6 +1904,8 @@ public partial class App : Application
         _tray?.SetClickThrough(_settings.ClickThrough);
         _tray?.SetReducedMotion(_settings.ReducedMotion);
         _tray?.SetQuietMode(_settings.EnableQuietMode);
+        _tray?.RefreshDeveloperMenuVisibility();
+        _petWindow?.RefreshDeveloperMenuVisibility();
 
         if (_settings.EnableDeveloperEvents || _settings.EnableAgentCompanion)
             _developerEvents?.Start();

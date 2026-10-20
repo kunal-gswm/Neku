@@ -1,9 +1,23 @@
 [CmdletBinding()]
-param()
+param(
+    [string]$Version
+)
 
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $proj = Join-Path $root "src\DesktopPet\DesktopPet.csproj"
+    if (Test-Path $proj) {
+        $xml = [xml](Get-Content $proj)
+        $Version = ($xml.Project.PropertyGroup.Version | Where-Object { $_ }) -join ''
+    }
+}
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = "1.0.1"
+}
+
 $artifacts = Join-Path $root "artifacts"
 $dist = Join-Path $root "dist"
 $exe = Join-Path $dist "Neku.exe"
@@ -15,8 +29,8 @@ if (-not (Test-Path $artifacts)) {
 }
 
 # 1. Standardize installer name
-$setupSrc = Join-Path $artifacts "Neku-Setup-1.0.0.exe"
-$setupDst = Join-Path $artifacts "Neku-Setup-v1.0.0.exe"
+$setupSrc = Join-Path $artifacts "Neku-Setup-$Version.exe"
+$setupDst = Join-Path $artifacts "Neku-Setup-v$Version.exe"
 if (Test-Path $setupSrc) {
     Copy-Item $setupSrc -Destination $setupDst -Force
     Write-Host "Created $setupDst from $setupSrc" -ForegroundColor Green
@@ -27,9 +41,9 @@ if (Test-Path $setupSrc) {
 }
 
 # 2. Package portable zip
-$zipName = "Neku-v1.0.0-win-x64.zip"
+$zipName = "Neku-v$Version-win-x64.zip"
 $zipPath = Join-Path $artifacts $zipName
-$tempStage = Join-Path ([System.IO.Path]::GetTempPath()) "Neku-v1.0.0-win-x64"
+$tempStage = Join-Path ([System.IO.Path]::GetTempPath()) "Neku-v$Version-win-x64"
 
 if (Test-Path $tempStage) {
     Remove-Item $tempStage -Recurse -Force
@@ -64,8 +78,8 @@ Write-Host "Created $zipPath" -ForegroundColor Green
 # 3. Generate SHA256SUMS.txt
 $shaFile = Join-Path $artifacts "SHA256SUMS.txt"
 $filesToHash = @(
-    "Neku-Setup-v1.0.0.exe",
-    "Neku-v1.0.0-win-x64.zip"
+    "Neku-Setup-v$Version.exe",
+    "Neku-v$Version-win-x64.zip"
 )
 
 $lines = @()

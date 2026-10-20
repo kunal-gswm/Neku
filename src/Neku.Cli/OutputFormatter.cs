@@ -24,7 +24,8 @@ public static class OutputFormatter
         bool isPaused = data.TryGetProperty("isPetPaused", out var p) && p.GetBoolean();
         string petState = data.TryGetProperty("petState", out var ps) ? ps.GetString() ?? "Idle" : "Idle";
 
-        Console.WriteLine($"Neku Desktop Companion (v1.0.0)");
+        string ver = data.TryGetProperty("version", out var v) ? v.GetString() ?? "1.0.1" : "1.0.1";
+        Console.WriteLine($"Neku Desktop Companion (v{ver})");
         Console.WriteLine($"----------------------------------------");
         Console.WriteLine($"Companion   : {companion}");
         Console.WriteLine($"Pet State   : {petState} ({(isHidden ? "Hidden" : "Visible")}, {(isPaused ? "Paused" : "Active")})");

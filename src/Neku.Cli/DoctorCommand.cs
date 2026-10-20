@@ -8,7 +8,7 @@ namespace Neku.Cli;
 
 public sealed class DoctorReport
 {
-    public string CliVersion { get; set; } = "1.0.0";
+    public string CliVersion { get; set; } = typeof(Program).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "1.0.1";
     public string? CliPath { get; set; }
     public bool DesktopExecutableFound { get; set; }
     public string? DesktopExecutablePath { get; set; }

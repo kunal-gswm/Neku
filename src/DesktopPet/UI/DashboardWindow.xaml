@@ -45,23 +45,23 @@
                         </DockPanel>
                         <TextBlock x:Name="RailActiveTaskText" Text="No active task" FontSize="11" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis" Margin="0,4,0,6"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="RailPlayPauseBtn" Content="▶ Play" Style="{StaticResource SecondaryButton}" Padding="8,3" FontSize="11" Margin="0,0,4,0" Click="RailPlayPauseBtn_Click"/>
-                            <Button x:Name="RailStopBtn" Content="⏹ Stop" Style="{StaticResource DangerButton}" Padding="8,3" FontSize="11" Click="RailStopBtn_Click"/>
+                            <Button x:Name="RailPlayPauseBtn" AutomationProperties.Name="Play or Pause Focus Session" Content="▶ Play" Style="{StaticResource SecondaryButton}" Padding="8,3" FontSize="11" Margin="0,0,4,0" Click="RailPlayPauseBtn_Click"/>
+                            <Button x:Name="RailStopBtn" AutomationProperties.Name="Stop Focus Session" Content="⏹ Stop" Style="{StaticResource DangerButton}" Padding="8,3" FontSize="11" Click="RailStopBtn_Click"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <!-- Nav Buttons -->
                 <StackPanel Margin="6,0,6,0">
-                    <Button x:Name="NavOverviewBtn" Content="📊  Overview" Style="{StaticResource NavRailButton}" Tag="Overview" Click="NavBtn_Click"/>
-                    <Button x:Name="NavTasksBtn" Content="📋  Tasks" Style="{StaticResource NavRailButton}" Tag="Tasks" Click="NavBtn_Click"/>
-                    <Button x:Name="NavFocusBtn" Content="⏱️  Focus Timer" Style="{StaticResource NavRailButton}" Tag="Focus" Click="NavBtn_Click"/>
-                    <Button x:Name="NavHistoryBtn" Content="📜  Focus History" Style="{StaticResource NavRailButton}" Tag="History" Click="NavBtn_Click"/>
-                    <Button x:Name="NavInsightsBtn" Content="📈  Insights" Style="{StaticResource NavRailButton}" Tag="Insights" Click="NavBtn_Click"/>
-                    <Button x:Name="NavGoalsBtn" Content="🎯  Goals" Style="{StaticResource NavRailButton}" Tag="Goals" Click="NavBtn_Click"/>
-                    <Button x:Name="NavAgentBtn" Content="🤖  Agent Activity" Style="{StaticResource NavRailButton}" Tag="Agent" Click="NavBtn_Click"/>
-                    <Button x:Name="NavRadarBtn" Content="📡  Developer Radar" Style="{StaticResource NavRailButton}" Tag="Radar" Click="NavBtn_Click"/>
-                    <Button x:Name="NavHealthBtn" Content="💻  System Health" Style="{StaticResource NavRailButton}" Tag="Health" Click="NavBtn_Click"/>
+                    <Button x:Name="NavOverviewBtn" AutomationProperties.Name="Overview Navigation" Content="📊  Overview" Style="{StaticResource NavRailButton}" Tag="Overview" Click="NavBtn_Click"/>
+                    <Button x:Name="NavTasksBtn" AutomationProperties.Name="Tasks Navigation" Content="📋  Tasks" Style="{StaticResource NavRailButton}" Tag="Tasks" Click="NavBtn_Click"/>
+                    <Button x:Name="NavFocusBtn" AutomationProperties.Name="Focus Timer Navigation" Content="⏱️  Focus Timer" Style="{StaticResource NavRailButton}" Tag="Focus" Click="NavBtn_Click"/>
+                    <Button x:Name="NavHistoryBtn" AutomationProperties.Name="Focus History Navigation" Content="📜  Focus History" Style="{StaticResource NavRailButton}" Tag="History" Click="NavBtn_Click"/>
+                    <Button x:Name="NavInsightsBtn" AutomationProperties.Name="Insights Navigation" Content="📈  Insights" Style="{StaticResource NavRailButton}" Tag="Insights" Click="NavBtn_Click"/>
+                    <Button x:Name="NavGoalsBtn" AutomationProperties.Name="Goals Navigation" Content="🎯  Goals" Style="{StaticResource NavRailButton}" Tag="Goals" Click="NavBtn_Click"/>
+                    <Button x:Name="NavAgentBtn" AutomationProperties.Name="Agent Activity Navigation" Content="🤖  Agent Activity" Style="{StaticResource NavRailButton}" Tag="Agent" Click="NavBtn_Click"/>
+                    <Button x:Name="NavRadarBtn" AutomationProperties.Name="Developer Radar Navigation" Content="📡  Developer Radar" Style="{StaticResource NavRailButton}" Tag="Radar" Click="NavBtn_Click"/>
+                    <Button x:Name="NavHealthBtn" AutomationProperties.Name="System Health Navigation" Content="💻  System Health" Style="{StaticResource NavRailButton}" Tag="Health" Click="NavBtn_Click"/>
                 </StackPanel>
             </DockPanel>
         </Border>

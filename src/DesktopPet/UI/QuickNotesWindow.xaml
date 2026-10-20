@@ -9,37 +9,11 @@
         Foreground="#FFF3E8FF"
         KeyDown="Window_KeyDown">
     <Window.Resources>
-        <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#FF282337"/>
-            <Setter Property="Foreground" Value="#FFF3E8FF"/>
-            <Setter Property="BorderBrush" Value="#FF483C66"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="#FFA78BFA"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="#FF8B5CF6"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF9F75FF"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ProductivityTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
 
     <Grid Margin="12">
@@ -52,29 +26,48 @@
         <!-- Left: Search, List, New button -->
         <DockPanel Grid.Column="0">
             <Button x:Name="NewNoteBtn" DockPanel.Dock="Bottom" Content="+ New Note" Margin="0,8,0,0"
+                    Style="{StaticResource PrimaryButton}"
+                    AutomationProperties.Name="Create New Note"
                     Click="NewNoteBtn_Click"/>
 
             <TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="0,0,0,6"
                      TextChanged="SearchBox_TextChanged"
-                     ToolTip="Filter notes by title or content"/>
+                     ToolTip="Filter notes by title or content"
+                     AutomationProperties.Name="Search Notes"/>
 
-            <ListBox x:Name="NotesListBox"
-                     Background="#FF282337"
-                     BorderBrush="#FF483C66"
-                     Foreground="#FFF3E8FF"
-                     SelectionChanged="NotesListBox_SelectionChanged"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="2,4">
-                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12"
-                                       Foreground="#FFF3E8FF" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding FormattedDate}" FontSize="10"
-                                       Foreground="#FFA78BFA" Margin="0,1,0,0"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <Grid>
+                <ListBox x:Name="NotesListBox"
+                         Background="{StaticResource ThemeInputBgBrush}"
+                         BorderBrush="{StaticResource ThemeBorderBrush}"
+                         Foreground="{StaticResource ThemeTextPrimaryBrush}"
+                         SelectionChanged="NotesListBox_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         AutomationProperties.Name="Notes List">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,4">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{StaticResource ThemeTextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding FormattedDate}" FontSize="10"
+                                           Foreground="{StaticResource ThemeTextSecondaryBrush}" Margin="0,1,0,0"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Empty State Message -->
+                <Border x:Name="EmptyNotesBorder" Background="{StaticResource ThemeInputBgBrush}"
+                        BorderBrush="{StaticResource ThemeBorderBrush}"
+                        BorderThickness="1" CornerRadius="4" Visibility="Collapsed" Padding="12">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="📝" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                        <TextBlock Text="No notes found" FontWeight="SemiBold" FontSize="11"
+                                   Foreground="{StaticResource ThemeTextPrimaryBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Click + New Note to add one" FontSize="10"
+                                   Foreground="{StaticResource ThemeTextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </DockPanel>
 
         <!-- Splitter -->
@@ -92,23 +85,30 @@
 
                 <TextBox x:Name="TitleBox" Grid.Column="0" FontSize="13" FontWeight="SemiBold"
                          TextChanged="Editor_TextChanged" Margin="0,0,6,0"
-                         ToolTip="Note Title"/>
+                         ToolTip="Note Title"
+                         AutomationProperties.Name="Note Title"/>
 
                 <Button x:Name="SaveBtn" Grid.Column="1" Content="💾 Save" Margin="0,0,6,0"
+                        Style="{StaticResource PrimaryButton}"
+                        AutomationProperties.Name="Save Note"
                         Click="SaveBtn_Click"/>
 
-                <Button x:Name="DeleteBtn" Grid.Column="2" Content="🗑" Background="#FFB91C1C"
-                        ToolTip="Delete Note" Click="DeleteBtn_Click"/>
+                <Button x:Name="DeleteBtn" Grid.Column="2" Content="🗑" Width="30"
+                        Style="{StaticResource DangerButton}"
+                        ToolTip="Delete Note"
+                        AutomationProperties.Name="Delete Note"
+                        Click="DeleteBtn_Click"/>
             </Grid>
 
             <!-- Status bar -->
             <TextBlock x:Name="StatusText" DockPanel.Dock="Bottom" Text="Ready"
-                       FontSize="10" Foreground="#FFA78BFA" Margin="2,4,0,0"/>
+                       FontSize="10" Foreground="{StaticResource ThemeTextSecondaryBrush}" Margin="2,4,0,0"/>
 
             <!-- Main note content -->
             <TextBox x:Name="ContentBox" AcceptsReturn="True" AcceptsTab="True"
                      TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                     FontSize="12" TextChanged="Editor_TextChanged"/>
+                     FontSize="12" TextChanged="Editor_TextChanged"
+                     AutomationProperties.Name="Note Content"/>
         </DockPanel>
     </Grid>
 </Window>

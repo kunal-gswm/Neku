@@ -129,16 +129,16 @@ public sealed class CliCommandTests
     {
         var (code1, out1, _) = RunCli("--version");
         Assert.Equal(0, code1);
-        Assert.Equal("Neku 1.0.0", out1.Trim());
+        Assert.Equal("Neku 1.0.1", out1.Trim());
 
         var (code2, out2, _) = RunCli("-v");
         Assert.Equal(0, code2);
-        Assert.Equal("Neku 1.0.0", out2.Trim());
+        Assert.Equal("Neku 1.0.1", out2.Trim());
 
         var (code3, out3, _) = RunCli("--version --json");
         Assert.Equal(0, code3);
         using var doc = JsonDocument.Parse(out3);
-        Assert.Equal("1.0.0", doc.RootElement.GetProperty("version").GetString());
+        Assert.Equal("1.0.1", doc.RootElement.GetProperty("version").GetString());
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public sealed class CliCommandTests
 
         using var doc = JsonDocument.Parse(outText);
         var root = doc.RootElement;
-        Assert.Equal("1.0.0", root.GetProperty("cliVersion").GetString());
+        Assert.Equal("1.0.1", root.GetProperty("cliVersion").GetString());
         Assert.True(root.TryGetProperty("desktopExecutableFound", out _));
         Assert.True(root.TryGetProperty("desktopAppRunning", out _));
         Assert.True(root.TryGetProperty("ipcPipeName", out _));

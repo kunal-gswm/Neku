@@ -26,6 +26,18 @@ public partial class PetWindow : Window, IPetView
 {
     private PetEngine? _engine;
     private MenuItem? _paletteMenuItem;
+    private MenuItem? _devSubmenu;
+    private MenuItem? _devEventsItem;
+    private MenuItem? _radarMenuItem;
+    private MenuItem? _hudMenuItem;
+    private Func<bool>? _isDeveloperEventsEnabled;
+    private Func<bool>? _isDeveloperRadarEnabled;
+    private Func<bool>? _isDeveloperHudEnabled;
+
+    public Visibility DevSubmenuVisibility => _devSubmenu?.Visibility ?? Visibility.Collapsed;
+    public Visibility DevEventsVisibility => _devEventsItem?.Visibility ?? Visibility.Collapsed;
+    public Visibility RadarItemVisibility => _radarMenuItem?.Visibility ?? Visibility.Collapsed;
+    public Visibility HudItemVisibility => _hudMenuItem?.Visibility ?? Visibility.Collapsed;
     private readonly Stopwatch _clock = new();
     private double _lastSeconds;
     private readonly Random _rng = new();
@@ -204,12 +216,16 @@ public partial class PetWindow : Window, IPetView
 
     public void Render(ImageSource frame, double left, double top, int facing)
     {
-        PetImage.Source = frame;
+        if (!ReferenceEquals(PetImage.Source, frame))
+            PetImage.Source = frame;
         double sx = facing >= 0 ? 1 : -1;
-        FlipTransform.ScaleX = sx;
+        if (Math.Abs(FlipTransform.ScaleX - sx) > 0.001)
+            FlipTransform.ScaleX = sx;
         // Keep the heat overlay aligned with the current frame and facing.
-        HeatMaskBrush.ImageSource = frame;
-        HeatFlip.ScaleX = sx;
+        if (!ReferenceEquals(HeatMaskBrush.ImageSource, frame))
+            HeatMaskBrush.ImageSource = frame;
+        if (Math.Abs(HeatFlip.ScaleX - sx) > 0.001)
+            HeatFlip.ScaleX = sx;
         PlaceAt(left, top);
     }
 
@@ -425,6 +441,23 @@ public partial class PetWindow : Window, IPetView
             Win32.RemoveClickThrough(hwnd);
     }
 
+    public void RefreshDeveloperMenuVisibility()
+    {
+        bool showEvents = _isDeveloperEventsEnabled?.Invoke() ?? false;
+        bool showRadar = _radarMenuItem != null && (_isDeveloperRadarEnabled?.Invoke() ?? false);
+        bool showHud = _hudMenuItem != null && (_isDeveloperHudEnabled?.Invoke() ?? false);
+
+        if (_devEventsItem != null)
+            _devEventsItem.Visibility = showEvents ? Visibility.Visible : Visibility.Collapsed;
+        if (_radarMenuItem != null)
+            _radarMenuItem.Visibility = showRadar ? Visibility.Visible : Visibility.Collapsed;
+        if (_hudMenuItem != null)
+            _hudMenuItem.Visibility = showHud ? Visibility.Visible : Visibility.Collapsed;
+
+        if (_devSubmenu != null)
+            _devSubmenu.Visibility = (showEvents || showRadar || showHud) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     /// <summary>Configures the right-click context menu on the pet window.</summary>
     public void SetupContextMenu(
         Action onFocusToggle, Func<string> getFocusLabel,
@@ -447,9 +480,16 @@ public partial class PetWindow : Window, IPetView
         Action? onDeveloperRadar = null,
         Action? onToggleDeveloperHud = null,
         Action<ToyType>? onSpawnToy = null,
-        Action? onClearToys = null)
+        Action? onClearToys = null,
+        Func<bool>? isDeveloperEventsEnabled = null,
+        Func<bool>? isDeveloperRadarEnabled = null,
+        Func<bool>? isDeveloperHudEnabled = null)
     {
         var menu = new ContextMenu();
+
+        _isDeveloperEventsEnabled = isDeveloperEventsEnabled;
+        _isDeveloperRadarEnabled = isDeveloperRadarEnabled;
+        _isDeveloperHudEnabled = isDeveloperHudEnabled;
 
         _paletteMenuItem = new MenuItem { Header = "⚡ Command Palette… (Ctrl+Alt+P)" };
         _paletteMenuItem.Click += (_, _) => onCommandPalette();
@@ -475,28 +515,33 @@ public partial class PetWindow : Window, IPetView
         quickNoteItem.Click += (_, _) => onQuickNote();
 
         // 3. Developer Events & Radar
-        var devEventsItem = new MenuItem { Header = "Developer Events…" };
-        devEventsItem.Click += (_, _) => onDeveloperEvents();
+        _devEventsItem = new MenuItem { Header = "Developer Events…" };
+        _devEventsItem.Click += (_, _) => onDeveloperEvents();
 
-        MenuItem? radarItem = null;
+        _radarMenuItem = null;
         if (onDeveloperRadar != null)
         {
-            radarItem = new MenuItem { Header = "📡 Developer Radar…" };
-            radarItem.Click += (_, _) => onDeveloperRadar();
+            _radarMenuItem = new MenuItem { Header = "📡 Developer Radar…" };
+            _radarMenuItem.Click += (_, _) => onDeveloperRadar();
         }
 
-        MenuItem? hudItem = null;
+        _hudMenuItem = null;
         if (onToggleDeveloperHud != null)
         {
-            hudItem = new MenuItem { Header = "🪟 Toggle Developer HUD" };
-            hudItem.Click += (_, _) => onToggleDeveloperHud();
+            _hudMenuItem = new MenuItem { Header = "🪟 Toggle Developer HUD" };
+            _hudMenuItem.Click += (_, _) => onToggleDeveloperHud();
         }
 
         // 4. Companion Studio & Settings
         var studioItem = new MenuItem { Header = "🎨 Companion Studio…" };
         studioItem.Click += (_, _) => onCompanionStudio();
 
-        var settingsItem = new MenuItem { Header = "Character and Behavior Settings…" };
+        _devSubmenu = new MenuItem { Header = "🛠️ Developer Tools" };
+        _devSubmenu.Items.Add(_devEventsItem);
+        if (_radarMenuItem != null) _devSubmenu.Items.Add(_radarMenuItem);
+        if (_hudMenuItem != null) _devSubmenu.Items.Add(_hudMenuItem);
+
+        var settingsItem = new MenuItem { Header = "Settings…" };
         settingsItem.Click += (_, _) => onSettings();
 
         // 5. Pause / Resume
@@ -534,7 +579,10 @@ public partial class PetWindow : Window, IPetView
             clickThroughItem.IsChecked = isClickThrough();
             reducedMotionItem.IsChecked = isReducedMotion();
             quietModeItem.IsChecked = isQuietMode();
+            RefreshDeveloperMenuVisibility();
         };
+
+        RefreshDeveloperMenuVisibility();
 
         menu.Items.Add(focusItem);
         menu.Items.Add(focusCancelItem);
@@ -544,9 +592,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(hubItem);
         menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
-        menu.Items.Add(devEventsItem);
-        if (radarItem != null) menu.Items.Add(radarItem);
-        if (hudItem != null) menu.Items.Add(hudItem);
+        menu.Items.Add(_devSubmenu);
         var toysSubmenu = new MenuItem { Header = "🎾 Desktop Toys" };
         var ballItem = new MenuItem { Header = "🎾 Bouncy Ball" };
         ballItem.Click += (_, _) => (onSpawnToy ?? OnSpawnToy)?.Invoke(ToyType.Ball);

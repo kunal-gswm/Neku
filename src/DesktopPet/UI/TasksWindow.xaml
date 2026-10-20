@@ -27,7 +27,7 @@
         <!-- Left Pane: Navigation views, Search/Sort, Task List -->
         <DockPanel Grid.Column="0">
             <!-- Hub Quick Switch Button -->
-            <Button DockPanel.Dock="Top" x:Name="OpenHubBtn" Content="🐾 Open Productivity Hub →"
+            <Button DockPanel.Dock="Top" x:Name="OpenHubBtn" AutomationProperties.Name="Open Productivity Hub" Content="🐾 Open Productivity Hub →"
                     Style="{StaticResource SecondaryButton}" Height="28" Margin="0,0,0,8" Padding="6,4"
                     Click="OpenHubBtn_Click" ToolTip="Open the full Productivity Hub with Analytics &amp; Goals"/>
 
@@ -39,13 +39,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="TodayTabBtn" Grid.Column="0" Content="☀️ Today" Style="{StaticResource TabButton}"
+                <Button x:Name="TodayTabBtn" AutomationProperties.Name="Today Tasks Filter" Grid.Column="0" Content="☀️ Today" Style="{StaticResource TabButton}"
                         Margin="0,0,3,0" Click="TabBtn_Click" Tag="Today"/>
-                <Button x:Name="UpcomingTabBtn" Grid.Column="1" Content="📅 Upcoming" Style="{StaticResource TabButton}"
+                <Button x:Name="UpcomingTabBtn" AutomationProperties.Name="Upcoming Tasks Filter" Grid.Column="1" Content="📅 Upcoming" Style="{StaticResource TabButton}"
                         Margin="2,0,3,0" Click="TabBtn_Click" Tag="Upcoming"/>
-                <Button x:Name="AllTabBtn" Grid.Column="2" Content="📋 All" Style="{StaticResource TabButton}"
+                <Button x:Name="AllTabBtn" AutomationProperties.Name="All Tasks Filter" Grid.Column="2" Content="📋 All" Style="{StaticResource TabButton}"
                         Margin="2,0,3,0" Click="TabBtn_Click" Tag="All"/>
-                <Button x:Name="CompletedTabBtn" Grid.Column="3" Content="✅ Done" Style="{StaticResource TabButton}"
+                <Button x:Name="CompletedTabBtn" AutomationProperties.Name="Completed Tasks Filter" Grid.Column="3" Content="✅ Done" Style="{StaticResource TabButton}"
                         Margin="2,0,0,0" Click="TabBtn_Click" Tag="Completed"/>
             </Grid>
 
@@ -55,10 +55,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="100"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="SearchBox" Grid.Column="0" Height="28" Margin="0,0,6,0"
+                <TextBox x:Name="SearchBox" AutomationProperties.Name="Search Tasks" Grid.Column="0" Height="28" Margin="0,0,6,0"
                          TextChanged="SearchBox_TextChanged"
                          ToolTip="Search tasks by title or description (Ctrl+F)"/>
-                <ComboBox x:Name="SortCombo" Grid.Column="1" Height="28" SelectionChanged="SortCombo_SelectionChanged"
+                <ComboBox x:Name="SortCombo" AutomationProperties.Name="Sort Tasks" Grid.Column="1" Height="28" SelectionChanged="SortCombo_SelectionChanged"
                           ToolTip="Sort task list">
                     <ComboBoxItem Content="Due Date" IsSelected="True"/>
                     <ComboBoxItem Content="Priority"/>
@@ -68,12 +68,12 @@
             </Grid>
 
             <!-- Bottom: New Task button -->
-            <Button x:Name="NewTaskBtn" DockPanel.Dock="Bottom" Content="+ New Task (Ctrl+N)"
+            <Button x:Name="NewTaskBtn" AutomationProperties.Name="Create New Task" DockPanel.Dock="Bottom" Content="+ New Task (Ctrl+N)"
                     Margin="0,8,0,0" Click="NewTaskBtn_Click"/>
 
             <!-- Task List and Empty State container -->
             <Grid>
-                <ListBox x:Name="TasksListBox"
+                <ListBox x:Name="TasksListBox" AutomationProperties.Name="Tasks List"
                          Background="#FF282337"
                          BorderBrush="#FF483C66"
                          Foreground="#FFF3E8FF"
@@ -155,19 +155,21 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <CheckBox x:Name="DetailCompleteCheck" Grid.Column="0" Content="Mark Completed"
+                    <CheckBox x:Name="DetailCompleteCheck" AutomationProperties.Name="Mark Task Completed" Grid.Column="0" Content="Mark Completed"
                               VerticalAlignment="Center" Click="DetailCompleteCheck_Click"/>
 
-                    <Button x:Name="StartFocusBtn" Grid.Column="2" Content="🎯 Start Focus (25m)"
+                    <Button x:Name="StartFocusBtn" AutomationProperties.Name="Start Focus Session" Grid.Column="2" Content="🎯 Start Focus (25m)"
                             Margin="0,0,6,0" Click="StartFocusBtn_Click"
                             ToolTip="Start a Pomodoro focus session on this task"/>
 
-                    <Button x:Name="DeleteTaskBtn" Grid.Column="3" Content="🗑" Background="#FFB91C1C"
-                            Width="30" Click="DeleteTaskBtn_Click" ToolTip="Delete Task"/>
+                    <Button x:Name="DeleteTaskBtn" Grid.Column="3" Content="🗑" Width="30"
+                            Style="{StaticResource DangerButton}"
+                            Click="DeleteTaskBtn_Click" ToolTip="Delete Task"
+                            AutomationProperties.Name="Delete Task"/>
                 </Grid>
 
                 <!-- Title Box -->
-                <TextBox x:Name="TitleBox" DockPanel.Dock="Top" FontSize="14" FontWeight="SemiBold"
+                <TextBox x:Name="TitleBox" AutomationProperties.Name="Task Title" DockPanel.Dock="Top" FontSize="14" FontWeight="SemiBold"
                          Margin="0,0,0,8" TextChanged="TitleBox_TextChanged" ToolTip="Task Title"/>
 
                 <!-- Metadata Row: Priority, Due Date, Est. Minutes -->
@@ -181,7 +183,7 @@
                     <!-- Priority -->
                     <StackPanel Grid.Column="0" Margin="0,0,4,0">
                         <TextBlock Text="Priority:" FontSize="10" Foreground="#FFA78BFA" Margin="0,0,0,2"/>
-                        <ComboBox x:Name="PriorityCombo" SelectionChanged="PriorityCombo_SelectionChanged">
+                        <ComboBox x:Name="PriorityCombo" AutomationProperties.Name="Task Priority" SelectionChanged="PriorityCombo_SelectionChanged">
                             <ComboBoxItem Content="Low"/>
                             <ComboBoxItem Content="Normal" IsSelected="True"/>
                             <ComboBoxItem Content="High"/>
@@ -197,7 +199,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <DatePicker x:Name="DueDatePicker" Grid.Column="0" SelectedDateChanged="DueDatePicker_SelectedDateChanged"/>
+                            <DatePicker x:Name="DueDatePicker" AutomationProperties.Name="Task Due Date" Grid.Column="0" SelectedDateChanged="DueDatePicker_SelectedDateChanged"/>
                             <Button x:Name="ClearDueDateBtn" Grid.Column="1" Content="✕" Width="22" Background="#FF3B314F"
                                     Margin="2,0,0,0" Click="ClearDueDateBtn_Click" ToolTip="Clear Due Date"/>
                         </Grid>
@@ -206,7 +208,7 @@
                     <!-- Estimated Minutes -->
                     <StackPanel Grid.Column="2" Margin="2,0,0,0">
                         <TextBlock Text="Estimate:" FontSize="10" Foreground="#FFA78BFA" Margin="0,0,0,2"/>
-                        <ComboBox x:Name="EstMinutesCombo" SelectionChanged="EstMinutesCombo_SelectionChanged">
+                        <ComboBox x:Name="EstMinutesCombo" AutomationProperties.Name="Task Estimate Minutes" SelectionChanged="EstMinutesCombo_SelectionChanged">
                             <ComboBoxItem Content="None (0m)" Tag="0" IsSelected="True"/>
                             <ComboBoxItem Content="25m (1 🍅)" Tag="25"/>
                             <ComboBoxItem Content="50m (2 🍅)" Tag="50"/>

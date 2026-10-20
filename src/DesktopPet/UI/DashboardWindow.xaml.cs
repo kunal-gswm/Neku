@@ -40,6 +40,11 @@ public partial class DashboardWindow : Window
     private readonly Action? _onToggleHud;
     private readonly SystemHealthService? _healthService;
 
+    private static readonly Color TimerOrangeColor = Color.FromRgb(0xFB, 0x92, 0x3C);
+    private static readonly Color TimerAmberColor = Color.FromRgb(0xFB, 0xBF, 0x24);
+    private static readonly Color TimerGreenColor = Color.FromRgb(0x34, 0xD3, 0x99);
+    private static readonly Color TimerMutedPurpleColor = Color.FromRgb(0xA7, 0x8B, 0xFA);
+
     private string _currentTab = "Overview";
     private string _currentTaskFilterTab = "All";
     private string _currentAgentFilter = "all";
@@ -289,31 +294,31 @@ public partial class DashboardWindow : Window
         if (_focusTimer.State == FocusTimerState.Focusing)
         {
             badgeText = "FOCUSING";
-            badgeColor = (Color)ColorConverter.ConvertFromString("#FFFB923C"); // Orange
+            badgeColor = TimerOrangeColor;
             RailPlayPauseBtn.Content = "⏸ Pause";
         }
         else if (_focusTimer.State == FocusTimerState.FocusPaused)
         {
             badgeText = "PAUSED";
-            badgeColor = (Color)ColorConverter.ConvertFromString("#FFFBBF24"); // Amber
+            badgeColor = TimerAmberColor;
             RailPlayPauseBtn.Content = "▶ Resume";
         }
         else if (_focusTimer.State == FocusTimerState.Break)
         {
             badgeText = _focusTimer.IsLongBreak ? "LONG BREAK" : "BREAK";
-            badgeColor = (Color)ColorConverter.ConvertFromString("#FF34D399"); // Green
+            badgeColor = TimerGreenColor;
             RailPlayPauseBtn.Content = "⏸ Pause";
         }
         else if (_focusTimer.State == FocusTimerState.BreakPaused)
         {
             badgeText = "BREAK PAUSED";
-            badgeColor = (Color)ColorConverter.ConvertFromString("#FFFBBF24"); // Amber
+            badgeColor = TimerAmberColor;
             RailPlayPauseBtn.Content = "▶ Resume";
         }
         else
         {
             badgeText = "IDLE";
-            badgeColor = (Color)ColorConverter.ConvertFromString("#FFA78BFA"); // Muted purple
+            badgeColor = TimerMutedPurpleColor;
             remFormatted = $"{_settings.FocusDurationMinutes:D2}:00";
             RailPlayPauseBtn.Content = "▶ Start";
         }

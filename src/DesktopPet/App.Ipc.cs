@@ -32,7 +32,7 @@ public partial class App
                     return NekuIpcResponse.Success("Neku is running.", new
                     {
                         running = true,
-                        version = "1.0.0",
+                        version = AppVersion.Display.TrimStart('v'),
                         activeCompanion = _settings.ActivePet,
                         companionDisplayName = AssetSource.GetDefaultDisplayName(_settings.ActivePet),
                         isPetHidden = _userHidden || _hiddenForQuiet,

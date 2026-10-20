@@ -200,7 +200,7 @@ public class AnimationSystemTests
         engine.TriggerGreeting();
 
         Assert.Equal(PetState.Wave, engine.State);
-        Assert.Contains("Ready to code", engine.SpeechText);
+        Assert.Contains("Good to see you", engine.SpeechText);
     }
 
     [Fact]

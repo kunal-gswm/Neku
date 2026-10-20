@@ -68,6 +68,10 @@ public partial class QuickNotesWindow : Window
             .ToList();
 
         NotesListBox.ItemsSource = items;
+        if (EmptyNotesBorder != null)
+        {
+            EmptyNotesBorder.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         if (_currentNote != null)
         {

@@ -24,8 +24,9 @@ public static class CommandRouter
                     return 0;
 
                 case "--version" or "-v" or "version":
-                    if (jsonMode) OutputFormatter.PrintJson(new { version = "1.0.0", name = "Neku CLI" });
-                    else Console.WriteLine("Neku 1.0.0");
+                    string cliVer = typeof(Program).Assembly.GetName().Version is { } ver ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.0.1";
+                    if (jsonMode) OutputFormatter.PrintJson(new { version = cliVer, name = "Neku CLI" });
+                    else Console.WriteLine($"Neku {cliVer}");
                     return 0;
 
                 case "status":

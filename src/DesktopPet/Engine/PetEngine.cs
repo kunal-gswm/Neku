@@ -47,6 +47,7 @@ public sealed class PetEngine
     private const double SurfaceRefresh = 0.25;
     private const double HeartInterval = 0.45;  // seconds between heart bursts while petted
     private const double TypingCooldown = 0.8;   // seconds after last key before leaving typing
+    private const double FacingDeadzone = 12.0;  // deadzone in DIP to prevent jitter when cursor is over pet center
 
     // ── injected ──────────────────────────────────────────────────────────────
     private readonly IPetView _view;
@@ -121,7 +122,34 @@ public sealed class PetEngine
     private const double TpRetract = 200.0;  // px/sec retract speed once idle
     private const double TpIdleDelay = 1.2;    // seconds of no scroll before retracting
 
-    public bool Paused { get; set; }
+    private bool _paused;
+    public bool Paused
+    {
+        get => _paused;
+        set
+        {
+            if (_paused == value) return;
+            _paused = value;
+            if (_paused)
+            {
+                _vx = 0;
+                _vy = 0;
+                ClearDecorations();
+                if (_state != PetState.Drag && _state != PetState.Fall)
+                {
+                    EnterState(PetState.Sit);
+                    _view.Render(_anim.Tick(0), _x, _y, _facing);
+                }
+            }
+            else
+            {
+                if (_state != PetState.Drag && _state != PetState.Fall)
+                {
+                    EnterState(PetState.Idle);
+                }
+            }
+        }
+    }
     public double X => _x;
     public double Y => _y;
     public double Width => _w;
@@ -278,7 +306,7 @@ public sealed class PetEngine
         }
 
         // 4. Respect Reduced Motion: map energetic jumps/celebrations to calm seated or happy
-        if (_settings.ReducedMotion && (state is PetState.Celebrate or PetState.Zoomies or PetState.Spin))
+        if (_settings.ReducedMotion && (state is PetState.Celebrate or PetState.Zoomies or PetState.Spin or PetState.Jump or PetState.Pounce))
         {
             state = PetState.Happy;
         }
@@ -319,7 +347,20 @@ public sealed class PetEngine
 
     public void TriggerGreeting()
     {
-        TriggerReaction(PetState.Wave, "Hey there! Ready to code? ✨", cooldownSeconds: 5.0);
+        TriggerReaction(PetState.Wave, "Hey there! Good to see you! ✨", cooldownSeconds: 5.0);
+    }
+
+    /// <summary>
+    /// Settle any active energetic movements immediately if Reduced Motion was just toggled on.
+    /// </summary>
+    public void HandleReducedMotionToggled(bool enabled)
+    {
+        if (enabled && _state is PetState.Zoomies or PetState.Spin or PetState.Jump or PetState.Pounce or PetState.Celebrate)
+        {
+            _vx = 0;
+            _vy = 0;
+            EnterState(PetState.Sit);
+        }
     }
 
     public void ResetPosition()
@@ -724,7 +765,8 @@ public sealed class PetEngine
 
         // Always watch the cursor — face toward it even while idle
         var cursor = CursorDip();
-        int dir = Math.Sign(cursor.X - CenterX);
+        double cdx = cursor.X - CenterX;
+        int dir = Math.Abs(cdx) > FacingDeadzone ? Math.Sign(cdx) : 0;
         if (dir != 0) _facing = dir;
 
         // Swat at the cursor when it rests still right beside the cat.
@@ -907,7 +949,7 @@ public sealed class PetEngine
         }
 
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     private void UpdateChase(double dt)
@@ -977,7 +1019,7 @@ public sealed class PetEngine
         _spinFlip -= dt;
         if (_spinFlip <= 0) { _facing = -_facing; _spinFlip = 0.14; }
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     private void UpdateBlink(double dt)
@@ -991,7 +1033,7 @@ public sealed class PetEngine
     {
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     private void UpdateZoomies(double dt)
@@ -1014,7 +1056,7 @@ public sealed class PetEngine
         }
 
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     private void UpdateBat(double dt)
@@ -1022,7 +1064,8 @@ public sealed class PetEngine
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
         // Keep facing the cursor while swatting.
         var cursor = CursorDip();
-        int dir = Math.Sign(cursor.X - CenterX);
+        double cdx = cursor.X - CenterX;
+        int dir = Math.Abs(cdx) > FacingDeadzone ? Math.Sign(cdx) : 0;
         if (dir != 0) _facing = dir;
 
         _stateTimer -= dt;
@@ -1073,7 +1116,7 @@ public sealed class PetEngine
     {
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
         _stateTimer -= dt;
-        if (_stateTimer <= 0) EnterState(PetState.Idle);
+        if (_anim.Finished || _stateTimer <= 0) EnterState(PetState.Idle);
     }
 
     private void UpdateYawn(double dt)
@@ -1106,7 +1149,8 @@ public sealed class PetEngine
         if (!IsSupported()) { EnterState(PetState.Fall); return; }
         // Face the cursor lovingly
         var cursor = CursorDip();
-        int dir = Math.Sign(cursor.X - CenterX);
+        double cdx = cursor.X - CenterX;
+        int dir = Math.Abs(cdx) > FacingDeadzone ? Math.Sign(cdx) : 0;
         if (dir != 0) _facing = dir;
         // State exit handled by EndPet()
     }

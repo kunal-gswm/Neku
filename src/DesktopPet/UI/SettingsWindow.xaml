@@ -32,10 +32,10 @@
 
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
                     HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button x:Name="CloseButton" Content="Done" Style="{StaticResource SecondaryButton}" Width="80" Click="CloseButton_Click"/>
+            <Button x:Name="CloseButton" AutomationProperties.Name="Close Settings" Content="Done" Style="{StaticResource SecondaryButton}" Width="80" Click="CloseButton_Click"/>
         </StackPanel>
 
-        <TabControl x:Name="SettingsTabControl" SelectedIndex="0">
+        <TabControl x:Name="SettingsTabControl" AutomationProperties.Name="Settings Tabs" SelectedIndex="0">
             <!-- ─────────────── Appearance ─────────────── -->
             <TabItem Header="Appearance">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -49,7 +49,7 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <ComboBox x:Name="CatColorBox" Width="220" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CatColorBox" AutomationProperties.Name="Select Companion Character" Width="220" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                                 <TextBlock x:Name="PackWarningText" Foreground="#D9534F"
                                            Style="{StaticResource Hint}" Margin="0,2,0,4" Visibility="Collapsed" TextWrapping="Wrap" MaxWidth="220"/>
                                 <Button x:Name="OpenStudioButton" Content="🎨 Open Companion Studio…" Margin="0,4,0,4"
@@ -65,7 +65,7 @@
                         </Grid>
 
                         <TextBlock Text="Size" Style="{StaticResource Head}"/>
-                        <ComboBox x:Name="SizeBox" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12">
+                        <ComboBox x:Name="SizeBox" AutomationProperties.Name="Companion Size Preset" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12">
                             <ComboBoxItem Content="Small (75%)"  Tag="0.75"/>
                             <ComboBoxItem Content="Medium (100%)" Tag="1.0"/>
                             <ComboBoxItem Content="Large (130%)"  Tag="1.3"/>
@@ -73,11 +73,11 @@
                         </ComboBox>
 
                         <TextBlock Text="Animation &amp; walk speed" Style="{StaticResource Head}"/>
-                        <Slider x:Name="SpeedSlider" Minimum="0.3" Maximum="2.5" TickFrequency="0.1"
+                        <Slider x:Name="SpeedSlider" AutomationProperties.Name="Animation Speed Slider" Minimum="0.3" Maximum="2.5" TickFrequency="0.1"
                                 IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
 
                         <TextBlock Text="Window opacity" Style="{StaticResource Head}"/>
-                        <Slider x:Name="OpacitySlider" Minimum="0.2" Maximum="1.0" TickFrequency="0.05"
+                        <Slider x:Name="OpacitySlider" AutomationProperties.Name="Pet Opacity Slider" Minimum="0.2" Maximum="1.0" TickFrequency="0.05"
                                 IsSnapToTickEnabled="True" Margin="0,0,0,4"/>
                         <TextBlock Text="Make Neku semi-transparent so you can see behind." Style="{StaticResource Hint}"/>
                     </StackPanel>
@@ -237,7 +237,7 @@
                             <TextBlock Text="Script integration:" Style="{StaticResource Head}"/>
                             <TextBlock Style="{StaticResource Hint}" Text="Add this to your build or test scripts:"/>
                             <TextBox Text=".\tools\neku-event.bat build_success &quot;Build completed in 2.1s!&quot;"
-                                     IsReadOnly="True" Margin="0,4,0,4" Background="#FFF5F5F5" FontFamily="Consolas" FontSize="11"/>
+                                     IsReadOnly="True" Margin="0,4,0,4" Background="{StaticResource ThemeInputBgBrush}" Foreground="{StaticResource ThemeTextPrimaryBrush}" BorderBrush="{StaticResource ThemeInputBorderBrush}" Padding="6,4" FontFamily="Consolas" FontSize="11"/>
 
                             <Separator Margin="0,12"/>
 
@@ -350,8 +350,8 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <TextBlock Text="Desktop integration" Style="{StaticResource Head}"/>
-                        <CheckBox x:Name="AutostartBox"    Content="Start with Windows"/>
-                        <CheckBox x:Name="ClickThroughBox" Content="Click-through mode (clicks pass through)"/>
+                        <CheckBox x:Name="AutostartBox" AutomationProperties.Name="Start with Windows"    Content="Start with Windows"/>
+                        <CheckBox x:Name="ClickThroughBox" AutomationProperties.Name="Click-Through Mode" Content="Click-through mode (clicks pass through)"/>
                         <TextBlock Style="{StaticResource Hint}" Margin="22,0,0,6"
                                    Text="Allows clicking on applications directly behind Neku. Toggle off from system tray."/>
                         <CheckBox x:Name="RememberStateBox" Content="Remember position and mood across restarts"/>
@@ -361,13 +361,13 @@
 
                         <TextBlock Text="Controls &amp; Diagnostics" Style="{StaticResource Head}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
-                            <Button x:Name="ResetPositionButton" Content="Reset position" Width="110" Click="ResetPositionButton_Click"/>
-                            <Button x:Name="RestoreDefaultsButton" Content="Restore defaults" Width="110" Margin="8,0,0,0" Click="RestoreDefaultsButton_Click"/>
+                            <Button x:Name="ResetPositionButton" AutomationProperties.Name="Reset Companion Position" Content="Reset position" Width="110" Click="ResetPositionButton_Click"/>
+                            <Button x:Name="RestoreDefaultsButton" AutomationProperties.Name="Restore Default Settings" Content="Restore defaults" Width="110" Margin="8,0,0,0" Click="RestoreDefaultsButton_Click"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
-                            <Button x:Name="LogsButton" Content="Open log folder" Width="110" Click="LogsButton_Click"/>
-                            <Button x:Name="UpdateCheckButton" Content="Check update" Width="110" Margin="8,0,0,0" Click="UpdateCheckButton_Click"/>
+                            <Button x:Name="LogsButton" AutomationProperties.Name="Open Log Folder" Content="Open log folder" Width="110" Click="LogsButton_Click"/>
+                            <Button x:Name="UpdateCheckButton" AutomationProperties.Name="Check for Updates" Content="Check update" Width="110" Margin="8,0,0,0" Click="UpdateCheckButton_Click"/>
                         </StackPanel>
 
                         <Separator Margin="0,12"/>
