@@ -93,6 +93,7 @@ public sealed class DeveloperEventService : IDisposable
     private readonly AgentActivityService? _agentActivityService;
     private bool _running;
 
+    public bool IsRunning => _running;
     public RequestRateLimiter RateLimiter { get; } = new(maxRequests: 60, window: TimeSpan.FromSeconds(10));
     public event Action<string, BuildTestResultStatus, string>? BuildTestEventReceived;
 

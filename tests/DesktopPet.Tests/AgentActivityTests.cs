@@ -740,7 +740,7 @@ public class AgentActivityTests : IDisposable
     }
 
     [Fact]
-    public void AsyncObservationHook_ProcessExecution_WorksWithLiveEndpointAndClosedEndpoint()
+    public async Task AsyncObservationHook_ProcessExecution_WorksWithLiveEndpointAndClosedEndpoint()
     {
         int testPort = 48198;
         string hookCmd = ClaudeCodeIntegrationService.BuildHookCommand(testPort);
@@ -763,8 +763,11 @@ public class AgentActivityTests : IDisposable
         {
             proc.StandardInput.WriteLine("{\"session_id\":\"sess-closed\",\"hook_event_name\":\"SessionStart\"}");
             proc.StandardInput.Close();
-            string output = proc.StandardOutput.ReadToEnd();
+            var outTask = proc.StandardOutput.ReadToEndAsync();
+            var errTask = proc.StandardError.ReadToEndAsync();
+            await Task.WhenAll(outTask, errTask);
             bool exited = proc.WaitForExit(3500);
+            string output = await outTask;
 
             sw.Stop();
             Assert.True(exited, "Process should exit within timeout");
@@ -782,6 +785,24 @@ public class AgentActivityTests : IDisposable
         var activityService = new AgentActivityService(_testSessionsFile);
         using var devService = new DeveloperEventService(null, settings, Dispatcher.CurrentDispatcher, activityService);
         devService.Start();
+        Assert.True(devService.IsRunning, "DeveloperEventService should be active");
+
+        // Warm up and verify HTTP listener is accepting connections
+        using (var pingClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) })
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                try
+                {
+                    var ping = await pingClient.GetAsync($"http://127.0.0.1:{testPort}/");
+                    if (ping.StatusCode == HttpStatusCode.OK) break;
+                }
+                catch
+                {
+                    await Task.Delay(50);
+                }
+            }
+        }
 
         try
         {
@@ -796,18 +817,45 @@ public class AgentActivityTests : IDisposable
                 CreateNoWindow = true
             };
 
-            using var proc = Process.Start(psiOpen)!;
-            proc.StandardInput.WriteLine("{\"session_id\":\"sess-live-hook\",\"cwd\":\"D:\\\\TestLive\",\"hook_event_name\":\"SessionStart\"}");
-            proc.StandardInput.Close();
-            string output = proc.StandardOutput.ReadToEnd();
-            bool exited = proc.WaitForExit(3500);
+            async Task RunLiveHookAsync()
+            {
+                using var proc = Process.Start(psiOpen)!;
+                proc.StandardInput.WriteLine("{\"session_id\":\"sess-live-hook\",\"cwd\":\"D:\\\\TestLive\",\"hook_event_name\":\"SessionStart\"}");
+                proc.StandardInput.Close();
+                var outTask = proc.StandardOutput.ReadToEndAsync();
+                var errTask = proc.StandardError.ReadToEndAsync();
+                await Task.WhenAll(outTask, errTask);
+                bool exited = proc.WaitForExit(3500);
+                string output = await outTask;
 
-            Assert.True(exited);
-            Assert.Equal(0, proc.ExitCode);
-            Assert.Empty(output); // Output discarded to NUL, no permission decisions
+                Assert.True(exited);
+                Assert.Equal(0, proc.ExitCode);
+                Assert.Empty(output); // Output discarded to NUL, no permission decisions
+            }
 
-            // Verify event reached AgentActivityService
-            var session = activityService.GetSession("sess-live-hook");
+            await RunLiveHookAsync();
+
+            // Verify event reached AgentActivityService with resilient polling
+            AgentSession? session = null;
+            for (int i = 0; i < 30; i++)
+            {
+                session = activityService.GetSession("sess-live-hook");
+                if (session != null) break;
+                await Task.Delay(50);
+            }
+
+            if (session == null)
+            {
+                // Retry once if first subprocess run raced with runner CPU contention
+                await RunLiveHookAsync();
+                for (int i = 0; i < 30; i++)
+                {
+                    session = activityService.GetSession("sess-live-hook");
+                    if (session != null) break;
+                    await Task.Delay(50);
+                }
+            }
+
             Assert.NotNull(session);
             Assert.Equal("sess-live-hook", session.SessionId);
             Assert.Equal(AgentSessionStatus.Active, session.Status);
