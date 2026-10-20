@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DesktopPet\DesktopPet.csproj" />
     <ProjectReference Include="..\..\src\Neku.Protocol\Neku.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\Neku.Cli\Neku.Cli.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

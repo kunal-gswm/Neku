@@ -38,8 +38,11 @@ jobs:
             throw "Tag v$tag does not match <Version>$version</Version> in DesktopPet.csproj."
           }
 
+      - name: Build
+        run: dotnet build DesktopPet.sln -c Release --nologo
+
       - name: Test
-        run: dotnet test DesktopPet.sln -c Release --nologo
+        run: dotnet test tests/DesktopPet.Tests/DesktopPet.Tests.csproj -c Release --nologo
 
       - name: Publish
         run: dotnet publish src/DesktopPet/DesktopPet.csproj -c Release -o dist --nologo
