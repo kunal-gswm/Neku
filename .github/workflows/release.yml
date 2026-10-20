@@ -39,7 +39,7 @@ jobs:
           }
 
       - name: Test
-        run: dotnet test tests/DesktopPet.Tests/DesktopPet.Tests.csproj --nologo
+        run: dotnet test DesktopPet.sln -c Release --nologo
 
       - name: Publish
         run: dotnet publish src/DesktopPet/DesktopPet.csproj -c Release -o dist --nologo

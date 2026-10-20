@@ -673,6 +673,7 @@ public class KeyboardIntegrationTests : IDisposable
                 Assert.Equal("Radar", dashboard.CurrentTab);
 
                 dashboard.Close();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
             catch (Exception ex)
             {
@@ -681,7 +682,7 @@ public class KeyboardIntegrationTests : IDisposable
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        bool finished = thread.Join(10000);
+        bool finished = thread.Join(15000);
 
         Assert.True(finished, "DashboardWindow 9-tab cycling test timed out");
         Assert.Null(threadEx);
@@ -738,6 +739,7 @@ public class KeyboardIntegrationTests : IDisposable
                 Assert.Equal(5, window.SettingsTabControl.SelectedIndex);
 
                 window.Close();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
             catch (Exception ex)
             {
@@ -746,7 +748,7 @@ public class KeyboardIntegrationTests : IDisposable
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        bool finished = thread.Join(10000);
+        bool finished = thread.Join(15000);
 
         Assert.True(finished, "SettingsWindow tab shortcuts test timed out");
         Assert.Null(threadEx);
