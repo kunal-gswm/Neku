@@ -51,4 +51,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Neku.Protocol\Neku.Protocol.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -23,6 +23,8 @@
   ·
   <a href="#feature-highlights">Features</a>
   ·
+  <a href="#terminal-command-interface-cli">CLI</a>
+  ·
   <a href="#companion-gallery-character-system">Companions</a>
   ·
   <a href="#download-installation">Download</a>
@@ -83,6 +85,54 @@ Modern developer and desktop environments are filled with resource-heavy web wra
 - **Build & Test Notifications:** Trigger instant pet celebrations or commiserations directly from PowerShell (`tools/neku-event.ps1`), bash, or cURL after builds, tests, or deployments.
 
 ---
+
+## Terminal Command Interface (CLI)
+
+Neku includes a standalone, lightning-fast terminal CLI (`neku`) for controlling your desktop companion, Pomodoro focus sessions, tasks, notes, and developer events from PowerShell, Windows Terminal, build scripts, and CI workflows.
+
+> **Full Documentation:** See [docs/CLI.md](docs/CLI.md) for the complete command reference, options, JSON schemas, and scripting examples.
+
+```powershell
+# Check status and environment
+neku status
+neku doctor
+
+# Control companion visibility and animations
+neku pet hide
+neku pet show
+neku pet pause
+neku pet resume
+
+# Pomodoro focus sprints
+neku focus start --minutes 45
+neku focus status
+neku focus stop
+
+# Tasks and quick scratchpad notes
+neku task add "Finish unit tests" --priority High
+neku task list
+neku task complete <id>
+
+neku note add --title "Ideas" --body "CLI build script integration"
+neku note list
+neku note search "build"
+
+# Live companion switching
+neku companion list
+neku companion set billu
+
+# Build & test event reactions
+neku event build success --message "Release build passed!"
+neku event build failure --message "Compilation error"
+
+# Machine-readable JSON output for PowerShell automation
+neku status --json
+```
+
+- **Zero-Friction Windows Integration:** Installed to `%LocalAppData%\Programs\Neku\bin\neku.exe` and automatically registered in your User `PATH`.
+- **Local Named-Pipe IPC:** Communicates directly with the running companion via `\\.\pipe\Neku.CommandPipe.{user}`. Zero open network ports, zero telemetry.
+- **Single Source of Truth:** Tasks, notes, and focus timers stay synchronized between terminal and desktop UI.
+- **Machine-Readable Scripting:** Every command supports `--json` and predictable exit codes (`0` = success, `1` = runtime/offline error, `2` = usage error).
 
 ## Companion Gallery & Character System
 

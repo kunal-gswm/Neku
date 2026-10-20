@@ -158,6 +158,8 @@ public partial class App : Application
             });
         };
         _ipcServer.Start();
+        _commandIpcServer = new Neku.Protocol.NekuIpcServer(HandleIpcCommandAsync, logger: msg => DebugLog.Write(msg));
+        _commandIpcServer.Start();
 
         var legacyConflict = CheckLegacyPixelPawsConflict();
         if (legacyConflict != null)
@@ -2048,6 +2050,7 @@ public partial class App : Application
         _quietWatchTimer?.Stop();
         _developerEvents?.Dispose();
         _ipcServer?.Dispose();
+        _commandIpcServer?.Dispose();
         _hotkey?.Dispose();
         _http?.Dispose();
         _hookWatchdog?.Dispose();
@@ -2087,6 +2090,7 @@ public partial class App : Application
         _quietWatchTimer?.Stop();
         _developerEvents?.Dispose();
         _ipcServer?.Dispose();
+        _commandIpcServer?.Dispose();
         _hotkey?.Dispose();
         _focusTimer?.Dispose();
         _focusHudWindow?.Close();

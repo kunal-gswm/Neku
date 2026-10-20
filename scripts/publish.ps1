@@ -1,10 +1,12 @@
 <#
-  Build the release artifact: a single self-contained Neku.exe that runs on any Windows
-  x64 machine with no .NET install, no git, and no Assets folder beside it (the art is embedded).
+  Build the release artifacts:
+    1. Single self-contained Neku.exe (WPF desktop companion)
+    2. Single self-contained bin\neku.exe (CLI command executable)
+    3. Convenience root launcher neku.cmd
 
   Usage:
     .\scripts\publish.ps1              # build into .\dist
-    .\scripts\publish.ps1 -Run         # ...and launch it to check it works
+    .\scripts\publish.ps1 -Run         # ...and launch desktop app to check it works
 #>
 param(
     [string]$OutDir = "dist",
@@ -14,47 +16,74 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
-$proj = Join-Path $root "src\DesktopPet\DesktopPet.csproj"
+$projApp = Join-Path $root "src\DesktopPet\DesktopPet.csproj"
+$projCli = Join-Path $root "src\Neku.Cli\Neku.Cli.csproj"
 $out  = if ([System.IO.Path]::IsPathRooted($OutDir)) { $OutDir } else { Join-Path $root $OutDir }
+$binDir = Join-Path $out "bin"
 
-Write-Host "Publishing Neku (self-contained, single file)..." -ForegroundColor Cyan
+Write-Host "Publishing Neku Desktop Companion and CLI..." -ForegroundColor Cyan
 
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
-dotnet publish $proj -c Release -o $out --nologo | Select-Object -Last 3
-if ($LASTEXITCODE -ne 0) { throw "publish failed" }
+New-Item -ItemType Directory -Path $binDir -Force | Out-Null
 
-$exe = Join-Path $out "Neku.exe"
-if (-not (Test-Path $exe)) { throw "No Neku.exe in $out" }
+# 1. Publish DesktopPet (Neku.exe)
+Write-Host "  -> Publishing DesktopPet (Neku.exe)..." -ForegroundColor Cyan
+dotnet publish $projApp -c Release -o $out --nologo -p:_IsPublishing=true | Select-Object -Last 3
+if ($LASTEXITCODE -ne 0) { throw "DesktopPet publish failed" }
 
-# The .pdb is debugging symbols — useful to keep locally, not something to ship.
+$exeApp = Join-Path $out "Neku.exe"
+if (-not (Test-Path $exeApp)) { throw "No Neku.exe in $out" }
 Get-ChildItem $out -Filter *.pdb | Remove-Item -Force
 
-$version = (Get-Item $exe).VersionInfo.ProductVersion
-$sizeMb  = [math]::Round((Get-Item $exe).Length / 1MB, 1)
-$hash    = (Get-FileHash $exe -Algorithm SHA256).Hash
+# 2. Publish Neku.Cli (bin\neku.exe)
+Write-Host "  -> Publishing Neku.Cli (bin\neku.exe)..." -ForegroundColor Cyan
+dotnet publish $projCli -c Release -o $binDir --nologo -p:_IsPublishing=true | Select-Object -Last 3
+if ($LASTEXITCODE -ne 0) { throw "Neku.Cli publish failed" }
+
+$exeCli = Join-Path $binDir "neku.exe"
+$rawCli = Join-Path $binDir "NekuCli.exe"
+if (Test-Path $rawCli) {
+    if (Test-Path $exeCli) { Remove-Item $exeCli -Force }
+    Move-Item $rawCli $exeCli -Force
+}
+if (-not (Test-Path $exeCli)) { throw "No neku.exe in $binDir" }
+Get-ChildItem $binDir -Filter *.pdb | Remove-Item -Force
+
+# 3. Create root convenience launcher neku.cmd for portable users
+$cmdPath = Join-Path $out "neku.cmd"
+Set-Content -Path $cmdPath -Value "@echo off`r`n`"%~dp0bin\neku.exe`" %*`r`n" -Encoding ASCII
+
+# Output details
+$versionApp = (Get-Item $exeApp).VersionInfo.ProductVersion
+$sizeMbApp  = [math]::Round((Get-Item $exeApp).Length / 1MB, 1)
+$hashApp    = (Get-FileHash $exeApp -Algorithm SHA256).Hash
+
+$versionCli = (Get-Item $exeCli).VersionInfo.ProductVersion
+$sizeMbCli  = [math]::Round((Get-Item $exeCli).Length / 1MB, 1)
+$hashCli    = (Get-FileHash $exeCli -Algorithm SHA256).Hash
 
 Write-Host ""
-Write-Host "  Built  : $exe"      -ForegroundColor Green
-Write-Host "  Version: $version"  -ForegroundColor Green
-Write-Host "  Size   : $sizeMb MB" -ForegroundColor Green
-Write-Host "  SHA256 : $hash"     -ForegroundColor Green
+Write-Host "  Published Desktop Companion : $exeApp" -ForegroundColor Green
+Write-Host "    Version : $versionApp"  -ForegroundColor Green
+Write-Host "    Size    : $sizeMbApp MB" -ForegroundColor Green
+Write-Host "    SHA256  : $hashApp"     -ForegroundColor Green
+Write-Host ""
+Write-Host "  Published Terminal CLI      : $exeCli" -ForegroundColor Green
+Write-Host "    Version : $versionCli"  -ForegroundColor Green
+Write-Host "    Size    : $sizeMbCli MB" -ForegroundColor Green
+Write-Host "    SHA256  : $hashCli"     -ForegroundColor Green
+Write-Host ""
+Write-Host "  Portable Command Wrapper    : $cmdPath" -ForegroundColor Green
 Write-Host ""
 
-# Publish leaves nothing but the exe; if an Assets folder appears here, embedding has regressed
-# and users would get a companion with no artwork.
-$stray = Get-ChildItem $out | Where-Object { $_.Name -ne "Neku.exe" }
+# Verify publish layout
+$stray = Get-ChildItem $out | Where-Object { $_.Name -notin @("Neku.exe", "bin", "neku.cmd") }
 if ($stray) {
-    Write-Warning "Unexpected extra files in the publish output (the exe should be self-sufficient):"
+    Write-Warning "Unexpected extra files in publish output:"
     $stray | ForEach-Object { Write-Warning "  $($_.Name)" }
 }
 
-Write-Host "To cut a release:" -ForegroundColor Cyan
-Write-Host "  1. Bump <Version> in src/DesktopPet/DesktopPet.csproj"
-Write-Host "  2. git tag v$($version.Split('+')[0]) && git push --tags"
-Write-Host "  3. gh release create v$($version.Split('+')[0]) `"$exe`" --generate-notes"
-Write-Host ""
-
 if ($Run) {
-    Write-Host "Launching..." -ForegroundColor Cyan
-    Start-Process $exe
+    Write-Host "Launching desktop app..." -ForegroundColor Cyan
+    Start-Process $exeApp
 }

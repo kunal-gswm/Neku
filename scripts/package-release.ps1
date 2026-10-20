@@ -8,6 +8,8 @@ $artifacts = Join-Path $root "artifacts"
 $dist = Join-Path $root "dist"
 $exe = Join-Path $dist "Neku.exe"
 
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 if (-not (Test-Path $artifacts)) {
     New-Item -ItemType Directory -Path $artifacts -Force | Out-Null
 }
@@ -38,6 +40,16 @@ Copy-Item $exe -Destination $tempStage
 Copy-Item (Join-Path $root "LICENSE") -Destination $tempStage
 Copy-Item (Join-Path $root "THIRD_PARTY_NOTICES.md") -Destination $tempStage
 Copy-Item (Join-Path $root "README.md") -Destination $tempStage
+
+# Stage CLI binaries and launcher wrapper if available
+$cliBin = Join-Path $dist "bin"
+if (Test-Path $cliBin) {
+    Copy-Item $cliBin -Destination $tempStage -Recurse -Force
+}
+$cliCmd = Join-Path $dist "neku.cmd"
+if (Test-Path $cliCmd) {
+    Copy-Item $cliCmd -Destination $tempStage -Force
+}
 
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
