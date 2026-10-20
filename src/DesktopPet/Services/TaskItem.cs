@@ -71,6 +71,7 @@ public sealed class TaskItem : INotifyPropertyChanged
     private TaskItemStatus _status = TaskItemStatus.Todo;
     private TaskPriority _priority = TaskPriority.Normal;
     private DateTime? _dueDate;
+    private DateTime? _reminderAt;
     private int _estimatedMinutes = 0;
     private int _completedPomodoros = 0;
     private int _totalFocusMinutes = 0;
@@ -200,6 +201,28 @@ public sealed class TaskItem : INotifyPropertyChanged
         }
     }
 
+    /// <summary>Optional scheduled local reminder timestamp in UTC.</summary>
+    [JsonPropertyName("reminderAt")]
+    public DateTime? ReminderAt
+    {
+        get => _reminderAt;
+        set
+        {
+            var normalized = value.HasValue
+                ? (value.Value.Kind == DateTimeKind.Utc ? value.Value : value.Value.ToUniversalTime())
+                : (DateTime?)null;
+
+            if (_reminderAt != normalized)
+            {
+                _reminderAt = normalized;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasReminder));
+                OnPropertyChanged(nameof(IsReminderOverdue));
+                OnPropertyChanged(nameof(FormattedReminder));
+            }
+        }
+    }
+
     /// <summary>Estimated duration in minutes (0 = none/unspecified).</summary>
     [JsonPropertyName("estimatedMinutes")]
     public int EstimatedMinutes
@@ -325,6 +348,32 @@ public sealed class TaskItem : INotifyPropertyChanged
     }
 
     // Helper properties for UI data binding
+    [JsonIgnore]
+    public bool HasReminder => ReminderAt.HasValue;
+
+    [JsonIgnore]
+    public bool IsReminderOverdue => !IsCompleted && ReminderAt.HasValue && ReminderAt.Value <= DateTime.UtcNow;
+
+    [JsonIgnore]
+    public string FormattedReminder
+    {
+        get
+        {
+            if (!ReminderAt.HasValue) return "";
+            var local = ReminderAt.Value.ToLocalTime();
+            var today = DateTime.Today;
+            if (local.Date == today)
+            {
+                return $"Today {local:t}";
+            }
+            if (local.Date == today.AddDays(1))
+            {
+                return $"Tomorrow {local:t}";
+            }
+            return $"{local:MMM d, t}";
+        }
+    }
+
     [JsonIgnore]
     public bool IsOverdue => !IsCompleted && DueDate.HasValue && ToLocalDate(DueDate.Value) < DateTime.Today;
 

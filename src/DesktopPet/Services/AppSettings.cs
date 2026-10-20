@@ -120,12 +120,22 @@ public sealed class AppSettings
 
     // ── Productivity Reminders ───────────────────────────────────────────────
     [JsonPropertyName("enableTaskReminders")] public bool EnableTaskReminders { get; set; } = true;
+    [JsonPropertyName("enableScheduledReminders")] public bool EnableScheduledReminders { get; set; } = true;
+    [JsonPropertyName("defaultSnoozeMinutes")] public int DefaultSnoozeMinutes { get; set; } = 15;
+    [JsonPropertyName("enableQuietHours")] public bool EnableQuietHours { get; set; } = false;
+    [JsonPropertyName("quietHoursStart")] public string QuietHoursStart { get; set; } = "22:00";
+    [JsonPropertyName("quietHoursEnd")] public string QuietHoursEnd { get; set; } = "08:00";
     [JsonPropertyName("enableUpcomingTaskReminders")] public bool EnableUpcomingTaskReminders { get; set; } = true;
     [JsonPropertyName("enableOverdueTaskReminders")] public bool EnableOverdueTaskReminders { get; set; } = true;
     [JsonPropertyName("enableBreakReminders")] public bool EnableBreakReminders { get; set; } = true;
     [JsonPropertyName("enableFocusCompletedReminders")] public bool EnableFocusCompletedReminders { get; set; } = true;
     [JsonPropertyName("enableBreakCompletedReminders")] public bool EnableBreakCompletedReminders { get; set; } = true;
     [JsonPropertyName("reminderIntervalMinutes")] public int ReminderIntervalMinutes { get; set; } = 30;
+
+    // ── Quick Capture ─────────────────────────────────────────────────────────
+    [JsonPropertyName("enableQuickCaptureHotkey")] public bool EnableQuickCaptureHotkey { get; set; } = true;
+    [JsonPropertyName("quickCaptureHotkeyModifiers")] public int QuickCaptureHotkeyModifiers { get; set; } = 2 | 1;
+    [JsonPropertyName("quickCaptureHotkeyKey")] public int QuickCaptureHotkeyKey { get; set; } = 46;
 
     // ── Onboarding ────────────────────────────────────────────────────────────
     /// <summary>Whether the first-run onboarding speech bubble has been dismissed.</summary>
@@ -315,6 +325,11 @@ public sealed class AppSettings
         if (DailyTaskGoal <= 0) DailyTaskGoal = 3;
         if (WeeklyTaskGoal <= 0) WeeklyTaskGoal = 15;
         if (ReminderIntervalMinutes <= 0) ReminderIntervalMinutes = 30;
+        if (DefaultSnoozeMinutes <= 0) DefaultSnoozeMinutes = 15;
+        if (string.IsNullOrWhiteSpace(QuietHoursStart)) QuietHoursStart = "22:00";
+        if (string.IsNullOrWhiteSpace(QuietHoursEnd)) QuietHoursEnd = "08:00";
+        if (QuickCaptureHotkeyModifiers <= 0) QuickCaptureHotkeyModifiers = 2 | 1;
+        if (QuickCaptureHotkeyKey <= 0) QuickCaptureHotkeyKey = 46;
         if (FocusCycleCompletedSessions < 0) FocusCycleCompletedSessions = 0;
         if (CommandPaletteHotkeyModifiers <= 0) CommandPaletteHotkeyModifiers = 2 | 1;
         if (CommandPaletteHotkeyKey <= 0) CommandPaletteHotkeyKey = 59;

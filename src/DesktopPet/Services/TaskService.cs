@@ -221,6 +221,11 @@ public sealed class TaskService
             task.Status = TaskItemStatus.Todo;
         }
 
+        if (task.ReminderAt.HasValue && task.ReminderAt.Value.Kind != DateTimeKind.Utc)
+        {
+            task.ReminderAt = task.ReminderAt.Value.ToUniversalTime();
+        }
+
         _tasks.Add(task);
     }
 
@@ -271,7 +276,8 @@ public sealed class TaskService
         TaskItemStatus status = TaskItemStatus.Todo,
         string project = "",
         IEnumerable<string>? tags = null,
-        TaskRecurrenceRule recurrence = TaskRecurrenceRule.None)
+        TaskRecurrenceRule recurrence = TaskRecurrenceRule.None,
+        DateTime? reminderAt = null)
     {
         var task = new TaskItem
         {
@@ -280,6 +286,7 @@ public sealed class TaskService
             Description = description?.Trim() ?? "",
             Priority = priority,
             DueDate = dueDate,
+            ReminderAt = reminderAt,
             EstimatedMinutes = Math.Max(0, estimatedMinutes),
             Status = status,
             IsCompleted = status == TaskItemStatus.Completed,
@@ -317,6 +324,11 @@ public sealed class TaskService
         Save();
         TasksChanged?.Invoke();
         return true;
+    }
+
+    public bool SetReminder(string id, DateTime? reminderAt)
+    {
+        return Update(id, t => t.ReminderAt = reminderAt);
     }
 
     public bool ToggleComplete(string id)

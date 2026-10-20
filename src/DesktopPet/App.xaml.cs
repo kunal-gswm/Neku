@@ -48,6 +48,8 @@ public partial class App : Application
     private FocusHistoryService _focusHistoryService = new();
     private DashboardWindow? _dashboardWindow;
     private ProductivityReminderService? _reminderService;
+    private TaskReminderService? _taskReminderService;
+    private QuickCaptureWindow? _quickCaptureWindow;
     private DeveloperEventsWindow? _devEventsWindow;
     private CommandPaletteService _paletteService = new();
     private CommandPaletteWindow? _paletteWindow;
@@ -295,6 +297,39 @@ public partial class App : Application
             _engine?.TriggerReaction(PetState.Stretch, msg, 3.0);
         };
 
+        _taskReminderService = new TaskReminderService(_taskService, _settings, Dispatcher);
+        _taskReminderService.IsQuietOrPresenting = () => _hiddenForQuiet || (_settings.EnableQuietMode && _engine?.IsQuiet == true);
+        _taskReminderService.ReminderDue += (task, isMissed) =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var win = new ReminderNotificationWindow(task, _taskReminderService, isMissed, _settings.DefaultSnoozeMinutes);
+                _taskReminderService.RegisterActiveNotification(task.Id, win);
+                win.Show();
+
+                if (!_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
+                {
+                    _engine?.TriggerReaction(PetState.Wave, $"⏰ Reminder: {task.Title}", 3.0);
+                }
+            });
+        };
+        _taskReminderService.ConsolidatedRemindersDue += (count, tasks) =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var win = new ReminderNotificationWindow(
+                    tasks,
+                    _taskReminderService,
+                    onOpenTasks: () => OpenTasksWindow());
+                win.Show();
+
+                if (!_settings.EnableQuietMode && !_hiddenForQuiet && _engine?.IsQuiet != true)
+                {
+                    _engine?.TriggerReaction(PetState.Wave, $"⏰ {count} missed task reminders!", 3.0);
+                }
+            });
+        };
+
         if (!string.IsNullOrEmpty(_settings.FocusActiveTaskId))
         {
             var activeTask = _taskService.Get(_settings.FocusActiveTaskId);
@@ -338,6 +373,7 @@ public partial class App : Application
             isQuietMode: () => _settings.EnableQuietMode,
             onResetPosition: OnResetPosition,
             onExit: QuitApp,
+            onQuickCapture: () => OpenQuickCapture(),
             onDeveloperRadar: () => OpenProductivityHub("Radar"),
             onToggleDeveloperHud: ToggleDeveloperHud,
             onSpawnToy: type => SpawnToyOnDesktop(type),
@@ -370,6 +406,7 @@ public partial class App : Application
             onDeveloperRadar: () => OpenProductivityHub("Radar"),
             onToggleDeveloperHud: ToggleDeveloperHud,
             onToggleFocusHud: ToggleFocusHud,
+            onQuickCapture: () => OpenQuickCapture(),
             onDoubleClick: SummonCompanionAndHub);
 
         _petWindow.PetInteracted += DismissOnboarding;
@@ -455,6 +492,7 @@ public partial class App : Application
             DebugLog.Write("[Hotkey] Global summon shortcut Ctrl+Alt+N could not be registered (combo in use).");
         }
 
+        ApplyQuickCaptureHotkey();
         InitializePaletteCommands();
         ApplyPaletteHotkey();
 
@@ -998,6 +1036,22 @@ public partial class App : Application
         }
     }
 
+    public void OpenQuickCapture(QuickCaptureMode initialMode = QuickCaptureMode.Task)
+    {
+        DismissOnboarding();
+        if (_quickCaptureWindow == null || !_quickCaptureWindow.IsLoaded)
+        {
+            _quickCaptureWindow = new QuickCaptureWindow(_taskService, _notesService, initialMode);
+            _quickCaptureWindow.Closed += (_, _) => _quickCaptureWindow = null;
+            BringToForeground(_quickCaptureWindow);
+        }
+        else
+        {
+            _quickCaptureWindow.SetMode(initialMode);
+            BringToForeground(_quickCaptureWindow);
+        }
+    }
+
     private void OpenProductivityHub(string? initialTab = null)
     {
         DismissOnboarding();
@@ -1320,6 +1374,28 @@ public partial class App : Application
         _petWindow?.UpdatePaletteShortcut(label);
     }
 
+    private void ApplyQuickCaptureHotkey()
+    {
+        if (_hotkey == null) return;
+        _hotkey.UnregisterQuickCapture();
+
+        if (_settings.EnableQuickCaptureHotkey)
+        {
+            var mods = (ModifierKeys)_settings.QuickCaptureHotkeyModifiers;
+            var key = (Key)_settings.QuickCaptureHotkeyKey;
+            bool registered = _hotkey.RegisterQuickCapture(mods, key, () => Dispatcher.Invoke(() => OpenQuickCapture()));
+
+            if (registered)
+            {
+                DebugLog.Write($"[Hotkey] Global Quick Capture shortcut {HotkeyService.FormatHotkey(mods, key)} registered successfully.");
+            }
+            else
+            {
+                DebugLog.Write($"[Hotkey] Global Quick Capture shortcut {HotkeyService.FormatHotkey(mods, key)} could not be registered (combo in use).");
+            }
+        }
+    }
+
     private void InitializePaletteCommands()
     {
         _paletteService.Clear();
@@ -1356,6 +1432,16 @@ public partial class App : Application
             icon: "➕",
             shortcutHint: "Ctrl+N",
             keywords: new[] { "new task", "add task", "create task", "todo" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "quickcapture.open",
+            title: "Quick Capture",
+            description: "Capture a task or quick note in seconds (Ctrl+Alt+C)",
+            category: "Productivity",
+            action: () => OpenQuickCapture(),
+            icon: "⚡",
+            shortcutHint: "Ctrl+Alt+C",
+            keywords: new[] { "quick capture", "capture", "quick add", "task", "note", "thought" }));
 
         _paletteService.Register(new PaletteCommand(
             id: "focus.start",
@@ -2030,6 +2116,7 @@ public partial class App : Application
 
         UpdateQuietHiding();
         ApplyPaletteHotkey();
+        ApplyQuickCaptureHotkey();
         InitializePaletteCommands();
     }
 
@@ -2134,6 +2221,9 @@ public partial class App : Application
         _repoMonitor?.Dispose();
         _radarService?.Dispose();
         _reminderService?.Dispose();
+        _taskReminderService?.Dispose();
+        _quickCaptureWindow?.Close();
+        _quickCaptureWindow = null;
         _tray?.Dispose();
         Shutdown();
     }
@@ -2169,6 +2259,9 @@ public partial class App : Application
         _repoMonitor?.Dispose();
         _radarService?.Dispose();
         _reminderService?.Dispose();
+        _taskReminderService?.Dispose();
+        _quickCaptureWindow?.Close();
+        _quickCaptureWindow = null;
         _http?.Dispose();
         _hookWatchdog?.Dispose();
         _keyboard?.Dispose();

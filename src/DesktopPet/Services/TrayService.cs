@@ -27,6 +27,7 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem? _radarItem;
     private readonly ToolStripMenuItem? _hudItem;
     private readonly ToolStripMenuItem? _focusHudItem;
+    private readonly ToolStripMenuItem _quickCaptureItem;
 
     public bool IsDevSubmenuVisible => _devSubmenu.Available;
     public bool IsDevEventsVisible => _devEventsItem.Available;
@@ -50,7 +51,7 @@ public sealed class TrayService : IDisposable
         Action<bool> onQuietModeToggled, Action onResetPosition, Action onQuit,
         Action onUpdate, AppSettings settings,
         Action? onDeveloperRadar = null, Action? onToggleDeveloperHud = null,
-        Action? onToggleFocusHud = null, Action? onDoubleClick = null)
+        Action? onToggleFocusHud = null, Action? onQuickCapture = null, Action? onDoubleClick = null)
     {
         _onUpdate = onUpdate;
         _settings = settings;
@@ -75,6 +76,9 @@ public sealed class TrayService : IDisposable
 
         _tasksItem = new ToolStripMenuItem("Tasks…");
         _tasksItem.Click += (_, _) => onTasks();
+
+        _quickCaptureItem = new ToolStripMenuItem("⚡ Quick Capture… (Ctrl+Alt+C)");
+        _quickCaptureItem.Click += (_, _) => onQuickCapture?.Invoke();
 
         _quickNoteItem = new ToolStripMenuItem("Quick Note…");
         _quickNoteItem.Click += (_, _) => onQuickNote();
@@ -150,6 +154,7 @@ public sealed class TrayService : IDisposable
         if (_focusHudItem != null) menu.Items.Add(_focusHudItem);
         menu.Items.Add(_tasksItem);
         menu.Items.Add(_quickNoteItem);
+        menu.Items.Add(_quickCaptureItem);
         menu.Items.Add(new ToolStripSeparator());
 
         // 3. Companion Studio, Settings & Developer Tools

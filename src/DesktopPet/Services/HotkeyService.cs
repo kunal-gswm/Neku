@@ -17,6 +17,7 @@ public sealed class HotkeyService : IDisposable
     public const int ExitHotkeyId = 0xB002;
     public const int PaletteHotkeyId = 0xB003;
     public const int PaletteFallbackHotkeyId = 0xB004;
+    public const int QuickCaptureHotkeyId = 0xB005;
 
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
@@ -121,6 +122,28 @@ public sealed class HotkeyService : IDisposable
     public void UnregisterPalette()
     {
         Unregister(PaletteHotkeyId);
+    }
+
+    /// <summary>
+    /// Register the global Quick Capture hotkey (default Ctrl + Alt + C).
+    /// </summary>
+    public bool RegisterQuickCapture(Action action)
+    {
+        return Register(QuickCaptureHotkeyId, ModifierKeys.Control | ModifierKeys.Alt, Key.C, action);
+    }
+
+    /// <summary>
+    /// Register the global Quick Capture hotkey with custom modifiers and key.
+    /// </summary>
+    public bool RegisterQuickCapture(ModifierKeys mods, Key key, Action action)
+    {
+        return Register(QuickCaptureHotkeyId, mods, key, action);
+    }
+
+    /// <summary>Unregister the global Quick Capture hotkey.</summary>
+    public void UnregisterQuickCapture()
+    {
+        Unregister(QuickCaptureHotkeyId);
     }
 
     /// <summary>Unregister a specific hotkey ID.</summary>

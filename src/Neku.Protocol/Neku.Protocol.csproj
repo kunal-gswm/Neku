@@ -7,7 +7,7 @@
     <RootNamespace>Neku.Protocol</RootNamespace>
     <AssemblyName>Neku.Protocol</AssemblyName>
 
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Product>Neku Protocol</Product>
     <Company>Neku</Company>
     <Description>Shared IPC protocol contracts and server for the Neku desktop companion and CLI.</Description>

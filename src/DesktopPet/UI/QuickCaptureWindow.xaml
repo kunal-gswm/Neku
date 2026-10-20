@@ -1,0 +1,138 @@
+<Window x:Class="DesktopPet.UI.QuickCaptureWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Neku Quick Capture"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Width="480" Height="210"
+        WindowStartupLocation="CenterScreen"
+        KeyDown="Window_KeyDown"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ProductivityTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{StaticResource ThemeSurfaceBrush}"
+            BorderBrush="{StaticResource ThemeAccentPurpleBrush}"
+            BorderThickness="2"
+            CornerRadius="14">
+        <Border.Effect>
+            <DropShadowEffect Color="#2E1065" BlurRadius="20" ShadowDepth="4" Opacity="0.55"/>
+        </Border.Effect>
+        <Grid Margin="18,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header: Title, Segmented Mode Switch, Close -->
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="⚡" FontSize="16" Margin="0,0,6,0"/>
+                    <TextBlock Text="Quick Capture" FontSize="14" FontWeight="Bold" Foreground="{StaticResource ThemeTextPrimaryBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Segmented Mode Switch -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button x:Name="TaskModeBtn"
+                            Content="📋 Task"
+                            Style="{StaticResource FilterChipButton}"
+                            Padding="12,3"
+                            FontSize="11"
+                            Margin="0,0,4,0"
+                            Click="TaskModeBtn_Click"
+                            AutomationProperties.Name="Switch to Task Mode"/>
+                    <Button x:Name="NoteModeBtn"
+                            Content="📝 Note"
+                            Style="{StaticResource FilterChipButton}"
+                            Padding="12,3"
+                            FontSize="11"
+                            Click="NoteModeBtn_Click"
+                            AutomationProperties.Name="Switch to Note Mode"/>
+                </StackPanel>
+
+                <!-- Close Button -->
+                <Button Grid.Column="2"
+                        Content="✕"
+                        Width="24" Height="24"
+                        FontSize="12"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Foreground="{StaticResource ThemeTextDimBrush}"
+                        Cursor="Hand"
+                        Click="CancelBtn_Click"
+                        AutomationProperties.Name="Close Quick Capture"/>
+            </Grid>
+
+            <!-- Input Field -->
+            <Border Grid.Row="1"
+                    Background="{StaticResource ThemeInputBgBrush}"
+                    BorderBrush="{StaticResource ThemeInputBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="6"
+                    Margin="0,0,0,12">
+                <TextBox x:Name="InputBox"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Foreground="{StaticResource ThemeTextPrimaryBrush}"
+                         FontSize="13"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         PreviewKeyDown="InputBox_PreviewKeyDown"
+                         AutomationProperties.Name="Quick Capture Text Input"/>
+            </Border>
+
+            <!-- Footer: Hint / Feedback and Action Buttons -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Feedback / Hint Text -->
+                <TextBlock x:Name="FeedbackText"
+                           Grid.Column="0"
+                           Text="Enter to save • Esc to cancel • Tab to switch"
+                           FontSize="11"
+                           Foreground="{StaticResource ThemeTextDimBrush}"
+                           VerticalAlignment="Center"/>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="CancelBtn"
+                            Content="Cancel"
+                            Style="{StaticResource SecondaryButton}"
+                            Padding="12,4"
+                            FontSize="11"
+                            Margin="0,0,6,0"
+                            Click="CancelBtn_Click"
+                            AutomationProperties.Name="Cancel Quick Capture"/>
+                    <Button x:Name="SaveBtn"
+                            Content="Save (Enter)"
+                            Style="{StaticResource PrimaryButton}"
+                            Padding="14,4"
+                            FontSize="11"
+                            Click="SaveBtn_Click"
+                            AutomationProperties.Name="Save Quick Capture"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

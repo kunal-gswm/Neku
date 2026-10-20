@@ -172,6 +172,8 @@
                         <TextBlock Text="⏰ Productivity &amp; Focus Alerts" Style="{StaticResource Head}"/>
                         <CheckBox x:Name="UpcomingTaskRemindersBox" Content="Remind for tasks due today 📅"/>
                         <CheckBox x:Name="OverdueTaskRemindersBox" Content="Remind for overdue tasks ⚠️"/>
+                        <CheckBox x:Name="ScheduledRemindersBox" Content="Enable scheduled task reminders (with Snooze &amp; Complete actions) ⏰"/>
+                        <CheckBox x:Name="QuietHoursBox" Content="Quiet Hours (suppress reminder popups at night) 🌙"/>
                         <CheckBox x:Name="FocusCompletedRemindersBox" Content="Notify when focus session completes 🍅"/>
                         <CheckBox x:Name="BreakCompletedRemindersBox" Content="Notify when break completes ☕"/>
                         <TextBlock Text="Independent alert toggles. All alerts respect Quiet Mode and presentation mode." Style="{StaticResource Hint}" Margin="0,4,0,0"/>
@@ -381,6 +383,16 @@
                             <Button x:Name="ResetPaletteHotkeyButton" Content="Reset Default" Margin="8,0,0,0" Padding="8,2"
                                     Click="ResetPaletteHotkeyButton_Click"/>
                             <TextBlock x:Name="PaletteHotkeyStatusText" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
+                        </StackPanel>
+
+                        <CheckBox x:Name="QuickCaptureHotkeyBox" Content="Enable Quick Capture shortcut (Tasks &amp; Notes)"/>
+                        <StackPanel Orientation="Horizontal" Margin="22,4,0,10">
+                            <TextBlock Text="Shortcut:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="QuickCaptureHotkeyCaptureBox" Width="150" IsReadOnly="True"
+                                     PreviewKeyDown="QuickCaptureHotkeyCaptureBox_PreviewKeyDown"/>
+                            <Button x:Name="ResetQuickCaptureHotkeyButton" Content="Reset Default" Margin="8,0,0,0" Padding="8,2"
+                                    Click="ResetQuickCaptureHotkeyButton_Click"/>
+                            <TextBlock x:Name="QuickCaptureHotkeyStatusText" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"/>
                         </StackPanel>
 
                         <TextBlock Text="System Shortcuts" Style="{StaticResource Head}" Margin="0,4,0,2"/>

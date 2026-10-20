@@ -21,7 +21,7 @@ public partial class App
             case NekuIpcProtocol.Commands.Ping:
                 return NekuIpcResponse.Success("pong", new
                 {
-                    version = "1.0.0",
+                    version = AppVersion.Display.TrimStart('v'),
                     activePet = _settings.ActivePet,
                     status = "running"
                 });

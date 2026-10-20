@@ -14,6 +14,7 @@
                 <ResourceDictionary Source="ProductivityTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="TabButton" TargetType="Button" BasedOn="{StaticResource FilterChipButton}"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -128,6 +129,11 @@
                                                 <TextBlock Text="{Binding FormattedDueDate}" FontSize="9"
                                                            Foreground="#FF38BDF8"/>
                                             </Border>
+                                            <Border Visibility="{Binding HasReminder, Converter={StaticResource BoolToVis}}"
+                                                    Background="#FF2E1065" CornerRadius="3" Padding="4,1" Margin="0,0,4,2">
+                                                <TextBlock Text="{Binding FormattedReminder, StringFormat='⏰ {0}'}" FontSize="9"
+                                                           Foreground="#FFC084FC"/>
+                                            </Border>
 
                                             <!-- Pomodoro count badge -->
                                             <Border Background="#FF451A03" CornerRadius="3" Padding="4,1" Margin="0,0,4,2">
@@ -234,6 +240,47 @@
                         </ComboBox>
                     </StackPanel>
                 </Grid>
+
+                <!-- Reminder Row -->
+                <Border DockPanel.Dock="Top" Background="#FF231E30" BorderBrush="#FF483C66" BorderThickness="1"
+                        CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Label / Status -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⏰" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Reminder:" FontSize="11" FontWeight="SemiBold" Foreground="#FFF3E8FF" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="ReminderStatusText" Text="None" FontSize="11" Foreground="#FFA78BFA" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Quick Presets -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button x:Name="Remind5mBtn" Content="+5m" Style="{StaticResource FilterChipButton}"
+                                    Padding="6,2" FontSize="10" Margin="0,0,3,0" Click="RemindPreset_Click" Tag="5"
+                                    AutomationProperties.Name="Remind in 5 minutes"/>
+                            <Button x:Name="Remind15mBtn" Content="+15m" Style="{StaticResource FilterChipButton}"
+                                    Padding="6,2" FontSize="10" Margin="0,0,3,0" Click="RemindPreset_Click" Tag="15"
+                                    AutomationProperties.Name="Remind in 15 minutes"/>
+                            <Button x:Name="Remind1hBtn" Content="+1h" Style="{StaticResource FilterChipButton}"
+                                    Padding="6,2" FontSize="10" Margin="0,0,3,0" Click="RemindPreset_Click" Tag="60"
+                                    AutomationProperties.Name="Remind in 1 hour"/>
+                            <Button x:Name="RemindLaterBtn" Content="Later Today" Style="{StaticResource FilterChipButton}"
+                                    Padding="6,2" FontSize="10" Margin="0,0,4,0" Click="RemindPreset_Click" Tag="Later"
+                                    AutomationProperties.Name="Remind later today"/>
+                        </StackPanel>
+
+                        <!-- Clear Reminder Button -->
+                        <Button x:Name="ClearReminderBtn" Grid.Column="2" Content="✕" Width="20" Height="20"
+                                Style="{StaticResource DangerButton}" Padding="0" FontSize="10"
+                                Click="ClearReminderBtn_Click" ToolTip="Clear reminder"
+                                AutomationProperties.Name="Clear Task Reminder"/>
+                    </Grid>
+                </Border>
 
                 <!-- Pomodoro Completed Sessions Stats -->
                 <Border DockPanel.Dock="Top" Background="#FF282337" BorderBrush="#FF483C66" BorderThickness="1"

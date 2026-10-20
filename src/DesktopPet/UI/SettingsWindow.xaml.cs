@@ -63,6 +63,8 @@ public partial class SettingsWindow : Window
         SelectByTag(DropzoneActionBox, settings.DropzoneDefaultAction, fallbackIndex: 0);
 
         // Productivity Alerts
+        ScheduledRemindersBox.IsChecked = settings.EnableScheduledReminders;
+        QuietHoursBox.IsChecked = settings.EnableQuietHours;
         UpcomingTaskRemindersBox.IsChecked = settings.EnableUpcomingTaskReminders;
         OverdueTaskRemindersBox.IsChecked = settings.EnableOverdueTaskReminders;
         FocusCompletedRemindersBox.IsChecked = settings.EnableFocusCompletedReminders;
@@ -130,6 +132,10 @@ public partial class SettingsWindow : Window
         CommandPaletteHotkeyBox.IsChecked = settings.EnableCommandPaletteHotkey;
         PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)settings.CommandPaletteHotkeyModifiers, (Key)settings.CommandPaletteHotkeyKey);
         UpdatePaletteHotkeyStatus();
+
+        QuickCaptureHotkeyBox.IsChecked = settings.EnableQuickCaptureHotkey;
+        QuickCaptureHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)settings.QuickCaptureHotkeyModifiers, (Key)settings.QuickCaptureHotkeyKey);
+        UpdateQuickCaptureHotkeyStatus();
 
         VersionText.Text = $"Neku {AppVersion.Display}  •  settings in %AppData%\\Neku";
 
@@ -342,6 +348,8 @@ public partial class SettingsWindow : Window
         }
         DropzonePanel.Visibility = _settings.EnableDropzone ? Visibility.Visible : Visibility.Collapsed;
 
+        _settings.EnableScheduledReminders = ScheduledRemindersBox.IsChecked == true;
+        _settings.EnableQuietHours = QuietHoursBox.IsChecked == true;
         _settings.EnableUpcomingTaskReminders = UpcomingTaskRemindersBox.IsChecked == true;
         _settings.EnableOverdueTaskReminders = OverdueTaskRemindersBox.IsChecked == true;
         _settings.EnableFocusCompletedReminders = FocusCompletedRemindersBox.IsChecked == true;
@@ -398,6 +406,7 @@ public partial class SettingsWindow : Window
         _settings.EnableAutoUpdate = AutoUpdateBox.IsChecked == true;
         _settings.RememberPetState = RememberStateBox.IsChecked == true;
         _settings.EnableCommandPaletteHotkey = CommandPaletteHotkeyBox.IsChecked == true;
+        _settings.EnableQuickCaptureHotkey = QuickCaptureHotkeyBox.IsChecked == true;
 
         bool autostart = AutostartBox.IsChecked == true;
         _settings.Autostart = autostart;
@@ -428,6 +437,7 @@ public partial class SettingsWindow : Window
         _service.Save();
         _onChanged?.Invoke();   // apply live (e.g. resize or change opacity)
         UpdatePaletteHotkeyStatus();
+        UpdateQuickCaptureHotkeyStatus();
     }
 
     /// <summary>Capture a new Command Palette shortcut: record first non-modifier key with modifier held.</summary>
@@ -474,7 +484,7 @@ public partial class SettingsWindow : Window
     {
         if (key == Key.Escape)
         {
-            if (PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || (FocusManager.GetFocusedElement(this) is TextBox))
+            if ((PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || QuickCaptureHotkeyCaptureBox.IsKeyboardFocusWithin) || (FocusManager.GetFocusedElement(this) is TextBox))
             {
                 Keyboard.ClearFocus();
                 if (e != null) e.Handled = true;
@@ -494,7 +504,7 @@ public partial class SettingsWindow : Window
         }
 
         // Allow opening Command Palette via Ctrl+P, Ctrl+Shift+P, or Ctrl+Alt+P when not capturing hotkey
-        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && key == Key.P)
+        if (!(PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || QuickCaptureHotkeyCaptureBox.IsKeyboardFocusWithin) && key == Key.P)
         {
             if (modifiers == ModifierKeys.Control ||
                 modifiers == (ModifierKeys.Control | ModifierKeys.Shift) ||
@@ -507,7 +517,7 @@ public partial class SettingsWindow : Window
         }
 
         // Ctrl+Tab / Ctrl+Shift+Tab cycling through tabs
-        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && (modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
+        if (!(PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || QuickCaptureHotkeyCaptureBox.IsKeyboardFocusWithin) && (modifiers & ModifierKeys.Control) == ModifierKeys.Control && key == Key.Tab)
         {
             int count = SettingsTabControl.Items.Count;
             if (count > 0)
@@ -523,7 +533,7 @@ public partial class SettingsWindow : Window
         }
 
         // Ctrl + 1..6 direct tab navigation
-        if (!PaletteHotkeyCaptureBox.IsKeyboardFocusWithin && modifiers == ModifierKeys.Control)
+        if (!(PaletteHotkeyCaptureBox.IsKeyboardFocusWithin || QuickCaptureHotkeyCaptureBox.IsKeyboardFocusWithin) && modifiers == ModifierKeys.Control)
         {
             int targetTab = key switch
             {
@@ -552,6 +562,60 @@ public partial class SettingsWindow : Window
         PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.P);
         Apply();
         UpdatePaletteHotkeyStatus();
+    }
+
+    /// <summary>Capture a new Quick Capture shortcut: record first non-modifier key with modifier held.</summary>
+    private void QuickCaptureHotkeyCaptureBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        Key k = e.Key == Key.System ? e.SystemKey : e.Key;
+
+        if (k == Key.Tab) return;
+        if (k == Key.Escape) return;
+
+        if (k is Key.Back or Key.Delete && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            e.Handled = true;
+            ResetQuickCaptureHotkeyButton_Click(sender, e);
+            return;
+        }
+
+        if (k is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt
+              or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin or Key.System or Key.None)
+            return;
+
+        var mods = Keyboard.Modifiers;
+        if (mods == ModifierKeys.None) return;
+
+        e.Handled = true;
+        _settings.QuickCaptureHotkeyModifiers = (int)mods;
+        _settings.QuickCaptureHotkeyKey = (int)k;
+        QuickCaptureHotkeyCaptureBox.Text = HotkeyService.FormatHotkey(mods, k);
+        Apply();
+        UpdateQuickCaptureHotkeyStatus();
+    }
+
+    private void ResetQuickCaptureHotkeyButton_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.QuickCaptureHotkeyModifiers = (int)(ModifierKeys.Control | ModifierKeys.Alt);
+        _settings.QuickCaptureHotkeyKey = (int)Key.C;
+        QuickCaptureHotkeyCaptureBox.Text = HotkeyService.FormatHotkey(ModifierKeys.Control | ModifierKeys.Alt, Key.C);
+        Apply();
+        UpdateQuickCaptureHotkeyStatus();
+    }
+
+    private void UpdateQuickCaptureHotkeyStatus()
+    {
+        if (QuickCaptureHotkeyStatusText == null) return;
+
+        if (QuickCaptureHotkeyBox.IsChecked != true)
+        {
+            QuickCaptureHotkeyStatusText.Text = "Disabled";
+            QuickCaptureHotkeyStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            return;
+        }
+
+        QuickCaptureHotkeyStatusText.Text = "✓ Ready";
+        QuickCaptureHotkeyStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
     }
 
     private void UpdatePaletteHotkeyStatus()
@@ -671,6 +735,9 @@ public partial class SettingsWindow : Window
             ClickThroughBox.IsChecked = _settings.ClickThrough;
             CommandPaletteHotkeyBox.IsChecked = _settings.EnableCommandPaletteHotkey;
             PaletteHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)_settings.CommandPaletteHotkeyModifiers, (Key)_settings.CommandPaletteHotkeyKey);
+
+            QuickCaptureHotkeyBox.IsChecked = _settings.EnableQuickCaptureHotkey;
+            QuickCaptureHotkeyCaptureBox.Text = HotkeyService.FormatHotkey((ModifierKeys)_settings.QuickCaptureHotkeyModifiers, (Key)_settings.QuickCaptureHotkeyKey);
 
             SelectByTag(SizeBox, "1.0", 1);
             SelectByTag(StretchIntervalBox, "30", 2);

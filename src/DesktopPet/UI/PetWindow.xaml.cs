@@ -477,6 +477,7 @@ public partial class PetWindow : Window, IPetView
         Action onToggleQuietMode, Func<bool> isQuietMode,
         Action onResetPosition,
         Action onExit,
+        Action? onQuickCapture = null,
         Action? onDeveloperRadar = null,
         Action? onToggleDeveloperHud = null,
         Action<ToyType>? onSpawnToy = null,
@@ -510,6 +511,9 @@ public partial class PetWindow : Window, IPetView
         // 2. Tasks & Quick Note
         var tasksItem = new MenuItem { Header = "Tasks…" };
         tasksItem.Click += (_, _) => onTasks();
+
+        var quickCaptureItem = new MenuItem { Header = "⚡ Quick Capture… (Ctrl+Alt+C)" };
+        quickCaptureItem.Click += (_, _) => onQuickCapture?.Invoke();
 
         var quickNoteItem = new MenuItem { Header = "Quick Note…" };
         quickNoteItem.Click += (_, _) => onQuickNote();
@@ -592,6 +596,7 @@ public partial class PetWindow : Window, IPetView
         menu.Items.Add(hubItem);
         menu.Items.Add(tasksItem);
         menu.Items.Add(quickNoteItem);
+        menu.Items.Add(quickCaptureItem);
         menu.Items.Add(_devSubmenu);
         var toysSubmenu = new MenuItem { Header = "🎾 Desktop Toys" };
         var ballItem = new MenuItem { Header = "🎾 Bouncy Ball" };

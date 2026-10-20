@@ -9,6 +9,7 @@ using MessageBox = System.Windows.MessageBox;
 using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using Brushes = System.Windows.Media.Brushes;
+using Brush = System.Windows.Media.Brush;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using TextBox = System.Windows.Controls.TextBox;
 
@@ -322,6 +323,8 @@ public partial class TasksWindow : Window
 
         StartFocusBtn.Content = $"🎯 Start Focus ({_settings.FocusDurationMinutes}m)";
 
+        UpdateReminderDetailUi(task);
+
         _suppressEditEvents = false;
 
         DetailPanel.Visibility = Visibility.Visible;
@@ -329,6 +332,60 @@ public partial class TasksWindow : Window
     }
 
     /// <summary>Creates a new task and focuses its title field for immediate editing.</summary>
+    private void UpdateReminderDetailUi(TaskItem? task)
+    {
+        if (task == null || !task.ReminderAt.HasValue)
+        {
+            ReminderStatusText.Text = "None";
+            ReminderStatusText.Foreground = (Brush)FindResource("ThemeTextDimBrush");
+            ClearReminderBtn.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            ReminderStatusText.Text = task.FormattedReminder;
+            ReminderStatusText.Foreground = (Brush)FindResource("ThemeAccentPurpleHoverBrush");
+            ClearReminderBtn.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void RemindPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedTask == null) return;
+        string? tag = (sender as Button)?.Tag?.ToString();
+
+        DateTime reminderUtc;
+        if (tag == "Later")
+        {
+            var nowLocal = DateTime.Now;
+            var targetLocal = new DateTime(nowLocal.Year, nowLocal.Month, nowLocal.Day, 17, 0, 0);
+            if (targetLocal <= nowLocal.AddMinutes(30))
+            {
+                targetLocal = nowLocal.AddHours(3);
+            }
+            reminderUtc = targetLocal.ToUniversalTime();
+        }
+        else if (int.TryParse(tag, out int mins))
+        {
+            reminderUtc = DateTime.UtcNow.AddMinutes(mins);
+        }
+        else
+        {
+            reminderUtc = DateTime.UtcNow.AddMinutes(15);
+        }
+
+        _taskService.SetReminder(_selectedTask.Id, reminderUtc);
+        UpdateReminderDetailUi(_selectedTask);
+        RefreshList();
+    }
+
+    private void ClearReminderBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedTask == null) return;
+        _taskService.SetReminder(_selectedTask.Id, null);
+        UpdateReminderDetailUi(_selectedTask);
+        RefreshList();
+    }
+
     public void CreateNewTask()
     {
         NewTaskBtn_Click(this, new RoutedEventArgs());
