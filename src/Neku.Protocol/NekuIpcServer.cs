@@ -15,8 +15,45 @@ public sealed class NekuIpcServer : IDisposable
     private readonly Func<NekuIpcRequest, Task<NekuIpcResponse>> _handler;
     private readonly Action<string>? _logger;
     private readonly CancellationTokenSource _cts = new();
+    private readonly TaskCompletionSource _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private volatile TaskCompletionSource _nextInstanceReadyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Task? _listenerTask;
     private bool _disposed;
+
+    /// <summary>
+    /// Gets a task that completes once the server's named pipe has been created and is ready for client connections.
+    /// </summary>
+    public Task ReadyTask => _readyTcs.Task;
+
+    /// <summary>
+    /// Asynchronously waits until the named pipe server has successfully initialized and is ready to accept connections.
+    /// </summary>
+    public async Task WaitForReadyAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.CanBeCanceled)
+        {
+            await _readyTcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await _readyTcs.Task.ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously waits until the named pipe server has created its next instance and is ready to accept a subsequent connection.
+    /// </summary>
+    public async Task WaitForNextInstanceReadyAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.CanBeCanceled)
+        {
+            await _nextInstanceReadyTcs.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await _nextInstanceReadyTcs.Task.ConfigureAwait(false);
+        }
+    }
 
     public NekuIpcServer(
         Func<NekuIpcRequest, Task<NekuIpcResponse>> handler,
@@ -49,10 +86,20 @@ public sealed class NekuIpcServer : IDisposable
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 
+                // Signal initial server readiness and next instance readiness
+                _readyTcs.TrySetResult();
+                _nextInstanceReadyTcs.TrySetResult();
+
                 await server.WaitForConnectionAsync(_cts.Token).ConfigureAwait(false);
 
-                // Process connection with bounded read limit (MaxPayloadBytes)
-                await ProcessClientConnectionAsync(server, _cts.Token).ConfigureAwait(false);
+                // Reset next instance TCS so callers can await the subsequent server instance
+                _nextInstanceReadyTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                // Hand off client processing asynchronously so the listen loop immediately
+                // creates and begins waiting on the next server instance.
+                var activeStream = server;
+                server = null; // Ownership transferred to ProcessAndDisposeConnectionAsync
+                _ = Task.Run(() => ProcessAndDisposeConnectionAsync(activeStream, _cts.Token));
             }
             catch (OperationCanceledException)
             {
@@ -62,6 +109,8 @@ public sealed class NekuIpcServer : IDisposable
             {
                 if (!_cts.IsCancellationRequested)
                 {
+                    _readyTcs.TrySetException(ex);
+                    _nextInstanceReadyTcs.TrySetException(ex);
                     _logger?.Invoke($"[NekuIpcServer] Error in listen loop: {ex.Message}");
                     try { await Task.Delay(100, _cts.Token).ConfigureAwait(false); } catch { break; }
                 }
@@ -70,6 +119,18 @@ public sealed class NekuIpcServer : IDisposable
             {
                 try { server?.Dispose(); } catch { }
             }
+        }
+    }
+
+    private async Task ProcessAndDisposeConnectionAsync(NamedPipeServerStream stream, CancellationToken ct)
+    {
+        try
+        {
+            await ProcessClientConnectionAsync(stream, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            try { stream.Dispose(); } catch { }
         }
     }
 
@@ -180,6 +241,8 @@ public sealed class NekuIpcServer : IDisposable
         if (_disposed) return;
         _disposed = true;
         _cts.Cancel();
+        _readyTcs.TrySetCanceled();
+        _nextInstanceReadyTcs.TrySetCanceled();
         _cts.Dispose();
     }
 }

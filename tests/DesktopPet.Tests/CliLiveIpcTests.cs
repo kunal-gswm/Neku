@@ -54,6 +54,7 @@ public sealed class CliLiveIpcTests
         }, pipeName);
 
         server.Start();
+        await server.WaitForReadyAsync();
 
         // 1. Status command via IpcClient
         var statusResp = await IpcClient.SendCommandAsync(NekuIpcProtocol.Commands.Status, customPipeName: pipeName);
@@ -129,6 +130,7 @@ public sealed class CliLiveIpcTests
             }, pipeName);
 
             server.Start();
+            await server.WaitForReadyAsync();
 
             // Task Add
             var addResp = await IpcClient.SendCommandAsync(NekuIpcProtocol.Commands.TaskAdd, new() { ["title"] = "Ship CLI" }, customPipeName: pipeName);

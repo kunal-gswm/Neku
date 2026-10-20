@@ -12,26 +12,44 @@ public sealed class CliCommandTests
     {
         string baseDir = AppContext.BaseDirectory;
         DirectoryInfo? dir = new DirectoryInfo(baseDir);
+        var probed = new List<string>();
+
         for (int i = 0; i < 8 && dir != null; i++)
         {
             string candidate1 = Path.Combine(dir.FullName, "src", "Neku.Cli", "bin", "Release", "net10.0-windows", "win-x64", "neku.exe");
+            probed.Add(candidate1);
             if (File.Exists(candidate1)) return candidate1;
 
             string candidate2 = Path.Combine(dir.FullName, "src", "Neku.Cli", "bin", "Debug", "net10.0-windows", "win-x64", "neku.exe");
+            probed.Add(candidate2);
             if (File.Exists(candidate2)) return candidate2;
 
             string candidate3 = Path.Combine(dir.FullName, "dist", "bin", "neku.exe");
+            probed.Add(candidate3);
             if (File.Exists(candidate3)) return candidate3;
+
+            string candidate4 = Path.Combine(dir.FullName, "src", "Neku.Cli", "bin", "Release", "net10.0-windows", "neku.exe");
+            probed.Add(candidate4);
+            if (File.Exists(candidate4)) return candidate4;
+
+            string candidate5 = Path.Combine(dir.FullName, "src", "Neku.Cli", "bin", "Debug", "net10.0-windows", "neku.exe");
+            probed.Add(candidate5);
+            if (File.Exists(candidate5)) return candidate5;
 
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException($"Could not locate compiled neku.exe binary from {baseDir}.");
+        throw new FileNotFoundException($"Could not locate compiled neku.exe binary from {baseDir}. Probed locations:\n" + string.Join("\n", probed));
     }
 
-    private static (int ExitCode, string StandardOutput, string StandardError) RunCli(string arguments)
+    private static (int ExitCode, string StandardOutput, string StandardError) RunCli(string arguments, int timeoutMs = 15000)
     {
         string exe = GetCliExecutablePath();
+        if (!File.Exists(exe))
+        {
+            throw new FileNotFoundException($"Verified CLI binary does not exist at '{exe}'.");
+        }
+
         var psi = new ProcessStartInfo
         {
             FileName = exe,
@@ -39,28 +57,48 @@ public sealed class CliCommandTests
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
         };
 
         using var proc = new Process { StartInfo = psi };
-        var stdoutBuilder = new StringBuilder();
-        var stderrBuilder = new StringBuilder();
 
-        proc.OutputDataReceived += (_, e) => { if (e.Data != null) stdoutBuilder.AppendLine(e.Data); };
-        proc.ErrorDataReceived += (_, e) => { if (e.Data != null) stderrBuilder.AppendLine(e.Data); };
-
-        proc.Start();
-        proc.BeginOutputReadLine();
-        proc.BeginErrorReadLine();
-
-        bool exited = proc.WaitForExit(10000);
-        if (!exited)
+        try
         {
-            try { proc.Kill(); } catch { }
-            throw new TimeoutException($"Command 'neku {arguments}' timed out after 10 seconds.");
+            if (!proc.Start())
+            {
+                throw new InvalidOperationException($"Failed to start process '{exe}' with arguments '{arguments}'.");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Exception launching process '{exe}' with arguments '{arguments}': {ex.Message}", ex);
         }
 
-        return (proc.ExitCode, stdoutBuilder.ToString(), stderrBuilder.ToString());
+        // Concurrently drain stdout and stderr asynchronously to prevent pipe buffer deadlocks
+        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+        var stderrTask = proc.StandardError.ReadToEndAsync();
+
+        bool exited = proc.WaitForExit(timeoutMs);
+        if (!exited)
+        {
+            try
+            {
+                proc.Kill(entireProcessTree: true);
+            }
+            catch { }
+
+            throw new TimeoutException($"Command '{exe} {arguments}' timed out after {timeoutMs}ms (PID: {proc.Id}).");
+        }
+
+        // Ensure stream readers finish draining all buffered bytes to EOF
+        Task.WaitAll(new Task[] { stdoutTask, stderrTask }, 5000);
+
+        string stdout = stdoutTask.IsCompletedSuccessfully ? stdoutTask.Result : "";
+        string stderr = stderrTask.IsCompletedSuccessfully ? stderrTask.Result : "";
+
+        return (proc.ExitCode, stdout, stderr);
     }
 
     [Fact]

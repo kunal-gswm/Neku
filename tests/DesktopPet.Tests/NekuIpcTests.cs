@@ -70,10 +70,11 @@ public sealed class NekuIpcTests
         }, pipeName);
 
         server.Start();
+        await server.WaitForReadyAsync();
 
         // Connect client
         using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-        await client.ConnectAsync(2000);
+        await client.ConnectAsync(5000);
 
         using var writer = new StreamWriter(client, Encoding.UTF8, leaveOpen: true);
         using var reader = new StreamReader(client, Encoding.UTF8, leaveOpen: true);
@@ -102,9 +103,10 @@ public sealed class NekuIpcTests
         }, pipeName);
 
         server.Start();
+        await server.WaitForReadyAsync();
 
         using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-        await client.ConnectAsync(2000);
+        await client.ConnectAsync(5000);
 
         using var writer = new StreamWriter(client, Encoding.UTF8, leaveOpen: true);
         using var reader = new StreamReader(client, Encoding.UTF8, leaveOpen: true);
@@ -137,11 +139,12 @@ public sealed class NekuIpcTests
 
         using var server = new NekuIpcServer(req => Task.FromResult(NekuIpcResponse.Success("ok")), pipeName);
         server.Start();
+        await server.WaitForReadyAsync();
 
         // 1. Send malformed non-JSON string
         using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
-            await client.ConnectAsync(2000);
+            await client.ConnectAsync(5000);
             using var writer = new StreamWriter(client, Encoding.UTF8, leaveOpen: true);
             using var reader = new StreamReader(client, Encoding.UTF8, leaveOpen: true);
 
@@ -156,10 +159,13 @@ public sealed class NekuIpcTests
             Assert.Equal(400, resp.Code);
         }
 
+        // Deterministically wait for the server to be ready for the next sequential client connection
+        await server.WaitForNextInstanceReadyAsync();
+
         // 2. Send empty command
         using (var client2 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly))
         {
-            await client2.ConnectAsync(2000);
+            await client2.ConnectAsync(5000);
             using var writer2 = new StreamWriter(client2, Encoding.UTF8, leaveOpen: true);
             using var reader2 = new StreamReader(client2, Encoding.UTF8, leaveOpen: true);
 
