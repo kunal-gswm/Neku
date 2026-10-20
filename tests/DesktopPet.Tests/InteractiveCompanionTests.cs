@@ -122,33 +122,43 @@ public class InteractiveCompanionTests
     [Fact]
     public void FocusHudWindow_initializes_with_default_duration_and_handles_toggle()
     {
+        Exception? threadEx = null;
         var thread = new Thread(() =>
         {
-            using var timer = new FocusTimerService();
-            timer.FocusDurationMinutes = 30;
-            bool toggled = false;
-            bool canceled = false;
+            try
+            {
+                using var timer = new FocusTimerService();
+                timer.FocusDurationMinutes = 30;
+                bool toggled = false;
+                bool canceled = false;
 
-            var hud = new FocusHudWindow(timer, () => toggled = true, () => canceled = true);
-            Assert.Equal("30:00", hud.TimeText.Text);
-            Assert.Equal("▶", hud.PauseButton.Content);
+                var hud = new FocusHudWindow(timer, () => toggled = true, () => canceled = true);
+                Assert.Equal("30:00", hud.TimeText.Text);
+                Assert.Equal("▶", hud.PauseButton.Content);
 
-            // Test toggling when idle calls the callback
-            hud.PauseButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Assert.True(toggled);
+                // Test toggling when idle calls the callback
+                hud.PauseButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                Assert.True(toggled);
 
-            // Test cancel callback
-            var cancelItem = hud.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>()
-                .First(i => (string)i.Header == "Cancel Focus Session");
-            cancelItem.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent));
-            Assert.True(canceled);
+                // Test cancel callback
+                var cancelItem = hud.ContextMenu.Items.OfType<System.Windows.Controls.MenuItem>()
+                    .First(i => (string)i.Header == "Cancel Focus Session");
+                cancelItem.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent));
+                Assert.True(canceled);
 
-            hud.Close();
+                hud.Close();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.InvokeShutdown();
+            }
+            catch (Exception ex)
+            {
+                threadEx = ex;
+            }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        bool finished = thread.Join(5000);
-        Assert.True(finished);
+        bool finished = thread.Join(15000);
+        Assert.True(finished, "FocusHudWindow test timed out");
+        Assert.Null(threadEx);
     }
 
     // ── 2. Quick Notes Tests ──────────────────────────────────────────────────

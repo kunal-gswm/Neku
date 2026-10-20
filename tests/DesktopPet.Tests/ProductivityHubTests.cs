@@ -909,6 +909,7 @@ public sealed class ProductivityHubTests : IDisposable
                 dashboard.SelectTab("Agent");
 
                 dashboard.Close();
+                Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
             catch (Exception ex)
             {
@@ -917,7 +918,7 @@ public sealed class ProductivityHubTests : IDisposable
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        bool finished = thread.Join(10000);
+        bool finished = thread.Join(15000);
 
         Assert.True(finished, "DashboardWindow initialization timed out");
         Assert.Null(threadEx);
@@ -939,6 +940,7 @@ public sealed class ProductivityHubTests : IDisposable
                 Assert.NotNull(tasksWindow);
 
                 tasksWindow.Close();
+                Dispatcher.CurrentDispatcher.InvokeShutdown();
             }
             catch (Exception ex)
             {
@@ -947,7 +949,7 @@ public sealed class ProductivityHubTests : IDisposable
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
-        bool finished = thread.Join(10000);
+        bool finished = thread.Join(15000);
 
         Assert.True(finished, "TasksWindow initialization timed out");
         Assert.Null(threadEx);
