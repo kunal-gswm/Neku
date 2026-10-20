@@ -25,15 +25,10 @@ jobs:
 
       # Publishing is where asset embedding and single-file packaging can quietly break, and a
       # broken artifact is only noticed at release time otherwise.
-      - name: Verify the release artifact still builds as one file
+      - name: Verify release artifacts publish cleanly
         shell: pwsh
         run: |
-          dotnet publish src/DesktopPet/DesktopPet.csproj -c Release -o dist --nologo
-          Remove-Item dist/*.pdb -Force -ErrorAction SilentlyContinue
-          $stray = Get-ChildItem dist | Where-Object { $_.Name -ne 'Neku.exe' }
-          if ($stray) { throw "Publish produced more than the exe: $($stray.Name -join ', ')" }
-          $mb = [math]::Round((Get-Item dist/Neku.exe).Length / 1MB, 1)
-          Write-Host "Neku.exe is $mb MB"
+          .\scripts\publish.ps1
 
       - name: Install Inno Setup
         shell: pwsh

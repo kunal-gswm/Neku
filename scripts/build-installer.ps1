@@ -45,11 +45,22 @@ if (-not $SkipPublish) {
     }
 }
 
-# ── 3. Verify published Neku.exe exists ──
+# ── 3. Verify published executables exist ──
 if (-not (Test-Path $exe)) {
     throw "Published executable not found at $exe"
 }
 Write-Host "`nPublished executable verified: $exe" -ForegroundColor Green
+
+$cliExe = Join-Path $dist "bin\neku.exe"
+if (-not (Test-Path $cliExe)) {
+    Write-Host "Published CLI binary not found at $cliExe. Publishing via scripts\publish.ps1..." -ForegroundColor Cyan
+    $publishScript = Join-Path $root "scripts\publish.ps1"
+    & pwsh -File $publishScript
+    if ($LASTEXITCODE -ne 0) {
+        throw "publish.ps1 failed with exit code $LASTEXITCODE"
+    }
+}
+Write-Host "Published CLI verified: $cliExe" -ForegroundColor Green
 
 # ── 4. Verify absence of private companion assets in binary ──
 Write-Host "Auditing binary for private asset exclusion..." -ForegroundColor Cyan
