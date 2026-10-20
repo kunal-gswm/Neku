@@ -33,6 +33,7 @@ public sealed class NotesService
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
 
     public IReadOnlyList<NoteItem> Notes => _notes;
+    public event Action? NotesChanged;
 
     public NotesService(string? customPath = null)
     {
@@ -111,6 +112,7 @@ public sealed class NotesService
 
         _notes.Insert(0, note);
         Save();
+        NotesChanged?.Invoke();
         return note;
     }
 
@@ -123,6 +125,7 @@ public sealed class NotesService
             note.Content = content;
             note.UpdatedAt = DateTime.UtcNow;
             Save();
+            NotesChanged?.Invoke();
         }
     }
 
@@ -133,6 +136,7 @@ public sealed class NotesService
         {
             _notes.RemoveAt(index);
             Save();
+            NotesChanged?.Invoke();
             return true;
         }
         return false;

@@ -266,8 +266,14 @@ public partial class TasksWindow : Window
         DetailCompleteCheck.IsChecked = task.IsCompleted;
         DetailCompleteCheck.Content = task.IsCompleted ? "Completed ✅" : "Mark Completed";
 
-        TitleBox.Text = task.Title;
-        DescriptionBox.Text = task.Description;
+        if (!TitleBox.IsKeyboardFocusWithin)
+        {
+            TitleBox.Text = task.Title;
+        }
+        if (!DescriptionBox.IsKeyboardFocusWithin)
+        {
+            DescriptionBox.Text = task.Description;
+        }
 
         // Priority
         switch (task.Priority)
@@ -326,6 +332,52 @@ public partial class TasksWindow : Window
     public void CreateNewTask()
     {
         NewTaskBtn_Click(this, new RoutedEventArgs());
+    }
+
+    private void QuickTaskBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (QuickTaskBox.Text == "Add a task quickly... (press Enter)")
+        {
+            QuickTaskBox.Text = "";
+        }
+    }
+
+    private void QuickTaskBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(QuickTaskBox.Text))
+        {
+            QuickTaskBox.Text = "Add a task quickly... (press Enter)";
+        }
+    }
+
+    private void QuickTaskBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            CreateFromQuickBox();
+            e.Handled = true;
+        }
+    }
+
+    private void QuickAddBtn_Click(object sender, RoutedEventArgs e)
+    {
+        CreateFromQuickBox();
+    }
+
+    private void CreateFromQuickBox()
+    {
+        string title = QuickTaskBox.Text?.Trim() ?? "";
+        if (string.IsNullOrEmpty(title) || title == "Add a task quickly... (press Enter)") return;
+
+        DateTime? defaultDue = _activeTab == "Today" ? DateTime.Today : (_activeTab == "Upcoming" ? DateTime.Today.AddDays(1) : (DateTime?)null);
+        var task = _taskService.Create(
+            title: title,
+            dueDate: defaultDue,
+            estimatedMinutes: 25);
+
+        QuickTaskBox.Text = "";
+        _selectedTask = task;
+        RefreshList();
     }
 
     private void NewTaskBtn_Click(object sender, RoutedEventArgs e)

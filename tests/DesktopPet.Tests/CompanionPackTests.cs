@@ -265,12 +265,12 @@ public class CompanionPackTests
     }
 
     [Fact]
-    public void AppVersion_is_bumped_to_1_0_1()
+    public void AppVersion_is_bumped_to_1_0_2()
     {
-        Assert.Equal("v1.0.1", AppVersion.Display);
+        Assert.Equal("v1.0.2", AppVersion.Display);
         Assert.Equal(1, AppVersion.Current.Major);
         Assert.Equal(0, AppVersion.Current.Minor);
-        Assert.Equal(1, AppVersion.Current.Build);
+        Assert.Equal(2, AppVersion.Current.Build);
     }
 
     [Fact]

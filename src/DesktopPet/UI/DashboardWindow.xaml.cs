@@ -39,6 +39,9 @@ public partial class DashboardWindow : Window
     private readonly DeveloperRadarService? _radarService;
     private readonly Action? _onToggleHud;
     private readonly SystemHealthService? _healthService;
+    private readonly NotesService? _notesService;
+
+    public event Action? QuickNotesRequested;
 
     private static readonly Color TimerOrangeColor = Color.FromRgb(0xFB, 0x92, 0x3C);
     private static readonly Color TimerAmberColor = Color.FromRgb(0xFB, 0xBF, 0x24);
@@ -67,7 +70,8 @@ public partial class DashboardWindow : Window
         ClaudeCodeIntegrationService? claudeCodeService = null,
         DeveloperRadarService? radarService = null,
         Action? onToggleHud = null,
-        SystemHealthService? healthService = null)
+        SystemHealthService? healthService = null,
+        NotesService? notesService = null)
     {
         _taskService = taskService;
         _focusTimer = focusTimer;
@@ -78,6 +82,7 @@ public partial class DashboardWindow : Window
         _radarService = radarService;
         _onToggleHud = onToggleHud;
         _healthService = healthService;
+        _notesService = notesService;
 
         InitializeComponent();
         _isInitialized = true;
@@ -86,6 +91,10 @@ public partial class DashboardWindow : Window
         _taskService.TasksChanged += OnTasksChanged;
         _focusTimer.StateChanged += OnTimerStateChanged;
         _historyService.HistoryChanged += OnHistoryChanged;
+        if (_notesService != null)
+        {
+            _notesService.NotesChanged += OnNotesChanged;
+        }
 
         if (_agentActivityService != null)
         {
@@ -111,6 +120,7 @@ public partial class DashboardWindow : Window
         _uiRefreshTimer.Tick += (_, _) => UpdateTimerDisplays();
         _uiRefreshTimer.Start();
 
+        UpdateNavRailVisibility();
         SelectTab(initialTab ?? "Overview");
         UpdateTimerDisplays();
     }
@@ -133,12 +143,39 @@ public partial class DashboardWindow : Window
         DesktopPet.Native.Win32.EnableImmersiveDarkMode(handle);
     }
 
+
+    private void OnNotesChanged()
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            if (_currentTab == "Overview")
+            {
+                RefreshOverview();
+            }
+        });
+    }
+
+    private void UpdateNavRailVisibility()
+    {
+        NavAgentBtn.Visibility = (_settings.EnableAgentCompanion || _settings.EnableDeveloperEvents) ? Visibility.Visible : Visibility.Collapsed;
+        NavRadarBtn.Visibility = _settings.EnableDeveloperRadar ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void NavNotesBtn_Click(object sender, RoutedEventArgs e)
+    {
+        QuickNotesRequested?.Invoke();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
         _taskService.TasksChanged -= OnTasksChanged;
         _focusTimer.StateChanged -= OnTimerStateChanged;
         _historyService.HistoryChanged -= OnHistoryChanged;
+        if (_notesService != null)
+        {
+            _notesService.NotesChanged -= OnNotesChanged;
+        }
 
         if (_agentActivityService != null)
         {
@@ -418,10 +455,80 @@ public partial class DashboardWindow : Window
             OverviewQuickFocusBtn.Content = $"🎯 Start {_settings.FocusDurationMinutes}m Focus";
         }
 
+        // Today's Actionable Tasks
+        var todayTasks = allTasks
+            .Where(t => (!t.IsCompleted && (t.DueDate == null || TaskItem.ToLocalDate(t.DueDate.Value) <= DateTime.Today)) ||
+                        (t.IsCompleted && t.CompletedAt.HasValue && TaskItem.ToLocalDate(t.CompletedAt.Value) == DateTime.Today))
+            .OrderBy(t => t.IsCompleted)
+            .ThenByDescending(t => t.Priority)
+            .ThenBy(t => t.DueDate ?? DateTime.MaxValue)
+            .Take(8)
+            .Select(t => new TodayTaskDisplayItem(t))
+            .ToList();
+
+        OverviewTodayListBox.ItemsSource = todayTasks;
+        int pendingTodayCount = todayTasks.Count(t => !t.IsCompleted);
+        OverviewTodayTasksBadge.Text = $" ({pendingTodayCount} pending)";
+        OverviewTasksEmptyBorder.Visibility = todayTasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Recent Quick Notes
+        if (_notesService != null)
+        {
+            var recentNotes = _notesService.Notes
+                .OrderByDescending(n => n.UpdatedAt)
+                .Take(3)
+                .Select(n => new NoteOverviewItem(n))
+                .ToList();
+            OverviewNotesListBox.ItemsSource = recentNotes;
+            OverviewNotesEmptyBorder.Visibility = recentNotes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            OverviewNotesEmptyBorder.Visibility = Visibility.Visible;
+        }
+
         // Recent sessions list (last 5)
         OverviewRecentListBox.ItemsSource = allSessions.Take(5).ToList();
 
         DrawWeeklyChart();
+    }
+
+    internal void OverviewTaskCheck_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox cb && cb.DataContext is TodayTaskDisplayItem item)
+        {
+            _taskService.ToggleComplete(item.Task.Id);
+            RefreshOverview();
+            if (_currentTab == "Tasks") RefreshTaskList();
+        }
+    }
+
+    internal void OverviewTaskFocus_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is TodayTaskDisplayItem item)
+        {
+            TaskFocusRequested?.Invoke(item.Task);
+        }
+    }
+
+    private void ViewAllTasks_Click(object sender, RoutedEventArgs e)
+    {
+        SelectTab("Tasks");
+    }
+
+    private void OverviewNewNote_Click(object sender, RoutedEventArgs e)
+    {
+        QuickNotesRequested?.Invoke();
+    }
+
+    private void OverviewOpenNotes_Click(object sender, RoutedEventArgs e)
+    {
+        QuickNotesRequested?.Invoke();
+    }
+
+    private void OverviewNoteItem_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        QuickNotesRequested?.Invoke();
     }
 
     private void DrawWeeklyChart()
@@ -2400,5 +2507,51 @@ public partial class DashboardWindow : Window
     {
         _healthService?.Poll();
         RefreshHealth();
+    }
+}
+
+public sealed class TodayTaskDisplayItem
+{
+    public TaskItem Task { get; }
+    public string Title => Task.Title;
+    public bool IsCompleted => Task.IsCompleted;
+    public string PriorityDisplay => Task.Priority switch
+    {
+        TaskPriority.High => "● High",
+        TaskPriority.Low => "● Low",
+        _ => "● Normal"
+    };
+    public Brush PriorityColor => Task.Priority switch
+    {
+        TaskPriority.High => new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44)),
+        TaskPriority.Low => new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8)),
+        _ => new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24))
+    };
+    public string ProjectDisplay => string.IsNullOrEmpty(Task.Project) ? "" : $"[{Task.Project}]";
+
+    public TodayTaskDisplayItem(TaskItem task)
+    {
+        Task = task;
+    }
+}
+
+public sealed class NoteOverviewItem
+{
+    public NoteItem Note { get; }
+    public string Title => string.IsNullOrWhiteSpace(Note.Title) ? "Untitled" : Note.Title;
+    public string Preview
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Note.Content)) return "Empty note";
+            string firstLine = Note.Content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+            return firstLine.Length > 40 ? firstLine[..40] + "…" : firstLine;
+        }
+    }
+    public string FormattedDate => Note.UpdatedAt.ToLocalTime().ToString("MMM d");
+
+    public NoteOverviewItem(NoteItem note)
+    {
+        Note = note;
     }
 }

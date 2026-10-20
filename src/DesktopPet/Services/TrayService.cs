@@ -26,11 +26,14 @@ public sealed class TrayService : IDisposable
     private readonly ToolStripMenuItem _devSubmenu;
     private readonly ToolStripMenuItem? _radarItem;
     private readonly ToolStripMenuItem? _hudItem;
+    private readonly ToolStripMenuItem? _focusHudItem;
 
     public bool IsDevSubmenuVisible => _devSubmenu.Available;
     public bool IsDevEventsVisible => _devEventsItem.Available;
     public bool IsRadarVisible => _radarItem?.Available ?? false;
     public bool IsHudVisible => _hudItem?.Available ?? false;
+    public bool IsFocusHudVisible => _focusHudItem?.Available ?? false;
+    private readonly Action _onDoubleClick;
 
     public TrayService(
         Action onFocusToggle, Func<string> getFocusLabel,
@@ -46,7 +49,8 @@ public sealed class TrayService : IDisposable
         Action<bool> onClickThroughToggled, Action<bool> onReducedMotionToggled,
         Action<bool> onQuietModeToggled, Action onResetPosition, Action onQuit,
         Action onUpdate, AppSettings settings,
-        Action? onDeveloperRadar = null, Action? onToggleDeveloperHud = null)
+        Action? onDeveloperRadar = null, Action? onToggleDeveloperHud = null,
+        Action? onToggleFocusHud = null, Action? onDoubleClick = null)
     {
         _onUpdate = onUpdate;
         _settings = settings;
@@ -63,6 +67,11 @@ public sealed class TrayService : IDisposable
 
         _focusCancelItem = new ToolStripMenuItem("Cancel Focus Session");
         _focusCancelItem.Click += (_, _) => onFocusCancel();
+        if (onToggleFocusHud != null)
+        {
+            _focusHudItem = new ToolStripMenuItem("Toggle Focus HUD");
+            _focusHudItem.Click += (_, _) => onToggleFocusHud();
+        }
 
         _tasksItem = new ToolStripMenuItem("Tasks…");
         _tasksItem.Click += (_, _) => onTasks();
@@ -102,16 +111,16 @@ public sealed class TrayService : IDisposable
         _hideItem = new ToolStripMenuItem("Hide") { CheckOnClick = true };
         _hideItem.Click += (_, _) => onHideToggled(_hideItem.Checked);
 
-        _clickThroughItem = new ToolStripMenuItem("Click-through mode") { CheckOnClick = true, Checked = settings.ClickThrough };
+        _clickThroughItem = new ToolStripMenuItem("Click-Through Mode") { CheckOnClick = true, Checked = settings.ClickThrough };
         _clickThroughItem.Click += (_, _) => onClickThroughToggled(_clickThroughItem.Checked);
 
-        var resetPosItem = new ToolStripMenuItem("Reset position");
+        var resetPosItem = new ToolStripMenuItem("Reset Position");
         resetPosItem.Click += (_, _) => onResetPosition();
 
-        _quietModeItem = new ToolStripMenuItem("Quiet mode") { CheckOnClick = true, Checked = settings.EnableQuietMode };
+        _quietModeItem = new ToolStripMenuItem("Quiet Mode") { CheckOnClick = true, Checked = settings.EnableQuietMode };
         _quietModeItem.Click += (_, _) => onQuietModeToggled(_quietModeItem.Checked);
 
-        _reducedMotionItem = new ToolStripMenuItem("Reduced motion") { CheckOnClick = true, Checked = settings.ReducedMotion };
+        _reducedMotionItem = new ToolStripMenuItem("Reduced Motion") { CheckOnClick = true, Checked = settings.ReducedMotion };
         _reducedMotionItem.Click += (_, _) => onReducedMotionToggled(_reducedMotionItem.Checked);
 
         _updateItem = new ToolStripMenuItem("Update available — install now") { Visible = false };
@@ -131,18 +140,22 @@ public sealed class TrayService : IDisposable
         RefreshDeveloperMenuVisibility();
 
         // 1. Productivity Hub, Focus Session & Tasks
-        menu.Items.Add(_paletteItem);
+
         menu.Items.Add(hubItem);
-        menu.Items.Add(_focusItem);
-        menu.Items.Add(_focusCancelItem);
-        menu.Items.Add(_tasksItem);
+        menu.Items.Add(_paletteItem);
         menu.Items.Add(new ToolStripSeparator());
 
-        // 2. Quick Note, Developer Tools & Companion Studio
+        menu.Items.Add(_focusItem);
+        menu.Items.Add(_focusCancelItem);
+        if (_focusHudItem != null) menu.Items.Add(_focusHudItem);
+        menu.Items.Add(_tasksItem);
         menu.Items.Add(_quickNoteItem);
-        menu.Items.Add(_devSubmenu);
+        menu.Items.Add(new ToolStripSeparator());
+
+        // 3. Companion Studio, Settings & Developer Tools
         menu.Items.Add(studioItem);
         menu.Items.Add(settingsItem);
+        menu.Items.Add(_devSubmenu);
         menu.Items.Add(new ToolStripSeparator());
 
         // 3. Pause & Hide
@@ -165,8 +178,11 @@ public sealed class TrayService : IDisposable
             Text = "Neku",
             ContextMenuStrip = menu
         };
-        _icon.DoubleClick += (_, _) => onSettings();
+        _onDoubleClick = onDoubleClick ?? onProductivityHub;
+        _icon.DoubleClick += (_, _) => _onDoubleClick();
     }
+
+    internal void SimulateDoubleClick() => _onDoubleClick();
 
 
     /// <summary>Open a URL in the user's default browser. Best-effort — never throws into the UI.</summary>

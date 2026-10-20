@@ -67,6 +67,23 @@
                 </ComboBox>
             </Grid>
 
+            <!-- Inline Quick Task Entry -->
+            <Border DockPanel.Dock="Top" Background="#FF231E30" BorderBrush="#FF483C66" BorderThickness="1" CornerRadius="6" Padding="4" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="QuickTaskBox" BorderThickness="0" Background="Transparent" Foreground="White"
+                             VerticalContentAlignment="Center" Padding="4,2" FontSize="12"
+                             AutomationProperties.Name="Quick Task Input"
+                             Text="Add a task quickly... (press Enter)"
+                             GotFocus="QuickTaskBox_GotFocus" LostFocus="QuickTaskBox_LostFocus" KeyDown="QuickTaskBox_KeyDown"/>
+                    <Button x:Name="QuickAddBtn" Grid.Column="1" Content="+ Add" Style="{StaticResource SecondaryButton}"
+                            Padding="8,2" FontSize="11" Margin="4,0,0,0" Click="QuickAddBtn_Click" AutomationProperties.Name="Quick Add Task"/>
+                </Grid>
+            </Border>
+
             <!-- Bottom: New Task button -->
             <Button x:Name="NewTaskBtn" AutomationProperties.Name="Create New Task" DockPanel.Dock="Bottom" Content="+ New Task (Ctrl+N)"
                     Margin="0,8,0,0" Click="NewTaskBtn_Click"/>

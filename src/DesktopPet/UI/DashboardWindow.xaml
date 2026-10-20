@@ -55,6 +55,7 @@
                 <StackPanel Margin="6,0,6,0">
                     <Button x:Name="NavOverviewBtn" AutomationProperties.Name="Overview Navigation" Content="📊  Overview" Style="{StaticResource NavRailButton}" Tag="Overview" Click="NavBtn_Click"/>
                     <Button x:Name="NavTasksBtn" AutomationProperties.Name="Tasks Navigation" Content="📋  Tasks" Style="{StaticResource NavRailButton}" Tag="Tasks" Click="NavBtn_Click"/>
+                    <Button x:Name="NavNotesBtn" AutomationProperties.Name="Quick Notes Navigation" Content="📝  Quick Notes" Style="{StaticResource NavRailButton}" Tag="Notes" Click="NavNotesBtn_Click"/>
                     <Button x:Name="NavFocusBtn" AutomationProperties.Name="Focus Timer Navigation" Content="⏱️  Focus Timer" Style="{StaticResource NavRailButton}" Tag="Focus" Click="NavBtn_Click"/>
                     <Button x:Name="NavHistoryBtn" AutomationProperties.Name="Focus History Navigation" Content="📜  Focus History" Style="{StaticResource NavRailButton}" Tag="History" Click="NavBtn_Click"/>
                     <Button x:Name="NavInsightsBtn" AutomationProperties.Name="Insights Navigation" Content="📈  Insights" Style="{StaticResource NavRailButton}" Tag="Insights" Click="NavBtn_Click"/>
@@ -152,29 +153,35 @@
                     <Button x:Name="OverviewQuickFocusBtn" Grid.Column="1" Content="🎯 Start 25m Focus" Style="{StaticResource OrangeButton}" Padding="16,8" Click="OverviewQuickFocusBtn_Click"/>
                 </Grid>
 
-                <!-- Split lower area: Mini Weekly Chart & Recent Focus Sessions -->
+                <!-- Split lower area: Today's Priorities & Quick Notes / Focus Trend -->
                 <Grid Grid.Row="3">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1.2*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Mini Weekly Activity Chart -->
-                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,6,0">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top" Text="Weekly Focus Trend" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,10"/>
-                            <Canvas x:Name="OverviewWeeklyCanvas" ClipToBounds="True" Height="140" SizeChanged="OverviewWeeklyCanvas_SizeChanged"/>
-                        </DockPanel>
-                    </Border>
-
-                    <!-- Recent Sessions List -->
-                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14" Margin="6,0,0,0">
+                    <!-- Left: Today's Priorities -->
+                    <Border Grid.Column="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,6,0">
                         <DockPanel>
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                                <TextBlock Text="Recent Focus Activity" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
-                                <Button Content="View All →" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" HorizontalAlignment="Right" Click="ViewAllHistory_Click"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="☀️ Today's Tasks" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
+                                    <TextBlock x:Name="OverviewTodayTasksBadge" Text=" (0)" FontSize="12" Foreground="{StaticResource TextDimBrush}"/>
+                                </StackPanel>
+                                <Button Content="All Tasks →" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" HorizontalAlignment="Right" Click="ViewAllTasks_Click"/>
                             </DockPanel>
-                            <ListBox x:Name="OverviewRecentListBox" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                            <!-- Empty state when no today tasks -->
+                            <Border x:Name="OverviewTasksEmptyBorder" Visibility="Collapsed" Background="#FF161320" CornerRadius="6" Padding="12" Margin="0,4,0,0" VerticalAlignment="Center">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="✨" FontSize="20" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                    <TextBlock Text="All caught up for today!" FontSize="12" FontWeight="SemiBold" Foreground="White" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Add a task above or pick from your backlog." FontSize="10" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- List of Today's Tasks -->
+                            <ListBox x:Name="OverviewTodayListBox" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#FF352C4A" BorderThickness="0,0,0,1" Padding="4,6">
@@ -184,12 +191,15 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding TypeDisplay}" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsCompleted, Mode=OneWay}" Margin="0,0,8,0" VerticalAlignment="Center" Click="OverviewTaskCheck_Click"/>
                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding TaskTitle, TargetNullValue='Free Focus'}" FontSize="12" FontWeight="Medium" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding FormattedDate}" FontSize="10" Foreground="{StaticResource TextDimBrush}"/>
+                                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Medium" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                        <TextBlock Text="{Binding PriorityDisplay}" FontSize="9" Foreground="{Binding PriorityColor}" Margin="0,0,6,0"/>
+                                                        <TextBlock Text="{Binding ProjectDisplay}" FontSize="9" Foreground="{StaticResource TextDimBrush}"/>
+                                                    </StackPanel>
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="2" Text="{Binding DurationDisplay}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentOrangeBrush}" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="2" Content="🎯 Focus" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" VerticalAlignment="Center" Click="OverviewTaskFocus_Click" ToolTip="Start focus session on this task"/>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -197,6 +207,63 @@
                             </ListBox>
                         </DockPanel>
                     </Border>
+
+                    <!-- Right Column: Quick Notes & Focus Trend -->
+                    <Grid Grid.Column="1" Margin="6,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Quick Notes Card -->
+                        <Border Grid.Row="0" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                            <DockPanel>
+                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                    <TextBlock Text="📝 Quick Notes" FontSize="13" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Content="+ New" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" Margin="0,0,4,0" Click="OverviewNewNote_Click"/>
+                                        <Button Content="Open →" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" Click="OverviewOpenNotes_Click"/>
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <Border x:Name="OverviewNotesEmptyBorder" Visibility="Collapsed" Background="#FF161320" CornerRadius="6" Padding="8" VerticalAlignment="Center">
+                                    <TextBlock Text="No notes yet. Click '+ New' to capture thoughts quickly." FontSize="11" Foreground="{StaticResource TextDimBrush}" HorizontalAlignment="Center"/>
+                                </Border>
+
+                                <ListBox x:Name="OverviewNotesListBox" Background="Transparent" BorderThickness="0" MaxHeight="85" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#FF352C4A" BorderThickness="0,0,0,1" Padding="2,4" Cursor="Hand" MouseDown="OverviewNoteItem_MouseDown">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Preview}" FontSize="10" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding FormattedDate}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Mini Weekly Focus Trend -->
+                        <Border Grid.Row="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                            <DockPanel>
+                                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                    <TextBlock Text="📈 Focus Trend" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
+                                    <Button Content="View History →" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" HorizontalAlignment="Right" Click="ViewAllHistory_Click"/>
+                                </DockPanel>
+                                <Canvas x:Name="OverviewWeeklyCanvas" ClipToBounds="True" Height="75" SizeChanged="OverviewWeeklyCanvas_SizeChanged"/>
+                                <ListBox x:Name="OverviewRecentListBox" Visibility="Collapsed"/>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
                 </Grid>
             </Grid>
 

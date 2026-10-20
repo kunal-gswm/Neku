@@ -368,7 +368,9 @@ public partial class App : Application
             onUpdate: RunUpdate,
             settings: _settings,
             onDeveloperRadar: () => OpenProductivityHub("Radar"),
-            onToggleDeveloperHud: ToggleDeveloperHud);
+            onToggleDeveloperHud: ToggleDeveloperHud,
+            onToggleFocusHud: ToggleFocusHud,
+            onDoubleClick: SummonCompanionAndHub);
 
         _petWindow.PetInteracted += DismissOnboarding;
 
@@ -917,6 +919,47 @@ public partial class App : Application
         }
     }
 
+    public static void BringToForeground(Window window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+            window.WindowState = WindowState.Normal;
+
+        EnsureWindowOnScreen(window);
+
+        window.Show();
+        window.Activate();
+        bool wasTopmost = window.Topmost;
+        window.Topmost = true;
+        if (!wasTopmost) window.Topmost = false;
+        window.Focus();
+    }
+
+    private static void EnsureWindowOnScreen(Window window)
+    {
+        double left = window.Left;
+        double top = window.Top;
+        double width = window.ActualWidth > 0 ? window.ActualWidth : (double.IsNaN(window.Width) ? 600 : window.Width);
+        double height = window.ActualHeight > 0 ? window.ActualHeight : (double.IsNaN(window.Height) ? 400 : window.Height);
+
+        double screenLeft = SystemParameters.VirtualScreenLeft;
+        double screenTop = SystemParameters.VirtualScreenTop;
+        double screenWidth = SystemParameters.VirtualScreenWidth;
+        double screenHeight = SystemParameters.VirtualScreenHeight;
+
+        if (left + width < screenLeft + 50 || left > screenLeft + screenWidth - 50 ||
+            top + height < screenTop + 50 || top > screenTop + screenHeight - 50)
+        {
+            window.Left = Math.Max(screenLeft, (SystemParameters.PrimaryScreenWidth - width) / 2);
+            window.Top = Math.Max(screenTop, (SystemParameters.PrimaryScreenHeight - height) / 2);
+        }
+    }
+
+    private void SummonCompanionAndHub()
+    {
+        SummonNeku();
+        OpenProductivityHub();
+    }
+
     private void OpenQuickNotes()
     {
         DismissOnboarding();
@@ -924,13 +967,11 @@ public partial class App : Application
         {
             _notesWindow = new QuickNotesWindow(_notesService);
             _notesWindow.Closed += (_, _) => _notesWindow = null;
-            _notesWindow.Show();
+            BringToForeground(_notesWindow);
         }
         else
         {
-            if (_notesWindow.WindowState == WindowState.Minimized)
-                _notesWindow.WindowState = WindowState.Normal;
-            _notesWindow.Activate();
+            BringToForeground(_notesWindow);
         }
     }
 
@@ -949,13 +990,11 @@ public partial class App : Application
                 OpenProductivityHub("Tasks");
             };
             _tasksWindow.Closed += (_, _) => _tasksWindow = null;
-            _tasksWindow.Show();
+            BringToForeground(_tasksWindow);
         }
         else
         {
-            if (_tasksWindow.WindowState == WindowState.Minimized)
-                _tasksWindow.WindowState = WindowState.Normal;
-            _tasksWindow.Activate();
+            BringToForeground(_tasksWindow);
         }
     }
 
@@ -967,19 +1006,18 @@ public partial class App : Application
             _dashboardWindow = new DashboardWindow(
                 _taskService, _focusTimer, _focusHistoryService, _settings, initialTab,
                 _agentActivityService, _claudeCodeService, _radarService, ToggleDeveloperHud,
-                _healthService);
+                _healthService, _notesService);
             _dashboardWindow.TaskFocusRequested += task =>
             {
                 StartFocusForTask(task);
             };
+            _dashboardWindow.QuickNotesRequested += OpenQuickNotes;
             _dashboardWindow.Closed += (_, _) => _dashboardWindow = null;
-            _dashboardWindow.Show();
+            BringToForeground(_dashboardWindow);
         }
         else
         {
-            if (_dashboardWindow.WindowState == WindowState.Minimized)
-                _dashboardWindow.WindowState = WindowState.Normal;
-            _dashboardWindow.Activate();
+            BringToForeground(_dashboardWindow);
             if (!string.IsNullOrEmpty(initialTab))
             {
                 _dashboardWindow.SelectTab(initialTab);
@@ -1170,7 +1208,21 @@ public partial class App : Application
         {
             DebugLog.Write("[Summon] Unhiding user-hidden companion.");
             OnHideToggled(false);
-            return;
+        }
+
+        if (_settings.ClickThrough)
+        {
+            OnClickThroughToggled(false);
+        }
+
+        if (_petWindow != null)
+        {
+            if (_petWindow.Visibility != Visibility.Visible)
+            {
+                _petWindow.Visibility = Visibility.Visible;
+            }
+
+            _petWindow.Topmost = true;
         }
 
         if (_engine != null && _engine.IsOffScreen())
