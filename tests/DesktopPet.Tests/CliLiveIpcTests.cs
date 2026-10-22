@@ -23,7 +23,7 @@ public sealed class CliLiveIpcTests
                     return Task.FromResult(NekuIpcResponse.Success("Neku is running.", new
                     {
                         running = true,
-                        version = "1.0.4",
+                        version = "1.0.5",
                         companionDisplayName = "Neku (Goblin companion)",
                         isPetHidden = !petVisible,
                         isPetPaused = petPaused,

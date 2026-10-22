@@ -57,6 +57,7 @@ public sealed class TaskService
     public event Action? TasksChanged;
     public event Action? SchedulesChanged;
     public event Action? RoutinesChanged;
+    public event Action<DailyRoutine>? RoutineCompleted;
 
     public TaskService(string? customPath = null)
     {
@@ -1142,6 +1143,7 @@ public sealed class TaskService
 
     public bool CompleteRoutineStep(string routineId, string stepId)
     {
+        DailyRoutine? completedRoutine = null;
         lock (_lock)
         {
             var routine = _routines.FirstOrDefault(r => r.Id == routineId);
@@ -1162,6 +1164,7 @@ public sealed class TaskService
             {
                 routine.IsActive = false;
                 routine.LastCompletedAt = DateTime.UtcNow;
+                completedRoutine = routine;
             }
 
             routine.UpdatedAt = DateTime.UtcNow;
@@ -1169,6 +1172,10 @@ public sealed class TaskService
 
         Save();
         RoutinesChanged?.Invoke();
+        if (completedRoutine != null)
+        {
+            RoutineCompleted?.Invoke(completedRoutine);
+        }
         return true;
     }
 

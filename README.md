@@ -30,7 +30,7 @@
   ·
   <a href="#terminal-command-interface-cli">CLI</a>
   ·
-  <a href="#companion-gallery-character-system">Companions</a>
+  <a href="#companion-studio-20--character-system">Companions</a>
   ·
   <a href="#performance-power-resource-benchmarks">Performance</a>
   ·
@@ -207,33 +207,32 @@ neku status --json
 
 ---
 
-## Companion Gallery & Character System
+## Companion Studio 2.0 & Character System
 
-Neku features a modular character architecture supporting distinct visual spritesheets and behavioral definitions. Open **Companion Studio** anytime to preview animations, switch companions, and adjust personality presets.
+Neku features an extensible companion architecture supporting distinct visual spritesheets, custom animations, and behavioral drives. Open **Companion Studio** anytime to preview animations, switch companions, import custom characters, and adjust personality presets.
 
-<p align="center">
-  <img src="docs/assets/readme/companion-gallery.png" alt="Companion Studio Roster" width="680" />
-</p>
-
-### Built-in Public Companions
+### Built-in Mascot Roster
 
 | Companion | Archetype | Default Personality | Description |
 |:---|:---|:---|:---|
-| **Neku** | Mascot Companion | `Playful` | The spirited, round teal companion who loves celebrating your focus sessions, typing alongside you, and cheering passing builds. |
-| **Billu** | Reel Goblin | `Chaotic` | Sarcastic, smug, and chaotic orange tabby fueled by 8 hours of doomscrolling Reels. Features original internet quips, dramatic side-eyes, exaggerated blinks, facepaws, and flopping. |
-| **Classic Cat** | Standard Tabby | `Calm` | The beloved calm gray tabby that wanders your taskbar, naps peacefully, and chases your cursor. |
-| **Janet** | Calico Variant | `Curious` | Alert, inquisitive tortoiseshell/calico companion that keenly observes your desktop activity. |
-| **Color Variants** | Tabby Variants | `Custom` | Additional built-in tabby coats including Orange, Silver, Cream, Chocolate, and Slate Blue. |
+| **Neku** | Official Mascot | `Playful` | The spirited, round teal desktop companion who celebrates focus sessions, types alongside you, wanders window frames, and cheers passing builds. |
+| **Billu** | Reel Goblin | `Chaotic` | Sarcastic and chaotic orange tabby fueled by doomscrolling Reels humor. Features dramatic side-eyes, exaggerated blinks, facepaws, and flopping. |
 
-### Companion Studio
-Right-click Neku and select **Companion Studio...** to access the customization hub:
-- **Live Animated Preview:** Inspect idle, walk, sleep, celebrate, and special animations with interactive playback controls.
+*Note: Legacy cat color variants remain preserved in the application engine for backward compatibility and fallback, and can be viewed under the "Legacy Characters" filter.*
+
+### Companion Studio 2.0 Features
+Right-click Neku and select **Companion Studio...** (or launch from the Command Palette):
+- **📦 One-Click Import:** Import any companion pack directly from a `.zip` archive or extracted folder.
+- **🔍 Search & Filter:** Filter companions instantly by name, ID, or category (*Mascots & Originals*, *Imported Custom Packs*, *Personal*, *Legacy*).
+- **Live Animated Preview:** Inspect idle, walk, sleep, celebrate, and special animations with interactive playback controls (0.5x, 1x, 1.5x, 2x).
 - **Personality Drives:** Switch between **Calm**, **Playful**, **Expressive**, and **Chaotic** drives to adjust roaming frequency, curiosity, and dialogue variety.
-- **Size Scaling:** Dynamically scale your pet from 0.5x to 2.0x desktop size.
-- **Animation Speed & Sound:** Fine-tune animation frame pacing and toggle audio cues.
+- **Pack Management:** Live companion activation, pack removal with safe confirmation, and instant shortcut to open the companion's asset folder in Windows Explorer.
+- **Keyboard Shortcuts:** `Ctrl+I` to import ZIP, `Ctrl+Shift+I` to import folder, `Ctrl+F` to search, `F5` to refresh.
 
-### Custom Companions & Modding
-Neku supports user-authored companion packs without modifying code or rebuilding. Place custom packs in `%AppData%\Neku\Assets\pets\<pack-name>\`:
+### Custom Characters & Modding
+Neku supports user-authored companion packs without modifying code or rebuilding. Users can import cartoon, anime, or original characters locally for personal desktop companionship.
+
+To create or package a custom companion, see the comprehensive [Companion Pack & Artist Guide](docs/COMPANION_PACK_GUIDE.md).
 
 ```
 %AppData%\Neku\Assets\pets\my-custom-companion\
@@ -244,20 +243,21 @@ Neku supports user-authored companion packs without modifying code or rebuilding
 ```json
 {
   "name": "My Custom Companion",
+  "author": "PixelArtist",
+  "version": "1.0.0",
+  "category": "Original",
   "sheet": "spritesheet.png",
-  "cellWidth": 128,
-  "cellHeight": 128,
+  "cellWidth": 64,
+  "cellHeight": 64,
   "columns": 4,
   "scale": 1.0,
   "animations": {
-    "idle": { "frames": [0, 1], "fps": 2.0, "loop": true },
-    "walk": { "frames": [2, 3, 4, 5], "fps": 6.0, "loop": true },
-    "sleep": { "frames": [6, 7], "fps": 1.0, "loop": true },
-    "fall": { "frames": [8, 9], "fps": 4.0, "loop": true },
-    "drag": { "frames": [10], "fps": 1.0, "loop": true },
-    "happy": { "frames": [11, 12], "fps": 3.0, "loop": true },
-    "annoyed": { "frames": [13, 14], "fps": 3.0, "loop": true },
-    "surprised": { "frames": [15], "fps": 1.0, "loop": false }
+    "idle": { "frames": [0, 1, 2, 3], "fps": 4.0, "loop": true },
+    "walk": { "frames": [4, 5, 6, 7], "fps": 6.0, "loop": true },
+    "sleep": { "frames": [8, 9, 10, 11], "fps": 2.0, "loop": true },
+    "fall": { "frames": [12, 13], "fps": 5.0, "loop": true },
+    "pet": { "frames": [14, 15], "fps": 4.0, "loop": false },
+    "typing": { "frames": [16, 17], "fps": 6.0, "loop": true }
   }
 }
 ```

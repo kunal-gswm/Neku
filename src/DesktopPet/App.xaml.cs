@@ -62,6 +62,7 @@ public partial class App : Application
     private ToyService _toyService = new();
     private readonly List<ToyWindow> _activeToyWindows = new();
     private DesktopPet.Services.Health.SystemHealthService? _healthService;
+    private BackupService _backupService = new();
 
     private HttpClient? _http;
     private HotkeyService? _hotkey;
@@ -243,7 +244,33 @@ public partial class App : Application
         _notesService = new NotesService();
         _taskService = new TaskService();
         _taskService.TaskCompleted += OnTaskCompleted;
+        _taskService.RoutineCompleted += OnRoutineCompleted;
         _taskService.TaskDeleted += OnTaskDeleted;
+
+        _backupService = new BackupService(
+            taskService: _taskService,
+            notesService: _notesService,
+            settingsService: _settingsService,
+            focusHistoryService: _focusHistoryService);
+
+        if (_settings.EnableAutomaticBackups &&
+            (!_settings.LastAutoBackupDateUtc.HasValue || (DateTime.UtcNow - _settings.LastAutoBackupDateUtc.Value).TotalHours >= 24))
+        {
+            try
+            {
+                var autoResult = _backupService.CreateBackup("Automatic daily backup");
+                if (autoResult.Success)
+                {
+                    _settings.LastAutoBackupDateUtc = DateTime.UtcNow;
+                    _settingsService.Save();
+                    DebugLog.Write($"[Backup] Created automatic daily backup: {autoResult.BackupFilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugLog.Write($"[Backup] Auto backup failed: {ex.Message}");
+            }
+        }
 
         // Initialize local System Health Service
         if (_settings.EnableSystemHealthMonitoring)
@@ -1102,10 +1129,33 @@ public partial class App : Application
         }
     }
 
+    private DateTime _lastProductivitySpeechUtc = DateTime.MinValue;
+
+    private bool IsInQuietHours()
+    {
+        if (!_settings.EnableQuietHours) return false;
+        if (!TimeSpan.TryParse(_settings.QuietHoursStart, out var start) ||
+            !TimeSpan.TryParse(_settings.QuietHoursEnd, out var end))
+        {
+            return false;
+        }
+
+        var now = DateTime.Now.TimeOfDay;
+        return start <= end
+            ? now >= start && now <= end
+            : now >= start || now <= end;
+    }
+
     private void OnTaskCompleted(TaskItem task)
     {
-        if (!_settings.EnableTaskReactions) return;
+        if (!_settings.EnableTaskReactions || !_settings.EnableProductivityReactions) return;
+        if (_settings.BehaviorProfile == CompanionBehaviorProfile.Quiet) return;
         if (_settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true) return;
+        if (IsInQuietHours()) return;
+        if (_focusTimer?.IsActive == true && _settings.SuppressInteractionsDuringFocus) return;
+
+        if ((DateTime.UtcNow - _lastProductivitySpeechUtc).TotalSeconds < _settings.InteractionCooldownSeconds) return;
+        _lastProductivitySpeechUtc = DateTime.UtcNow;
 
         int tasksToday = _taskService.Tasks.Count(t => t.IsCompleted && t.CompletedAt.HasValue && TaskItem.ToLocalDate(t.CompletedAt.Value) == DateTime.Today);
         _engine?.Personality.OnPositiveEvent();
@@ -1119,6 +1169,27 @@ public partial class App : Application
             string line = _engine?.Personality.GetTaskCompletedLine(task.Title) ?? "Task completed! Great job! ✨";
             _engine?.TriggerReaction(PetState.Celebrate, line, 2.0);
         }
+
+        if (!_settings.ReducedMotion)
+        {
+            _petWindow?.SpawnHearts();
+        }
+    }
+
+    private void OnRoutineCompleted(DailyRoutine routine)
+    {
+        if (!_settings.EnableTaskReactions || !_settings.EnableProductivityReactions) return;
+        if (_settings.BehaviorProfile == CompanionBehaviorProfile.Quiet) return;
+        if (_settings.EnableQuietMode || _hiddenForQuiet || _engine?.IsQuiet == true) return;
+        if (IsInQuietHours()) return;
+        if (_focusTimer?.IsActive == true && _settings.SuppressInteractionsDuringFocus) return;
+
+        if ((DateTime.UtcNow - _lastProductivitySpeechUtc).TotalSeconds < _settings.InteractionCooldownSeconds) return;
+        _lastProductivitySpeechUtc = DateTime.UtcNow;
+
+        _engine?.Personality.OnPositiveEvent();
+        string line = _engine?.Personality.GetRoutineCompletedLine(routine.Name) ?? "Daily routine completed! ⚡";
+        _engine?.TriggerReaction(PetState.Celebrate, line, 2.5);
 
         if (!_settings.ReducedMotion)
         {
@@ -1179,7 +1250,8 @@ public partial class App : Application
             onChanged: OnSettingsChanged,
             onCheckUpdate: () => Updater().DescribeCheckAsync(),
             onResetPosition: OnResetPosition,
-            onTriggerDevEvent: (type, msg) => _developerEvents?.HandleEvent(type, msg));
+            onTriggerDevEvent: (type, msg) => _developerEvents?.HandleEvent(type, msg),
+            backupService: _backupService);
         _settingsWindow.Closed += (_, _) =>
         {
             _settingsWindow = null;
@@ -1456,6 +1528,35 @@ public partial class App : Application
             action: () => OpenProductivityHub("Routines"),
             icon: "⚡",
             keywords: new[] { "routines", "daily routines", "habits", "ritual", "morning", "evening", "steps" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "backup.create",
+            title: "Create Local Backup",
+            description: "Save an offline backup of all tasks, routines, notes, and settings",
+            category: "Productivity",
+            action: () =>
+            {
+                var result = _backupService.CreateBackup("Manual backup via Command Palette");
+                if (result.Success)
+                {
+                    _engine?.ShowSpeech("Backup created successfully! 💾", 2.5);
+                }
+                else
+                {
+                    _engine?.ShowSpeech("Backup failed: " + result.ErrorMessage, 3.0);
+                }
+            },
+            icon: "💾",
+            keywords: new[] { "backup", "save", "export", "archive", "data" }));
+
+        _paletteService.Register(new PaletteCommand(
+            id: "backup.open",
+            title: "Open Backups & Data Settings",
+            description: "View and restore local backups in Settings",
+            category: "Settings",
+            action: () => ShowSettings(),
+            icon: "📦",
+            keywords: new[] { "backup", "restore", "data", "history", "recover" }));
 
         _paletteService.Register(new PaletteCommand(
             id: "focus.start",

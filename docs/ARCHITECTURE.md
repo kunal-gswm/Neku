@@ -130,7 +130,9 @@ Handles infrastructure, host OS monitoring, persistence, and external interactio
 - **[`AutostartService`](../src/DesktopPet/Services/AutostartService.cs)**:
   - Writes/removes user autostart entries in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 - **[`AssetSource`](../src/DesktopPet/Services/AssetSource.cs)**:
-  - Two-tier asset loader that checks local disk directories first (`Assets/pets/<name>`), falling back to compiled-in assembly embedded resources for single-file deployment.
+  - Multi-tier asset discovery loader that checks per-user imported companion packs (%AppData%/Neku/Assets/pets/<name>), local application directories (Assets/pets/<name>), and compiled-in assembly embedded resources for single-file deployment. Categorizes packs into Mascots, Personal, Imported Custom Packs, and Legacy Characters.
+- **[CompanionPackService](../src/DesktopPet/Services/CompanionPackService.cs)**:
+  - Custom companion pack management engine. Provides zip archive extraction and folder import with transactional staging, manifest schema validation, spritesheet frame bounding checks, archive traversal (../) defense, zip bomb threshold guards (50MB / 500 entries limit), and executable file rejection. Enforces protected pack deletion guards and automatic active-pet fallback.
 
 ### 2.3 UI & Presentation Subsystem (`DesktopPet.UI`)
 

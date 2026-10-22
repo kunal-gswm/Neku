@@ -567,7 +567,13 @@ public sealed class PetEngine
         }
         UpdateQuietMode(dt);
 
-        if (_state == PetState.Idle && !_quiet && _bubbleTimeLeft <= 0 && _personality.ShouldReact(0.2))
+        bool suppressUnsolicited = _settings.BehaviorProfile == CompanionBehaviorProfile.Quiet
+            || (_settings.SuppressInteractionsDuringFocus && _settings.FocusTimerActive)
+            || !_settings.EnableRandomReactions;
+
+        double reactChance = _settings.BehaviorProfile == CompanionBehaviorProfile.Playful ? 0.35 : 0.2;
+
+        if (_state == PetState.Idle && !_quiet && !suppressUnsolicited && _bubbleTimeLeft <= 0 && _personality.ShouldReact(reactChance))
         {
             var line = _personality.GetDialogueLine();
             if (line != null) ShowSpeech(line, 2.8);

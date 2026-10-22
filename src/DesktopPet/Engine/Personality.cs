@@ -142,6 +142,14 @@ public sealed class Personality
         "Welcome back! Let's crush this next session! 🐾",
     ];
 
+    private static readonly string[] RoutineCompletedLines =
+    [
+        "Routine finished! Flawless rhythm today! ⚡",
+        "All ritual steps complete! You're unstoppable! 🌟",
+        "Daily routine conquered! High paws! 🐾",
+        "Ritual done! Look at that daily momentum! ✨",
+    ];
+
     private static readonly string[] TaskCompletedLines =
     [
         "Task completed! Look at you getting things done! 🌟",
@@ -356,6 +364,14 @@ public sealed class Personality
         "Back to work! That reel wasn't even that good anyway.",
         "Recharge complete. Back to the grind, chief.",
         "Time to lock back in. Don't make me side-eye you.",
+    ];
+
+    private static readonly string[] BilluRoutineCompletedLines =
+    [
+        "Routine completed? Bro followed every step. Rare discipline W 🤝",
+        "Ritual complete. Now commencing mandatory post-productivity loaf 🛋️",
+        "Daily routine done. You may now relax with certified dignity ✨",
+        "All routine steps checked. The grind was real, respect.",
     ];
 
     private static readonly string[] BilluTaskCompletedLines =
@@ -903,6 +919,9 @@ public sealed class Personality
     /// <summary>Reaction line when a task is completed.</summary>
     public string GetTaskCompletedLine(string? taskTitle = null) => PickNonRepeating(IsBillu ? BilluTaskCompletedLines : TaskCompletedLines);
 
+    /// <summary>Reaction line when a daily routine is completed.</summary>
+    public string GetRoutineCompletedLine(string? routineName = null) => PickNonRepeating(IsBillu ? BilluRoutineCompletedLines : RoutineCompletedLines);
+
     /// <summary>Reaction line when a developer build passes.</summary>
     public string GetBuildSuccessLine() => PickNonRepeating(IsBillu ? BilluBuildSuccessLines : BuildSuccessLines);
 
@@ -986,5 +1005,38 @@ public sealed class Personality
         if (_mischief > 0.6) chance *= 2.0;     // mischievous companion reacts more
         if (IsBillu) chance *= 1.4;             // Billu has extra reactive meme energy
         return _rng.NextDouble() < chance;
+    }
+    public static void ApplyBehaviorProfile(AppSettings settings, CompanionBehaviorProfile profile)
+    {
+        settings.BehaviorProfile = profile;
+        switch (profile)
+        {
+            case CompanionBehaviorProfile.Quiet:
+                settings.EnableRandomReactions = false;
+                settings.EnableScrollPlay = false;
+                settings.ReducedMotion = true;
+                settings.SuppressInteractionsDuringFocus = true;
+                settings.InteractionCooldownSeconds = 60.0;
+                break;
+
+            case CompanionBehaviorProfile.Balanced:
+                settings.EnableRandomReactions = true;
+                settings.EnableScrollPlay = true;
+                settings.ReducedMotion = false;
+                settings.SuppressInteractionsDuringFocus = true;
+                settings.InteractionCooldownSeconds = 30.0;
+                settings.EnableProductivityReactions = true;
+                break;
+
+            case CompanionBehaviorProfile.Playful:
+                settings.EnableRandomReactions = true;
+                settings.EnableScrollPlay = true;
+                settings.ReducedMotion = false;
+                settings.SuppressInteractionsDuringFocus = false;
+                settings.InteractionCooldownSeconds = 15.0;
+                settings.EnableProductivityReactions = true;
+                settings.EnablePettingReactions = true;
+                break;
+        }
     }
 }

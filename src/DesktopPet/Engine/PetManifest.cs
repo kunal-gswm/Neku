@@ -20,6 +20,24 @@ public sealed class PetManifest
     /// <summary>Display scale applied to the sprite when rendered (1 = native cell size).</summary>
     [JsonPropertyName("scale")] public double Scale { get; set; } = 1.0;
 
+    /// <summary>Optional creator or artist attribution.</summary>
+    [JsonPropertyName("author")] public string? Author { get; set; }
+
+    /// <summary>Optional pack version string (e.g., "1.0.0").</summary>
+    [JsonPropertyName("version")] public string? Version { get; set; }
+
+    /// <summary>Optional license identifier or terms (e.g., "CC-BY-4.0", "MIT", "Fan Art").</summary>
+    [JsonPropertyName("license")] public string? License { get; set; }
+
+    /// <summary>Optional source or portfolio link.</summary>
+    [JsonPropertyName("sourceUrl")] public string? SourceUrl { get; set; }
+
+    /// <summary>Optional display category (e.g., "Anime", "Cartoon", "Gaming", "Original").</summary>
+    [JsonPropertyName("category")] public string? Category { get; set; }
+
+    /// <summary>Optional search and filter tags.</summary>
+    [JsonPropertyName("tags")] public string[]? Tags { get; set; }
+
     /// <summary>Animation name (lower-case) -> definition. Expected keys: idle, walk, sleep, fall, drag, eat.</summary>
     [JsonPropertyName("animations")] public Dictionary<string, AnimationDef> Animations { get; set; } = new();
 

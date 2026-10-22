@@ -30,9 +30,22 @@ public sealed class NotesService
 {
     private readonly string _filePath;
     private readonly List<NoteItem> _notes = new();
+    private readonly object _lock = new();
     private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
 
-    public IReadOnlyList<NoteItem> Notes => _notes;
+    public string? LastCorruptBackupPath { get; private set; }
+
+    public IReadOnlyList<NoteItem> Notes
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _notes.ToList();
+            }
+        }
+    }
+
     public event Action? NotesChanged;
 
     public NotesService(string? customPath = null)
@@ -53,48 +66,99 @@ public sealed class NotesService
 
     public void Load()
     {
-        try
+        lock (_lock)
         {
-            if (File.Exists(_filePath))
+            _notes.Clear();
+
+            // Check if primary file is missing but an orphaned temp file exists from an interrupted move
+            if (!File.Exists(_filePath))
+            {
+                try
+                {
+                    string dir = Path.GetDirectoryName(_filePath)!;
+                    string baseName = Path.GetFileName(_filePath);
+                    if (Directory.Exists(dir))
+                    {
+                        var candidates = Directory.GetFiles(dir, baseName + ".tmp.*")
+                                                  .OrderByDescending(f => File.GetLastWriteTimeUtc(f))
+                                                  .ToList();
+                        if (candidates.Count > 0 && new FileInfo(candidates[0]).Length > 0)
+                        {
+                            File.Move(candidates[0], _filePath, overwrite: true);
+                            DebugLog.Write($"[NotesService] Recovered notes file from interrupted atomic write: {candidates[0]}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DebugLog.Write($"[NotesService] Error recovering temp file: {ex.Message}");
+                }
+            }
+
+            if (!File.Exists(_filePath))
+            {
+                return;
+            }
+
+            try
             {
                 string json = File.ReadAllText(_filePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return;
+                }
+
                 var items = JsonSerializer.Deserialize<List<NoteItem>>(json, JsonOpts);
-                _notes.Clear();
                 if (items != null)
                 {
                     _notes.AddRange(items.OrderByDescending(n => n.UpdatedAt));
                 }
             }
-        }
-        catch
-        {
-            // Fallback gracefully to empty notes list on read error
-            _notes.Clear();
+            catch (Exception ex)
+            {
+                DebugLog.Write($"[NotesService] Deserialization failed: {ex.Message}. Backing up corrupted file.");
+                try
+                {
+                    string corruptDir = Path.GetDirectoryName(_filePath)!;
+                    string timeStamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                    LastCorruptBackupPath = Path.Combine(corruptDir, $"notes.json.corrupt.{timeStamp}");
+                    File.Copy(_filePath, LastCorruptBackupPath, overwrite: true);
+                }
+                catch
+                {
+                    // Non-fatal
+                }
+
+                _notes.Clear();
+            }
         }
     }
 
     public void Save()
     {
-        string? tempPath = null;
-        try
+        lock (_lock)
         {
-            string dir = Path.GetDirectoryName(_filePath)!;
-            if (!Directory.Exists(dir))
+            string? tempPath = null;
+            try
             {
-                Directory.CreateDirectory(dir);
-            }
+                string dir = Path.GetDirectoryName(_filePath)!;
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
 
-            string json = JsonSerializer.Serialize(_notes, JsonOpts);
-            tempPath = _filePath + ".tmp." + Guid.NewGuid().ToString("N");
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _filePath, overwrite: true);
-            tempPath = null;
-        }
-        catch
-        {
-            if (tempPath != null && File.Exists(tempPath))
+                string json = JsonSerializer.Serialize(_notes, JsonOpts);
+                tempPath = _filePath + ".tmp." + Guid.NewGuid().ToString("N");
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, _filePath, overwrite: true);
+                tempPath = null;
+            }
+            catch
             {
-                try { File.Delete(tempPath); } catch { }
+                if (tempPath != null && File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { }
+                }
             }
         }
     }
@@ -110,7 +174,11 @@ public sealed class NotesService
             UpdatedAt = DateTime.UtcNow
         };
 
-        _notes.Insert(0, note);
+        lock (_lock)
+        {
+            _notes.Insert(0, note);
+        }
+
         Save();
         NotesChanged?.Invoke();
         return note;
@@ -118,29 +186,49 @@ public sealed class NotesService
 
     public void Update(string id, string title, string content)
     {
-        var note = _notes.FirstOrDefault(n => n.Id == id);
-        if (note != null)
+        lock (_lock)
         {
-            note.Title = string.IsNullOrWhiteSpace(title) ? "Untitled" : title.Trim();
-            note.Content = content;
-            note.UpdatedAt = DateTime.UtcNow;
-            Save();
-            NotesChanged?.Invoke();
+            var note = _notes.FirstOrDefault(n => n.Id == id);
+            if (note != null)
+            {
+                note.Title = string.IsNullOrWhiteSpace(title) ? "Untitled" : title.Trim();
+                note.Content = content;
+                note.UpdatedAt = DateTime.UtcNow;
+            }
         }
+
+        Save();
+        NotesChanged?.Invoke();
     }
 
     public bool Delete(string id)
     {
-        int index = _notes.FindIndex(n => n.Id == id);
-        if (index >= 0)
+        bool removed = false;
+        lock (_lock)
         {
-            _notes.RemoveAt(index);
+            int index = _notes.FindIndex(n => n.Id == id);
+            if (index >= 0)
+            {
+                _notes.RemoveAt(index);
+                removed = true;
+            }
+        }
+
+        if (removed)
+        {
             Save();
             NotesChanged?.Invoke();
             return true;
         }
+
         return false;
     }
 
-    public NoteItem? Get(string id) => _notes.FirstOrDefault(n => n.Id == id);
+    public NoteItem? Get(string id)
+    {
+        lock (_lock)
+        {
+            return _notes.FirstOrDefault(n => n.Id == id);
+        }
+    }
 }

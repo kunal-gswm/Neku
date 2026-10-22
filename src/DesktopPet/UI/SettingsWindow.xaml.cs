@@ -1,3 +1,4 @@
+using DesktopPet.Engine;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -22,13 +23,15 @@ public partial class SettingsWindow : Window
     private readonly Action? _onResetPosition;
     private readonly Action<string, string>? _onTriggerDevEvent;
     private readonly string _initialPet;
+    private readonly BackupService? _backupService;
     private bool _loaded;
 
     public SettingsWindow(AppSettings settings, SettingsService service,
                           Action? onChanged = null,
                           Func<Task<string>>? onCheckUpdate = null,
                           Action? onResetPosition = null,
-                          Action<string, string>? onTriggerDevEvent = null)
+                          Action<string, string>? onTriggerDevEvent = null,
+                          BackupService? backupService = null)
     {
         InitializeComponent();
         _settings = settings;
@@ -37,7 +40,14 @@ public partial class SettingsWindow : Window
         _onCheckUpdate = onCheckUpdate;
         _onResetPosition = onResetPosition;
         _onTriggerDevEvent = onTriggerDevEvent;
+        _backupService = backupService;
         _initialPet = settings.ActivePet;
+
+        // Behavior Profile (v1.0.5)
+        SelectByTag(BehaviorProfileCombo, settings.BehaviorProfile.ToString(), fallbackIndex: 1);
+        ProductivityReactionsBox.IsChecked = settings.EnableProductivityReactions;
+        FocusSuppressionBox.IsChecked = settings.SuppressInteractionsDuringFocus;
+        UpdateBehaviorProfileDescription();
 
         // Appearance
         SpeedSlider.Value = settings.Speed;
@@ -138,6 +148,9 @@ public partial class SettingsWindow : Window
         UpdateQuickCaptureHotkeyStatus();
 
         VersionText.Text = $"Neku {AppVersion.Display}  •  settings in %AppData%\\Neku";
+
+        AutoBackupsBox.IsChecked = settings.EnableAutomaticBackups;
+        RefreshBackupsList();
 
         SelectByTag(StretchIntervalBox, settings.StretchIntervalMinutes.ToString(), fallbackIndex: 0);
         SelectByTag(FocusDurationBox, settings.FocusDurationMinutes.ToString(), fallbackIndex: 2);
@@ -335,6 +348,9 @@ public partial class SettingsWindow : Window
         _settings.EnableMoods = MoodsBox.IsChecked == true;
         _settings.EnableSystemReactions = SystemReactionsBox.IsChecked == true;
         _settings.EnableTaskReactions = TaskReactionsBox.IsChecked == true;
+        _settings.EnableProductivityReactions = ProductivityReactionsBox.IsChecked == true;
+        _settings.SuppressInteractionsDuringFocus = FocusSuppressionBox.IsChecked == true;
+        _settings.EnableAutomaticBackups = AutoBackupsBox.IsChecked == true;
         _settings.EnableSmoothMovement = SmoothMovementBox.IsChecked == true;
         _settings.EnableEdgeResting = EdgeRestingBox.IsChecked == true;
         _settings.EnableToyInteractions = ToyInteractionsBox.IsChecked == true;
@@ -807,4 +823,137 @@ public partial class SettingsWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();
+    private void UpdateBehaviorProfileDescription()
+    {
+        BehaviorProfileDescriptionText.Text = _settings.BehaviorProfile switch
+        {
+            CompanionBehaviorProfile.Quiet => "Quiet: Minimal unsolicited antics, restrained movement, focus-friendly.",
+            CompanionBehaviorProfile.Playful => "Playful: Expressive idle antics, frequent remarks, playful celebrations.",
+            _ => "Balanced: Occasional interactions and subtle reactions to productive milestones."
+        };
+    }
+
+    private void BehaviorProfileCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loaded) return;
+        string tag = TagOf(BehaviorProfileCombo);
+        if (Enum.TryParse<CompanionBehaviorProfile>(tag, true, out var profile))
+        {
+            Personality.ApplyBehaviorProfile(_settings, profile);
+            RandomReactionsBox.IsChecked = _settings.EnableRandomReactions;
+            ScrollPlayBox.IsChecked = _settings.EnableScrollPlay;
+            ReducedMotionBox.IsChecked = _settings.ReducedMotion;
+            FocusSuppressionBox.IsChecked = _settings.SuppressInteractionsDuringFocus;
+            UpdateBehaviorProfileDescription();
+            Apply();
+        }
+    }
+
+    private void RefreshBackupsList()
+    {
+        if (_backupService == null) return;
+        var backups = _backupService.GetAvailableBackups();
+        BackupsListBox.ItemsSource = backups;
+        RestoreBackupButton.IsEnabled = false;
+        DeleteBackupButton.IsEnabled = false;
+    }
+
+    private void BackupsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selected = BackupsListBox.SelectedItem as BackupMetadata;
+        RestoreBackupButton.IsEnabled = selected != null && selected.IsValid;
+        DeleteBackupButton.IsEnabled = selected != null;
+    }
+
+    private void CreateBackupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_backupService == null) return;
+        var result = _backupService.CreateBackup("Manual backup from Settings");
+        if (result.Success)
+        {
+            RefreshBackupsList();
+            BackupStatusText.Text = "Backup created successfully! 💾";
+        }
+        else
+        {
+            MessageBox.Show("Backup failed:\n" + result.ErrorMessage, "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void OpenBackupsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_backupService != null && Directory.Exists(_backupService.BackupsDirectory))
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = _backupService.BackupsDirectory,
+                UseShellExecute = true
+            });
+        }
+    }
+
+    private void RefreshBackupsButton_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshBackupsList();
+        BackupStatusText.Text = "Backups refreshed! 🔄";
+    }
+
+    private void RestoreBackupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_backupService == null) return;
+        if (BackupsListBox.SelectedItem is not BackupMetadata meta) return;
+
+        var confirm = MessageBox.Show(
+            $"Restore selected backup from {meta.DisplayTime}?\n\n" +
+            "This will safely replace your current tasks, routines, schedules, notes, and settings with the backed up data.\n\n" +
+            "An automatic safety snapshot of your current data will be created first before anything is replaced.\n\n" +
+            "Do you want to proceed?",
+            "Confirm Restore",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        var result = _backupService.RestoreBackup(meta.FilePath);
+        if (result.Success)
+        {
+            RefreshBackupsList();
+            _onChanged?.Invoke();
+            BackupStatusText.Text = "Restore complete! 🔄";
+            MessageBox.Show(
+                "Data restored successfully!\n\nAll tasks, routines, notes, and preferences have been restored.",
+                "Restore Succeeded",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        else
+        {
+            string rollbackMsg = result.RolledBack ? "\n\nCurrent data was automatically rolled back safely." : "";
+            MessageBox.Show(
+                $"Restore failed: {result.ErrorMessage}{rollbackMsg}",
+                "Restore Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void DeleteBackupButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_backupService == null) return;
+        if (BackupsListBox.SelectedItem is not BackupMetadata meta) return;
+
+        var confirm = MessageBox.Show(
+            $"Delete backup from {meta.DisplayTime}?\n\nThis cannot be undone.",
+            "Confirm Delete",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes) return;
+
+        if (_backupService.DeleteBackup(meta.FilePath))
+        {
+            RefreshBackupsList();
+            BackupStatusText.Text = "Backup deleted. 🗑️";
+        }
+    }
 }

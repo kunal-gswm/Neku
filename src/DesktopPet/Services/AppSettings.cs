@@ -2,6 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace DesktopPet.Services;
 
+public enum CompanionBehaviorProfile
+{
+    Quiet = 0,
+    Balanced = 1,
+    Playful = 2
+}
+
 public sealed class AppSettings
 {
     [JsonPropertyName("speed")] public double Speed { get; set; } = 1.0;
@@ -300,6 +307,26 @@ public sealed class AppSettings
         "code", "devenv", "dotnet", "node", "cargo", "docker"
     };
 
+    // ── Companion Personalization & Behavior Profiles (v1.0.5) ────────────────
+    /// <summary>Active behavior profile: Quiet (minimal unsolicited antics), Balanced (occasional reactions), Playful (expressive idle).</summary>
+    [JsonPropertyName("behaviorProfile")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public CompanionBehaviorProfile BehaviorProfile { get; set; } = CompanionBehaviorProfile.Balanced;
+
+    /// <summary>Whether task completions, routine completions, and focus milestones trigger subtle pet reactions.</summary>
+    [JsonPropertyName("enableProductivityReactions")] public bool EnableProductivityReactions { get; set; } = true;
+
+    /// <summary>Whether unsolicited pet speech bubbles, wanders, and distractions are suppressed during active focus sessions.</summary>
+    [JsonPropertyName("suppressInteractionsDuringFocus")] public bool SuppressInteractionsDuringFocus { get; set; } = true;
+
+    /// <summary>Minimum cooldown in seconds between contextual pet remarks to avoid repetitive chatter.</summary>
+    [JsonPropertyName("interactionCooldownSeconds")] public double InteractionCooldownSeconds { get; set; } = 30.0;
+
+    // ── Local Backup Settings (v1.0.5) ─────────────────────────────────────────
+    [JsonPropertyName("enableAutomaticBackups")] public bool EnableAutomaticBackups { get; set; } = true;
+    [JsonPropertyName("maxBackupsRetained")] public int MaxBackupsRetained { get; set; } = 10;
+    [JsonPropertyName("lastAutoBackupDateUtc")] public DateTime? LastAutoBackupDateUtc { get; set; }
+
     /// <summary>
     /// Validates all configuration values, clamping numbers within safe limits and falling back
     /// to sensible defaults for corrupt or missing values.
@@ -342,6 +369,8 @@ public sealed class AppSettings
         SystemHealthRamThreshold = Math.Clamp(SystemHealthRamThreshold, 50, 99);
         SystemHealthLowDiskThreshold = Math.Clamp(SystemHealthLowDiskThreshold, 1, 50);
         SystemHealthLowBatteryThreshold = Math.Clamp(SystemHealthLowBatteryThreshold, 5, 50);
+        MaxBackupsRetained = Math.Clamp(MaxBackupsRetained, 1, 50);
+        InteractionCooldownSeconds = Math.Clamp(InteractionCooldownSeconds, 5.0, 300.0);
         MonitoredProcessNames ??= new() { "code", "devenv", "dotnet", "node", "cargo", "docker" };
     }
 }

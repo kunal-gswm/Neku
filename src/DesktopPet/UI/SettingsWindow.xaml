@@ -88,6 +88,23 @@
             <TabItem Header="Behavior">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
+                        <TextBlock Text="Companion Personality &amp; Behavior Profile" Style="{StaticResource Head}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                            <TextBlock Text="Behavior profile:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="BehaviorProfileCombo" Width="150" VerticalAlignment="Center" SelectionChanged="BehaviorProfileCombo_SelectionChanged">
+                                <ComboBoxItem Content="Quiet 🤫" Tag="Quiet"/>
+                                <ComboBoxItem Content="Balanced 🐾" Tag="Balanced"/>
+                                <ComboBoxItem Content="Playful ⚡" Tag="Playful"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock x:Name="BehaviorProfileDescriptionText" Style="{StaticResource Hint}" Margin="0,0,0,8"
+                                   Text="Balanced: Occasional interactions and subtle reactions to productive milestones."/>
+
+                        <CheckBox x:Name="ProductivityReactionsBox" Content="Celebrate task &amp; routine completions 🎉"/>
+                        <CheckBox x:Name="FocusSuppressionBox" Content="Suppress unsolicited pet antics during focus sessions 🎯"/>
+
+                        <Separator Margin="0,10"/>
+
                         <TextBlock Text="Movement &amp; Interaction" Style="{StaticResource Head}"/>
                         <CheckBox x:Name="AutonomousWanderBox" Content="Autonomous wandering across screen"/>
                         <CheckBox x:Name="WindowWalkingBox"    Content="Walk on top of window edges"/>
@@ -358,6 +375,46 @@
                                    Text="Allows clicking on applications directly behind Neku. Toggle off from system tray."/>
                         <CheckBox x:Name="RememberStateBox" Content="Remember position and mood across restarts"/>
                         <CheckBox x:Name="AutoUpdateBox"   Content="Check for updates automatically 🔄"/>
+
+                        <Separator Margin="0,12"/>
+
+                        <TextBlock Text="Local Data &amp; Backups" Style="{StaticResource Head}"/>
+                        <TextBlock Text="Automatic and manual offline backups of your tasks, schedules, routines, notes, and settings."
+                                   Style="{StaticResource Hint}" Margin="0,0,0,6"/>
+                        <CheckBox x:Name="AutoBackupsBox" Content="Enable automatic daily backups"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,8">
+                            <Button x:Name="CreateBackupButton" AutomationProperties.Name="Create Local Backup Now" Content="💾 Create Backup" Padding="10,4" Click="CreateBackupButton_Click"/>
+                            <Button x:Name="OpenBackupsFolderButton" AutomationProperties.Name="Open Backups Folder" Content="📁 Open Folder" Margin="8,0,0,0" Padding="10,4" Click="OpenBackupsFolderButton_Click"/>
+                            <Button x:Name="RefreshBackupsButton" AutomationProperties.Name="Refresh Backups List" Content="🔄 Refresh" Margin="8,0,0,0" Padding="10,4" Click="RefreshBackupsButton_Click"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Available Backups:" FontWeight="SemiBold" Margin="0,2,0,4"/>
+                        <ListBox x:Name="BackupsListBox" Height="130" Margin="0,0,0,8"
+                                 SelectionChanged="BackupsListBox_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding DisplayTime}" Style="{StaticResource Hint}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding DisplaySize}" VerticalAlignment="Center" Margin="10,0" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding StatusBadge}" VerticalAlignment="Center" FontWeight="Medium"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <Button x:Name="RestoreBackupButton" AutomationProperties.Name="Restore Selected Backup" Content="⏪ Restore Backup" IsEnabled="False" Padding="10,4" Click="RestoreBackupButton_Click"/>
+                            <Button x:Name="DeleteBackupButton" AutomationProperties.Name="Delete Selected Backup" Content="🗑️ Delete" IsEnabled="False" Margin="8,0,0,0" Padding="10,4" Click="DeleteBackupButton_Click"/>
+                            <TextBlock x:Name="BackupStatusText" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="11" Foreground="#FF34D399"/>
+                        </StackPanel>
 
                         <Separator Margin="0,12"/>
 

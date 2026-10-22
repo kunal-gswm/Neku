@@ -15,7 +15,7 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     }
 }
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = "1.0.4"
+    $Version = "1.0.5"
 }
 
 $artifacts = Join-Path $root "artifacts"
