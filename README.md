@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml"><img src="https://github.com/kunal-gswm/Neku/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://github.com/kunal-gswm/Neku/releases/tag/v1.0.4"><img src="https://img.shields.io/badge/Release-v1.0.4-blue.svg?logo=github" alt="Latest Release: v1.0.4" /></a>
+  <a href="https://github.com/kunal-gswm/Neku/releases/tag/v1.0.5"><img src="https://img.shields.io/badge/Release-v1.0.5-blue.svg?logo=github" alt="Latest Release: v1.0.5" /></a>
   <a href="#download-installation"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20x64-0078D4?logo=windows&logoColor=white" alt="Platform" /></a>
   <a href="#technology-architecture"><img src="https://img.shields.io/badge/.NET-10.0%20WPF-512BD4?logo=dotnet&logoColor=white" alt=".NET 10" /></a>
   <a href="#privacy-security-local-first"><img src="https://img.shields.io/badge/Privacy-100%25%20Local--First-10B981" alt="Local-First" /></a>
@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="#download-installation"><strong>Download (v1.0.4)</strong></a>
+  <a href="#download-installation"><strong>Download (v1.0.5)</strong></a>
   ·
   <a href="#global-shortcuts-quick-reference">Shortcuts</a>
   ·
@@ -70,22 +70,22 @@ Modern desktop environments are crowded with heavy web-wrapped tools that consum
 
 ## Download & Installation
 
-The latest stable release is **[Neku v1.0.4](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.4)**. Binaries are self-contained: the .NET 10 runtime is bundled internally, so no extra dependencies or frameworks are required.
+The latest stable release is **[Neku v1.0.5](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.5)**. Binaries are self-contained: the .NET 10 runtime is bundled internally, so no extra dependencies or frameworks are required.
 
 | Package | File | Description | Recommended For |
 |:---|:---|:---|:---|
-| **Windows Setup Installer** | [`Neku-Setup-1.0.4.exe`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.4/Neku-Setup-1.0.4.exe) | Per-user setup installer. Configures Start Menu shortcut, optional auto-start with Windows, User `PATH` for the CLI, and a clean uninstaller. No administrator rights required. | **Most Users (Recommended)** |
-| **Standalone Portable** | [`Neku.exe`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.4/Neku.exe) | Single self-contained executable. Run directly from any folder or USB drive. Leaves zero registry footprint. | **Portable / USB Drive** |
-| **Verification Checksums** | [`SHA256.txt`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.4/SHA256.txt) | SHA256 cryptographic checksums for release asset integrity verification. | **Verification** |
+| **Windows Setup Installer** | [`Neku-Setup-1.0.5.exe`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.5/Neku-Setup-1.0.5.exe) | Per-user setup installer. Configures Start Menu shortcut, optional auto-start with Windows, User `PATH` for the CLI, and a clean uninstaller. No administrator rights required. | **Most Users (Recommended)** |
+| **Standalone Portable** | [`Neku.exe`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.5/Neku.exe) | Single self-contained executable. Run directly from any folder or USB drive. Leaves zero registry footprint. | **Portable / USB Drive** |
+| **Verification Checksums** | [`SHA256.txt`](https://github.com/kunal-gswm/Neku/releases/download/v1.0.5/SHA256.txt) | SHA256 cryptographic checksums for release asset integrity verification. | **Verification** |
 
 ### Option A: Windows Setup Installer (Recommended)
-1. Download **`Neku-Setup-1.0.4.exe`** from [GitHub Releases](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.4).
+1. Download **`Neku-Setup-1.0.5.exe`** from [GitHub Releases](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.5).
 2. Run the installer. It installs per-user into `%LocalAppData%\Programs\Neku` without requiring UAC administrator privileges.
 3. (Optional) Check **Start Neku automatically with Windows** or create a Desktop shortcut.
 4. Launch Neku from the Start Menu or press <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>N</kbd>.
 
 ### Option B: Standalone Portable Executable
-1. Download **`Neku.exe`** from [GitHub Releases](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.4).
+1. Download **`Neku.exe`** from [GitHub Releases](https://github.com/kunal-gswm/Neku/releases/tag/v1.0.5).
 2. Place `Neku.exe` in any folder of your choice (e.g., `C:\Tools\Neku\`).
 3. Double-click `Neku.exe` to run. All companion assets and runtimes are embedded.
 4. *Note on Windows SmartScreen:* On the very first run of an unsigned executable, Windows SmartScreen may display an informational prompt. Click **More info → Run anyway** to proceed.
