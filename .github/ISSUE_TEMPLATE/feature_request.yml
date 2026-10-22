@@ -1,0 +1,54 @@
+name: Feature Request
+description: Suggest an idea or enhancement for Neku
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an idea to make Neku better!
+        Neku is designed as a **native, local-first, lightweight Windows desktop companion**.
+        Features should respect our core values: zero background bloat, zero telemetry, local privacy, and responsive performance.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a specific problem, friction, or limitation in your workflow?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution / Improvement
+      description: Describe the solution or new feature you would like to see implemented.
+      placeholder: "A clear description of what should happen and how it should work..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or workarounds you have considered.
+      placeholder: "Other approaches or tools that solve this..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context, Mockups, or Screenshots
+      description: Add any mockups, visual references, or extra information that would help explain the feature.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: alignment_checklist
+    attributes:
+      label: Feature Philosophy
+      options:
+        - label: "This feature respects Neku's local-first architecture and requires zero external cloud dependencies or telemetry."
+          required: true

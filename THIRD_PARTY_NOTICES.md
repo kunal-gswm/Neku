@@ -13,7 +13,7 @@ This document lists the third-party software and components incorporated into or
 
 ### Notice and License Preservation
 
-The original copyright notice and MIT license for PixelPaws are preserved in the [LICENSE](file:///d:/Neku/pixelpaws/LICENSE) file in the root of this repository.
+The original copyright notice and MIT license for PixelPaws are preserved in the [LICENSE](LICENSE) file in the root of this repository.
 
 ### Summary of Modifications for Neku
 

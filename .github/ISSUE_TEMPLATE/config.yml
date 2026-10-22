@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security Vulnerability Reporting
+    url: https://github.com/kunal-gswm/Neku/security/advisories/new
+    about: Privately and responsibly disclose potential security vulnerabilities
+  - name: 📖 Neku Documentation & Releases
+    url: https://github.com/kunal-gswm/Neku/releases
+    about: Read release notes and download stable installers

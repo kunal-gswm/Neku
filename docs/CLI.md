@@ -6,8 +6,8 @@ The **Neku CLI** (`neku`) is a lightweight, native Windows terminal interface th
 
 ## Table of Contents
 
-- [Overview & Architecture](#overview--architecture)
-- [Installation & PATH Setup](#installation--path-setup)
+- [Overview & Architecture](#overview-architecture)
+- [Installation & PATH Setup](#installation-path-setup)
 - [Command Reference](#command-reference)
   - [General Commands](#general-commands)
   - [Pet Control](#pet-control)
@@ -20,8 +20,8 @@ The **Neku CLI** (`neku`) is a lightweight, native Windows terminal interface th
 - [Exit Codes](#exit-codes)
 - [Behavior When Neku Is Not Running](#behavior-when-neku-is-not-running)
 - [Portable Usage](#portable-usage)
-- [Security & IPC Model](#security--ipc-model)
-- [Troubleshooting & Diagnostics](#troubleshooting--diagnostics)
+- [Security & IPC Model](#security-ipc-model)
+- [Troubleshooting & Diagnostics](#troubleshooting-diagnostics)
 - [Uninstalling](#uninstalling)
 
 ---

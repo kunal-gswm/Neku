@@ -92,62 +92,62 @@ flowchart TD
 
 The engine contains the platform-independent mathematics, simulation rules, and behavioral modeling.
 
-- **[`PetEngine`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/PetEngine.cs)**:
+- **[`PetEngine`](../src/DesktopPet/Engine/PetEngine.cs)**:
   - Serves as the central coordinator of the simulation.
   - Subscribes to the per-frame update loop (`CompositionTarget.Rendering`).
   - Evaluates physics (velocity, gravity, terminal speed), user interactions (drag, hover, cursor chase), and state transitions.
-  - Interacts with the view via the decoupled [`IPetView`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/PetEngine.cs#L10-L32) interface.
-- **[`StateMachine`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/StateMachine.cs)**:
+  - Interacts with the view via the decoupled [`IPetView`](../src/DesktopPet/Engine/PetEngine.cs#L10-L32) interface.
+- **[`StateMachine`](../src/DesktopPet/Engine/StateMachine.cs)**:
   - Encapsulates the pet's behavioral drives: `Energy` ($[0, 1]$) and `Hunger` ($[0, 1]$).
   - Determines transition durations and selects the next action from idle via weighted probability rolls influenced by time of day, system load, and foreground activity.
-- **[`SurfaceProvider`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/SurfaceProvider.cs)**:
+- **[`SurfaceProvider`](../src/DesktopPet/Engine/SurfaceProvider.cs)**:
   - Queries Win32 to enumerate visible, non-minimized, non-cloaked top-level windows in z-order.
   - Derives horizontal surface segments (the top window border/title bar) where the pet can land and walk.
-- **[`Platforms`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/Platforms.cs)**:
+- **[`Platforms`](../src/DesktopPet/Engine/Platforms.cs)**:
   - Pure static mathematics library for collision detection.
   - Provides `IsSupported()` and `TryLand()` using zero-allocation index iteration across surface spans.
-- **[`DesktopGeometry`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/DesktopGeometry.cs)**:
+- **[`DesktopGeometry`](../src/DesktopPet/Engine/DesktopGeometry.cs)**:
   - Aggregates all active monitors into a single virtual bounding rectangle.
   - Tracks individual monitor work areas (accounting for taskbars on any side and heterogeneous DPI configurations).
-- **[`SpriteAnimator`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/SpriteAnimator.cs)**:
-  - Reads sprite sheets and slices them into cached `CroppedBitmap` frames based on [`PetManifest`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/PetManifest.cs) JSON descriptions.
+- **[`SpriteAnimator`](../src/DesktopPet/Engine/SpriteAnimator.cs)**:
+  - Reads sprite sheets and slices them into cached `CroppedBitmap` frames based on [`PetManifest`](../src/DesktopPet/Engine/PetManifest.cs) JSON descriptions.
   - Manages playback FPS, loop counts, and frame advancement.
 
 ### 2.2 Services Subsystem (`DesktopPet.Services`)
 
 Handles infrastructure, host OS monitoring, persistence, and external interaction.
 
-- **[`SettingsService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/SettingsService.cs)** & **[`AppSettings`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/AppSettings.cs)**:
+- **[`SettingsService`](../src/DesktopPet/Services/SettingsService.cs)** & **[`AppSettings`](../src/DesktopPet/Services/AppSettings.cs)**:
   - Strongly typed JSON settings deserialization and serialization targeting `%AppData%\Neku\settings.json`.
-- **[`TrayService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/TrayService.cs)**:
+- **[`TrayService`](../src/DesktopPet/Services/TrayService.cs)**:
   - Manages the Windows system tray (`NotifyIcon`), its context menu, dynamic pause/resume states, and double-click actions.
-- **[`KeyboardMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/KeyboardMonitor.cs)** & **[`MouseMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/MouseMonitor.cs)**:
+- **[`KeyboardMonitor`](../src/DesktopPet/Services/KeyboardMonitor.cs)** & **[`MouseMonitor`](../src/DesktopPet/Services/MouseMonitor.cs)**:
   - Low-level Win32 hooks (`SetWindowsHookEx`) running on the UI thread to capture keystrokes (calculating keys-per-second typing heat) and mouse wheel delta (triggering scroll play).
-- **[`HookWatchdog`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/HookWatchdog.cs)**:
+- **[`HookWatchdog`](../src/DesktopPet/Services/HookWatchdog.cs)**:
   - Background health check ensuring hooks remain active; automatically reinstalls hooks if the Windows OS unhooks them due to message loop timeouts.
-- **[`SystemMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/SystemMonitor.cs)**:
+- **[`SystemMonitor`](../src/DesktopPet/Services/SystemMonitor.cs)**:
   - Samples CPU usage, battery level, active window category (focus app, browser, game), and OS notification state (`SHQueryUserNotificationState`).
-- **[`AutostartService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/AutostartService.cs)**:
+- **[`AutostartService`](../src/DesktopPet/Services/AutostartService.cs)**:
   - Writes/removes user autostart entries in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
-- **[`AssetSource`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/AssetSource.cs)**:
+- **[`AssetSource`](../src/DesktopPet/Services/AssetSource.cs)**:
   - Two-tier asset loader that checks local disk directories first (`Assets/pets/<name>`), falling back to compiled-in assembly embedded resources for single-file deployment.
 
 ### 2.3 UI & Presentation Subsystem (`DesktopPet.UI`)
 
-- **[`PetWindow`](file:///d:/Neku/pixelpaws/src/DesktopPet/UI/PetWindow.xaml.cs)**:
+- **[`PetWindow`](../src/DesktopPet/UI/PetWindow.xaml.cs)**:
   - Transparent, borderless, topmost WPF window (`WindowStyle=None`, `AllowsTransparency=True`).
   - Implements `IPetView` to render frames, mirror sprite horizontally according to facing direction, and apply red heat tinting during rapid typing.
-- **[`EffectsOverlay`](file:///d:/Neku/pixelpaws/src/DesktopPet/UI/EffectsOverlay.cs)**:
+- **[`EffectsOverlay`](../src/DesktopPet/UI/EffectsOverlay.cs)**:
   - Persistent, transparent, click-through overlay window spanning the entire virtual desktop.
   - Draws dynamic visual effects (floating hearts on hover, toilet paper ribbons on mouse scroll, dropped pebbles).
-- **[`SettingsWindow`](file:///d:/Neku/pixelpaws/src/DesktopPet/UI/SettingsWindow.xaml.cs)**:
+- **[`SettingsWindow`](../src/DesktopPet/UI/SettingsWindow.xaml.cs)**:
   - Tabbed WPF configuration dialog for behaviors, display scale, quiet mode, and diagnostic options.
 
 ---
 
 ## 3. State Machine & Personality Design
 
-The pet's autonomy is governed by a probabilistic, drive-based state machine implemented in [`StateMachine`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/StateMachine.cs).
+The pet's autonomy is governed by a probabilistic, drive-based state machine implemented in [`StateMachine`](../src/DesktopPet/Engine/StateMachine.cs).
 
 ### 3.1 Continuous Drives
 
@@ -235,7 +235,7 @@ The animation pipeline transforms sprite sheets into hardware-accelerated WPF vi
    - Defines grid dimensions (`columns`, `rows`, `cellWidth`, `cellHeight`).
    - Defines named animations with frame index sequences and frame durations (e.g., `"walk": { "frames": [4, 5, 6, 7], "fps": 8 }`).
 3. **Slicing and Caching**:
-   - [`SpriteAnimator`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/SpriteAnimator.cs) loads the image and caches `CroppedBitmap` instances for each cell index to eliminate per-frame allocations.
+   - [`SpriteAnimator`](../src/DesktopPet/Engine/SpriteAnimator.cs) loads the image and caches `CroppedBitmap` instances for each cell index to eliminate per-frame allocations.
 4. **Transformations & Tinting**:
    - Horizontal facing (+1 right, -1 left) is applied via a `ScaleTransform` ($X = -1$) on the WPF `Image` control.
    - Fast typing triggers a custom shader/tint transition in `PetWindow.SetHeatLevel()`.

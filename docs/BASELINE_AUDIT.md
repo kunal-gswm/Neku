@@ -20,20 +20,20 @@ The codebase is engineered with strict performance considerations:
 
 | Feature / Subsystem | Implementation Details & Status |
 |---------------------|---------------------------------|
-| **Transparent Pet Window** | Borderless, transparent, top-most window implemented in [`PetWindow`](file:///d:/Neku/pixelpaws/src/DesktopPet/UI/PetWindow.xaml.cs) (`WS_EX_TOOLWINDOW`, `WS_EX_TOPMOST`, `WS_EX_NOACTIVATE`). Doesn't clutter the taskbar or Alt+Tab. |
+| **Transparent Pet Window** | Borderless, transparent, top-most window implemented in [`PetWindow`](../src/DesktopPet/UI/PetWindow.xaml.cs) (`WS_EX_TOOLWINDOW`, `WS_EX_TOPMOST`, `WS_EX_NOACTIVATE`). Doesn't clutter the taskbar or Alt+Tab. |
 | **Direct Dragging & Dropping** | Mouse-down hit test allows left-click dragging. Cat follows cursor with realistic offset. On release, physics handles gravity and finds landing surfaces. |
-| **Comprehensive Animation Engine** | 27 distinct behavioral states implemented in [`PetState`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/PetState.cs): `Idle`, `Walk`, `Sleep`, `Fall`, `Drag`, `Chase`, `Eat`, `Pet`, `Stretch`, `Typing`, `TypingFast`, `Play`, `Zoomies`, `Bat`, `Hunt`, `Pounce`, `Proud`, `Groom`, `Yawn`, `Loaf`, `Gift`, `Knockoff`, `SideRest`, `Wakeup`, `Spin`, `Jump`, `Talk`. |
-| **System Tray Integration** | Managed via [`TrayService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/TrayService.cs) with context menu: Settings, Pause/Resume, Bring Pet Here, AI Talk, Open Logs, and Quit. |
-| **Settings Persistence** | Serialized via `System.Text.Json` into `%AppData%\PixelPaws\settings.json` via [`SettingsService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/SettingsService.cs). |
-| **Multi-Monitor Geometry** | Handled by [`DesktopGeometry`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/DesktopGeometry.cs). Supports heterogeneous multi-monitor setups, different heights, taskbar positions, and dynamic display connect/disconnect events. |
+| **Comprehensive Animation Engine** | 27 distinct behavioral states implemented in [`PetState`](../src/DesktopPet/Engine/PetState.cs): `Idle`, `Walk`, `Sleep`, `Fall`, `Drag`, `Chase`, `Eat`, `Pet`, `Stretch`, `Typing`, `TypingFast`, `Play`, `Zoomies`, `Bat`, `Hunt`, `Pounce`, `Proud`, `Groom`, `Yawn`, `Loaf`, `Gift`, `Knockoff`, `SideRest`, `Wakeup`, `Spin`, `Jump`, `Talk`. |
+| **System Tray Integration** | Managed via [`TrayService`](../src/DesktopPet/Services/TrayService.cs) with context menu: Settings, Pause/Resume, Bring Pet Here, AI Talk, Open Logs, and Quit. |
+| **Settings Persistence** | Serialized via `System.Text.Json` into `%AppData%\PixelPaws\settings.json` via [`SettingsService`](../src/DesktopPet/Services/SettingsService.cs). |
+| **Multi-Monitor Geometry** | Handled by [`DesktopGeometry`](../src/DesktopPet/Engine/DesktopGeometry.cs). Supports heterogeneous multi-monitor setups, different heights, taskbar positions, and dynamic display connect/disconnect events. |
 | **Per-Monitor DPI Handling** | Native coordinate transformations from physical pixels to WPF Device Independent Pixels (DIPs) using `PerMonitorV2` DPI scaling. |
-| **Physics & Collision Engine** | Real-time gravity (`2000 px/s²`), terminal velocity cap (`2600 px/s`), horizontal movement, jump arc kinematics, and edge collisions in [`PetEngine`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/PetEngine.cs). |
-| **Surface & Platform Detection** | [`SurfaceProvider`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/SurfaceProvider.cs) interrogates Win32 z-order window bounds (excluding tooltips, cloaked windows, overlays) and desktop floors. |
-| **Window Walking** | Pure functional landing and support detection via [`Platforms`](file:///d:/Neku/pixelpaws/src/DesktopPet/Engine/Platforms.cs). Pet walks along window title bars and falls when walking off edges. |
-| **Low-Level Keyboard & Mouse Hooks** | Global hooks via `WH_KEYBOARD_LL` and `WH_MOUSE_LL` in [`KeyboardMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/KeyboardMonitor.cs) and [`MouseMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/MouseMonitor.cs). Computes typing velocity and detects mouse wheel scrolling for playful interactions. |
-| **Hook Watchdog** | [`HookWatchdog`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/HookWatchdog.cs) continuously monitors hook health to recover if Windows unhooks low-level hooks due to timeout. |
-| **Quiet Mode / Do Not Disturb** | [`SystemMonitor`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/SystemMonitor.cs) queries `SHQueryUserNotificationState` to detect full-screen gaming, presentations, screen shares, or Focus Assist. Pet calms down or completely hides. |
-| **AI Companion (Optional)** | Optional chat companion with Google Gemini and local Ollama support via [`AiChatService`](file:///d:/Neku/pixelpaws/src/DesktopPet/Services/Ai/AiChatService.cs), parsing replies and emotion tags into animations. |
+| **Physics & Collision Engine** | Real-time gravity (`2000 px/s²`), terminal velocity cap (`2600 px/s`), horizontal movement, jump arc kinematics, and edge collisions in [`PetEngine`](../src/DesktopPet/Engine/PetEngine.cs). |
+| **Surface & Platform Detection** | [`SurfaceProvider`](../src/DesktopPet/Engine/SurfaceProvider.cs) interrogates Win32 z-order window bounds (excluding tooltips, cloaked windows, overlays) and desktop floors. |
+| **Window Walking** | Pure functional landing and support detection via [`Platforms`](../src/DesktopPet/Engine/Platforms.cs). Pet walks along window title bars and falls when walking off edges. |
+| **Low-Level Keyboard & Mouse Hooks** | Global hooks via `WH_KEYBOARD_LL` and `WH_MOUSE_LL` in [`KeyboardMonitor`](../src/DesktopPet/Services/KeyboardMonitor.cs) and [`MouseMonitor`](../src/DesktopPet/Services/MouseMonitor.cs). Computes typing velocity and detects mouse wheel scrolling for playful interactions. |
+| **Hook Watchdog** | [`HookWatchdog`](../src/DesktopPet/Services/HookWatchdog.cs) continuously monitors hook health to recover if Windows unhooks low-level hooks due to timeout. |
+| **Quiet Mode / Do Not Disturb** | [`SystemMonitor`](../src/DesktopPet/Services/SystemMonitor.cs) queries `SHQueryUserNotificationState` to detect full-screen gaming, presentations, screen shares, or Focus Assist. Pet calms down or completely hides. |
+| **AI Companion (Optional)** | Optional chat companion with Google Gemini and local Ollama support via [`AiChatService`](../src/DesktopPet/Services/Ai/AiChatService.cs), parsing replies and emotion tags into animations. |
 | **Single-Instance Enforcement** | Global named mutex (`PixelPaws.SingleInstance`) prevents duplicate running instances. |
 | **Crash Logging & Diagnostics** | Unhandled dispatcher and domain exceptions captured to `%Temp%\pixelpaws_crash.log`. Verbose tracing enabled via `PIXELPAWS_DEBUG=1`. |
 | **State Continuity** | Cat remembers last desktop position, energy, and hunger values across restarts to maintain behavioral consistency. |
@@ -91,14 +91,14 @@ src/DesktopPet/
 
 ## 4. Test Suite Audit
 
-The test suite in [`tests/DesktopPet.Tests`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests) targets `net10.0-windows` and passes **66 tests with 0 failures**:
+The test suite in [`tests/DesktopPet.Tests`](../tests/DesktopPet.Tests) targets `net10.0-windows` and passes **66 tests with 0 failures**:
 
-1. **[`PlatformsTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/PlatformsTests.cs)**: Validates platform support detection, boundary conditions, fall penetration thresholds, and landing calculations.
-2. **[`DesktopGeometryTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/DesktopGeometryTests.cs)**: Tests multi-monitor work areas, clamp boundaries, non-rectangular desktop layouts, and DPI scaling logic.
-3. **[`StateMachineTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/StateMachineTests.cs)**: Verifies energy/hunger drive evolution, drive recovery/drain rates, action selection probabilities, and persistence capture/restore.
-4. **[`QuietModeTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/QuietModeTests.cs)**: Tests notification states, full-screen detection, and suppression of disruptive pet states during presentation/gaming modes.
-5. **[`ReplyParsingTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/ReplyParsingTests.cs)**: Verifies parsing of structured AI emotion tags, trailing tags, and tool invocation markers.
-6. **[`AppVersionTests.cs`](file:///d:/Neku/pixelpaws/tests/DesktopPet.Tests/AppVersionTests.cs)**: Validates version parsing and compatibility matching against release tags.
+1. **[`PlatformsTests.cs`](../tests/DesktopPet.Tests/PlatformsTests.cs)**: Validates platform support detection, boundary conditions, fall penetration thresholds, and landing calculations.
+2. **[`DesktopGeometryTests.cs`](../tests/DesktopPet.Tests/DesktopGeometryTests.cs)**: Tests multi-monitor work areas, clamp boundaries, non-rectangular desktop layouts, and DPI scaling logic.
+3. **[`StateMachineTests.cs`](../tests/DesktopPet.Tests/StateMachineTests.cs)**: Verifies energy/hunger drive evolution, drive recovery/drain rates, action selection probabilities, and persistence capture/restore.
+4. **[`QuietModeTests.cs`](../tests/DesktopPet.Tests/QuietModeTests.cs)**: Tests notification states, full-screen detection, and suppression of disruptive pet states during presentation/gaming modes.
+5. **[`ReplyParsingTests.cs`](../tests/DesktopPet.Tests/ReplyParsingTests.cs)**: Verifies parsing of structured AI emotion tags, trailing tags, and tool invocation markers.
+6. **[`AppVersionTests.cs`](../tests/DesktopPet.Tests/AppVersionTests.cs)**: Validates version parsing and compatibility matching against release tags.
 
 ---
 
